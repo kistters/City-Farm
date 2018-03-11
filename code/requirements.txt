@@ -1,0 +1,6 @@
+flask
+Flask-SQLAlchemy
+gunicorn
+names
+requests
+celery

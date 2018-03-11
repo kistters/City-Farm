@@ -1,0 +1,38 @@
+version: '2'
+
+services:
+
+#Python
+  sever_user:
+    build: .
+    command: ["gunicorn", "--workers=3", "--bind=0.0.0.0:5000", "server_user:app"]
+    ports:
+      - "80:5000"
+    mem_limit: 512M
+    cpuset: 0,001
+    volumes:
+      - ./code:/code
+    extra_hosts:
+      - "server.it:127.0.0.1"
+    depends_on:
+      - rabbitmq
+
+#Python
+  celery:
+    build: .
+    #command: ["gunicorn", "--workers=3", "--bind=0.0.0.0:5000", "consumer:app"]
+    #command: ["python","test_user_save.py"]
+    entrypoint: ["celery"]
+    # volumes:
+    #   - ./code:/code
+    depends_on:
+      - rabbitmq
+
+#RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.6.15
+    command: ["rabbitmq-server"]
+    ports:
+      - "15672:15672"
+    volumes:
+      - "./rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins"
