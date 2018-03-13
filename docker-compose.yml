@@ -8,12 +8,8 @@ services:
     command: ["gunicorn", "--workers=3", "--bind=0.0.0.0:5000", "server_user:app"]
     ports:
       - "80:5000"
-    mem_limit: 512M
-    cpuset: 0,001
     volumes:
       - ./code:/code
-    extra_hosts:
-      - "server.it:127.0.0.1"
     depends_on:
       - rabbitmq
 
