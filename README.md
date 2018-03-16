@@ -4,7 +4,7 @@ Hello Farmers
 Follow 
 
 ```
-$ bash untitled.sh
+$ sudo bash untitled.sh
 ```
 
 :D
