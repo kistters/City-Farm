@@ -1,0 +1,1 @@
+celery -A tasks worker --loglevel=info -Q trigo.comer,milho.comer,trigo.plantar,milho.plantar

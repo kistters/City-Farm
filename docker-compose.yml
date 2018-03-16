@@ -1,62 +1,41 @@
 version: '2'
-
 services:
 
-
 #Python
-  backend:
+  publisher:
     build: Celery
-    command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "dash:app"]
-    #command: ["python","dash.py"]
-    ports:
-      - "5000:5000"
     volumes:
       - ./Celery/code:/code
-    depends_on:
-      - redis
-
-#Python
-  websocket:
-    build: Celery
-    command: ["python", "websocket.py"]
-    #command: ["python","dash.py"]
-    ports:
-      - "5678:5678"
-    volumes:
-      - ./Celery/code:/code
-    depends_on:
-      - redis
-#Nginx
-  web:
-    image: nginx:1.13.8
-    ports:
-        - "80:80"
-    volumes:
-        - ./nginx/conf.d:/etc/nginx/conf.d
-        - ./dash.html:/www/dash.html
-    depends_on:
-      - backend
-#Python
-  celery:
-    build: Celery
-    volumes:
-      - ./code:/code
     depends_on:
       - rabbitmq
-      
+
+#Python
+  worker:
+    build: Celery
+    volumes:
+      - ./Celery/code:/code
+    depends_on:
+      - rabbitmq
+      - redis
+
 #RabbitMQ
   rabbitmq:
     image: rabbitmq:3.6.15
     command: ["rabbitmq-server"]
+    cpu_shares: 30
+    mem_limit: 521M
     ports:
       - "15672:15672"
     volumes:
       - "./rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins"
-      
+
 #Database
   redis:
     image: redis
+    container_name: db_redis
+    cpu_shares: 30
+    mem_limit: 521M
+    volumes:
+      - ./scripts:/scripts
     ports:
       - "6379:6379"
-    depends_on:
-      - celery
