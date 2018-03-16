@@ -2,28 +2,48 @@ version: '2'
 
 services:
 
+
 #Python
-  sever_user:
-    build: .
-    command: ["gunicorn", "--workers=3", "--bind=0.0.0.0:5000", "server_user:app"]
+  backend:
+    build: Celery
+    command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "dash:app"]
+    #command: ["python","dash.py"]
     ports:
-      - "80:5000"
+      - "5000:5000"
+    volumes:
+      - ./Celery/code:/code
+    depends_on:
+      - redis
+
+#Python
+  websocket:
+    build: Celery
+    command: ["python", "websocket.py"]
+    #command: ["python","dash.py"]
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./Celery/code:/code
+    depends_on:
+      - redis
+#Nginx
+  web:
+    image: nginx:1.13.8
+    ports:
+        - "80:80"
+    volumes:
+        - ./nginx/conf.d:/etc/nginx/conf.d
+        - ./dash.html:/www/dash.html
+    depends_on:
+      - backend
+#Python
+  celery:
+    build: Celery
     volumes:
       - ./code:/code
     depends_on:
       - rabbitmq
-
-#Python
-  celery:
-    build: .
-    #command: ["gunicorn", "--workers=3", "--bind=0.0.0.0:5000", "consumer:app"]
-    #command: ["python","test_user_save.py"]
-    entrypoint: ["celery"]
-    # volumes:
-    #   - ./code:/code
-    depends_on:
-      - rabbitmq
-
+      
 #RabbitMQ
   rabbitmq:
     image: rabbitmq:3.6.15
@@ -32,3 +52,11 @@ services:
       - "15672:15672"
     volumes:
       - "./rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins"
+      
+#Database
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    depends_on:
+      - celery

@@ -11,3 +11,8 @@ host='sever-user.it'
 docker run --rm -it --network=$(docker inspect --format='{{.HostConfig.NetworkMode}}' $container) \
 --add-host $host:$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $container) \
 -v $(pwd)/code:/code pythonrabbitmq_test sh
+
+ docker-compose run --rm -v $(pwd)/Celery/code:/code celery sh
+ 
+
+ celery -A tasks worker --loglevel=info -Q trigo.comer,milho.comer,trigo.plantar,milho.plantar
