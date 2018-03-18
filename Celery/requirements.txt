@@ -2,4 +2,3 @@ flask
 gunicorn
 celery
 redis
-websockets
