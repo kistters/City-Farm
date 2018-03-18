@@ -33,7 +33,7 @@ ex-next() {
 	sleep 1
 }
 
-docker rm -f $(docker ps -a -q)
+#docker rm -f $(docker ps -a -q)
 docker-compose up -d rabbitmq redis
 
 ex-next
