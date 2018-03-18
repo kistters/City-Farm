@@ -3,17 +3,17 @@ services:
 
 #Python
   publisher:
-    build: Celery
+    build: CityFarm
     volumes:
-      - ./Celery/code:/code
+      - ./CityFarm/code:/code
     depends_on:
       - rabbitmq
 
 #Python
   worker:
-    build: Celery
+    build: CityFarm
     volumes:
-      - ./Celery/code:/code
+      - ./CityFarm/code:/code
     depends_on:
       - rabbitmq
       - redis
