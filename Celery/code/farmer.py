@@ -1,7 +1,7 @@
-from tasks import plantarMilho, plantarTrigo
+from tasks import plant
 
-for x in range(100):
-	plantarMilho.apply_async(queue='milho.plantar', serializer='json')
-	plantarTrigo.apply_async(queue='trigo.plantar', serializer='json')
+for x in range(10):
+	plant.apply_async(('corn',10), queue='planting', serializer='json')
+	plant.apply_async(('wheat',90), queue='planting', serializer='json')
 
 # for idx, item in enumerate(items):

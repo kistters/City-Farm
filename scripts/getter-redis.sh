@@ -2,18 +2,18 @@
 
 
 consultRedis() {
-		MILHO=$(echo GET milho | redis-cli)
-		TRIGO=$(echo GET trigo | redis-cli)
+		MILHO=$(echo GET corn | redis-cli)
+		TRIGO=$(echo GET wheat | redis-cli)
 sleep 0.3
 clear; 
 
 cat << EOF
-+--------+-------------+
-| plant  |   qty       |
-+------+---------------+
-|  milho | $MILHO      |
-|  trigo | $TRIGO      |
-+--------+-------------+
++-----+------+
+|plant|  qty |
++-----+------+
+|milho| $MILHO      
+|trigo| $TRIGO      
++-----+------+
 EOF
 
 }

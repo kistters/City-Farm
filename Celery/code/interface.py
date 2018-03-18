@@ -1,8 +1,8 @@
+""" for producer and consumer """
 
-
-def plant(plant, qty):
+def plant(what, qty):
 	pass
 
 
-def eat(plant, qty):
+def eat(what, qty):
 	pass
