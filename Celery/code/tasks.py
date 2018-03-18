@@ -7,9 +7,9 @@ app = Celery('tasks', broker='pyamqp://guest@rabbitmq//')
 r = redis.StrictRedis(host='redis', port=6379, db=0)
 
 @app.task
-def plant(what):
+def plant(what, qty):
 	r.incr(what)
-
+	
 @app.task
-def eat(what):
+def eat(what, qty):
 	r.decr(what)
