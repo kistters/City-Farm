@@ -9,9 +9,14 @@ r = redis.StrictRedis(host='redis', port=6379, db=0)
 """ farmer planting """
 @app.task
 def plant(what):
-	r.incr(what)
+	for x in range(3):
+		r.incr(what)
 
 """ citizen eating """
-@app.task
-def eat(what):
-	r.decr(what)
+#@app.task(bind=True, max_retries=3)
+@app.task(bind=True, max_retries=None)
+def eat(self, what):
+	if int(r.get(what).decode('utf8')) > 0:
+		r.decr(what)
+	else:
+		self.retry(countdown=3) 
