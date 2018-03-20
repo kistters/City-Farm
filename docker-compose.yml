@@ -1,6 +1,32 @@
 version: '2'
 services:
 
+  
+#Nginx
+  web:
+    image: nginx:1.13.8
+    cpu_shares: 30
+    mem_limit: 521M
+    ports:
+        - "80:80"
+        - "443:443"
+    volumes:
+        - ./nginx/conf.d:/etc/nginx/conf.d
+        - ./CityFarm/code:/code
+    depends_on:
+      - backend
+
+#Python
+  backend:
+    build: CityFarm
+    command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "city-farm:app"]
+    cpu_shares: 30
+    mem_limit: 521M
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./CityFarm/code:/code
+
 #Python
   publisher:
     build: CityFarm
