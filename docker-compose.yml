@@ -6,7 +6,7 @@ services:
   web:
     image: nginx:1.13.8
     cpu_shares: 30
-    mem_limit: 521M
+    mem_limit: 512M
     ports:
         - "80:80"
         - "443:443"
@@ -22,11 +22,24 @@ services:
     command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "city-farm:app"]
     #command: ["python", "city-farm.py"]
     cpu_shares: 30
-    mem_limit: 521M
+    mem_limit: 512M
     ports:
       - "5000:5000"
     volumes:
       - ./CityFarm/code:/code
+
+#Python
+  websocket:
+    build: CityFarm
+    command: ["python", "websocket.py"]
+    cpu_shares: 30
+    mem_limit: 512M
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./CityFarm/code:/code
+    depends_on:
+      - redis
 
 #Python
   publisher:
@@ -39,6 +52,8 @@ services:
 #Python
   worker:
     build: CityFarm
+    cpu_shares: 30
+    mem_limit: 512M
     volumes:
       - ./CityFarm/code:/code
     depends_on:
@@ -50,7 +65,7 @@ services:
     image: rabbitmq:3.6.15
     command: ["rabbitmq-server"]
     cpu_shares: 30
-    mem_limit: 521M
+    mem_limit: 512M
     ports:
       - "15672:15672"
     volumes:
@@ -61,7 +76,7 @@ services:
     image: redis
     container_name: db_redis
     cpu_shares: 30
-    mem_limit: 521M
+    mem_limit: 512M
     volumes:
       - ./scripts:/scripts
     ports:

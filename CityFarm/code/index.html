@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CityFarm</title>
+  <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>CityFarm</h1>
+    <hr>
+      WebSocket Status : <span id="message"></span>
+    <hr>
+
+      <div>
+        <p id="update-websocket"></p>
+      </div>
+  </div>
+  <script>
+    var host = window.location.host;
+    var ws = new WebSocket('ws://'+host+'/ws');
+    var $message = $('#message');
+
+    ws.onopen = function(){
+      $message.attr("class", 'label label-success');
+      $message.text('open');
+    };
+
+    ws.onmessage = function(ev){
+
+      $message.attr("class", 'label label-info');
+      $message.hide();
+      $message.fadeIn("slow");
+      $message.text('recieved message');
+      var json = JSON.parse(ev.data);
+      $('#update-websocket').hide();
+      $('#update-websocket').fadeIn("slow");
+      $('#update-websocket').text(json.message);
+
+      setTimeout(() => {
+        $message.attr("class", 'label label-success');
+        $message.text('waiting')
+      }, 1000)
+    };
+    
+    ws.onclose = function(ev){
+      $message.attr("class", 'label label-important');
+      $message.text('closed');
+    };
+
+    ws.onerror = function(ev){
+      $message.attr("class", 'label label-warning');
+      $message.text('error occurred');
+    };
+  </script>
+</body>
+</html>

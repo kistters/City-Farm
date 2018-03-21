@@ -2,3 +2,4 @@ flask
 gunicorn
 celery
 redis
+tornado

@@ -35,7 +35,7 @@ ex-next() {
 
 docker rm -f $(docker ps -a -q)
 docker-compose build
-docker-compose up -d rabbitmq redis
+docker-compose up -d rabbitmq redis websocket
 
 ex-next
 
