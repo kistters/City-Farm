@@ -45,14 +45,10 @@ ex-next
 
 gnome-terminal --geometry 39x9+-9+-8 -e 'sh -c "docker exec -it db_redis bash /scripts/getter-redis.sh"'
 
-ex-next
-
-gnome-terminal -e 'sh -c "docker-compose run --rm publisher python farmer.py"'
-
 ex-next 
 
-gnome-terminal --geometry 999x10+999+999 -e 'sh -c "docker stats $(docker ps --format={{.Names}})"'
-gnome-terminal --geometry 67x11+-9+262   -e 'sh -c "docker-compose up --remove-orphans  web"'
-gnome-terminal --geometry 67x11-7+267    -e 'sh -c "docker-compose run --rm publisher sh"'
+#gnome-terminal --geometry 999x10+999+999 -e 'sh -c "docker stats $(docker ps --format={{.Names}})"'
+#gnome-terminal --geometry 67x11+-9+262   -e 'sh -c "docker-compose up --remove-orphans  web"'
+gnome-terminal --geometry 67x11-7+267    -e 'sh -c "docker-compose run --rm publisher sh test.sh"'
 
 #xwininfo -id $(xprop -root | awk '/_NET_ACTIVE_WINDOW\(WINDOW\)/{print $NF}')
