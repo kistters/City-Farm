@@ -19,6 +19,7 @@
   <script>
     var host = window.location.host;
     var ws = new WebSocket('ws://'+host+'/ws');
+    var echo = new WebSocket('ws://'+host+'/echo');
     var $message = $('#message');
 
     ws.onopen = function(){
@@ -26,6 +27,10 @@
       $message.text('open');
     };
 
+    echo.onmessage = function(arg) {
+       console.log(arg)
+    }
+    
     ws.onmessage = function(ev){
 
       $message.attr("class", 'label label-info');

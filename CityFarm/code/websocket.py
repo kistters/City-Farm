@@ -34,10 +34,24 @@ class ApiHandler(web.RequestHandler):
         for c in cl:
             c.write_message(data)
 
+
+class EchoWebSocket(websocket.WebSocketHandler):
+    def open(self):
+        print("WebSocket opened")
+
+    def on_message(self, message):
+        data = {"text": message}
+        data = json.dumps(data)
+        self.write_message(data)
+
+    def on_close(self):
+        print("WebSocket closed")
+
 app = web.Application([
     (r'/', IndexHandler),
     (r'/ws', SocketHandler),
     (r'/api', ApiHandler),
+    (r'/echo', EchoWebSocket),
 ])
 
 if __name__ == '__main__':
