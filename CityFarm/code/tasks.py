@@ -17,5 +17,5 @@ def plant(what):
 #@app.task(bind=True, max_retries=3)
 @app.task(bind=True, max_retries=None)
 def eat(self, what):
-	if not decr_resource_if_available(what):
-		self.retry(countdown=3) 
+	if not decr_resource_if_available(r, what):
+		self.retry(countdown=3)

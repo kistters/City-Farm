@@ -1,10 +1,5 @@
-import redis
 
-r = redis.StrictRedis(host="redis",
-                      port="6379",
-                      db=0)
-
-def decr_resource_if_available(key, min_limit=0):
+def decr_resource_if_available(red, key, min_limit=0):
     """
     Controls the TPT (Transactions per time) for a given key. Useful when you need to respect some APIs rate limits,
     for instance. Better than using default celery rate_limit in cases where you have more than one worker machine
@@ -29,7 +24,7 @@ def decr_resource_if_available(key, min_limit=0):
         return 0 \
     end \
     "
-    is_rate_okay = r.register_script(script)
+    is_rate_okay = red.register_script(script)
 
     return bool(is_rate_okay(keys=[key], args=[min_limit]))
 
@@ -37,6 +32,10 @@ def decr_resource_if_available(key, min_limit=0):
 ####################################
 ###### How to use it ###############
 ####################################
+
+
+# import redis
+# r = redis.StrictRedis(host='locahost', port="6379", db=0)
 
 # consumers = 15
 # resource_type = "milho"
@@ -47,7 +46,7 @@ def decr_resource_if_available(key, min_limit=0):
 
 # # Consuming more than the initial amount
 # for consumer in range(consumers):
-#     decr_resource_if_available(resource_type)
+#     decr_resource_if_available(r, resource_type)
 
 # # Final amount is always zero, never negative. Even tough we run this script in multiple machines at the same time
 # final_amount = r.get(resource_type)
