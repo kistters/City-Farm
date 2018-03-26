@@ -1,16 +1,15 @@
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, render_template
 from tasks import plant, eat
-import random
-
+import random, requests
 
 app = Flask(__name__)
 
 @app.route('/')
-def home():
-	response = make_response(jsonify({'ip': request.remote_addr, 'cookie': request.cookies.get('cityfarm')}))
+def dashboard():
+	response = make_response(render_template('dashboard.html'))
+	#jsonify({'ip': request.remote_addr, 'cookie': request.cookies.get('cityfarm')})
 	response.set_cookie('cityfarm',value='Farmer')
 	return response, 200
-
 
 @app.route('/work', methods=['POST'])
 def work():
@@ -22,6 +21,15 @@ def work():
 	plant.apply_async(["corn"], queue='planting', serializer='json')
 	plant.apply_async(["wheat"], queue='planting', serializer='json')
 	return jsonify({'ip': request.remote_addr,'plan':'farmer'}), 200
+
+
+@app.route('/update')
+def updateInfo():
+	URL = "http://websocket:8888/update" # set into conf
+	r = requests.get(url = URL)
+
+	return 'OK', 200
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True)

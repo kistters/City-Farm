@@ -19,15 +19,16 @@ services:
 #Python
   backend:
     build: CityFarm
-    command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "city-farm:app"]
-    #command: ["python", "city-farm.py"]
+    #command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "city-farm:app"]
+    command: ["python", "city-farm.py"]
     cpu_shares: 30
     mem_limit: 512M
     ports:
-      - "5000:5000"
+      - "80:5000"
     volumes:
       - ./CityFarm/code:/code
-
+    depends_on:
+      - redis
 #Python
   websocket:
     build: CityFarm
@@ -42,18 +43,11 @@ services:
       - redis
 
 #Python
-  publisher:
-    build: CityFarm
-    volumes:
-      - ./CityFarm/code:/code
-    depends_on:
-      - rabbitmq
-
-#Python
   worker:
     build: CityFarm
     cpu_shares: 30
     mem_limit: 512M
+    command: ["sh","run-worker.sh"]
     volumes:
       - ./CityFarm/code:/code
     depends_on:

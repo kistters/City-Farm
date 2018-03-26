@@ -10,28 +10,33 @@
     <h1>CityFarm</h1>
     <hr>
       WebSocket Status : <span id="message"></span>
+      <button type="button" class="btn-warning pull-right" id="worker-generic">Work</button>
     <hr>
-
       <div>
         <p id="update-websocket"></p>
       </div>
+      <div id="status">
+      </div>
   </div>
+  <script type="text/javascript">
+
+      $('#worker-generic').click(function(){
+            $.post('/work')
+          })
+  </script>
   <script>
     var host = window.location.host;
-    var ws = new WebSocket('ws://'+host+'/ws');
-    var echo = new WebSocket('ws://'+host+'/echo');
+    var ws_message = new WebSocket('ws://'+host+':8888'+'/message');
+    var ws_status = new WebSocket('ws://'+host+':8888'+'/status');
     var $message = $('#message');
+    var $status = $('#status');
 
-    ws.onopen = function(){
+    ws_message.onopen = function(){
       $message.attr("class", 'label label-success');
       $message.text('open');
     };
-
-    echo.onmessage = function(arg) {
-       console.log(arg)
-    }
-    
-    ws.onmessage = function(ev){
+  
+    ws_message.onmessage = function(ev){
 
       $message.attr("class", 'label label-info');
       $message.hide();
@@ -48,15 +53,27 @@
       }, 1000)
     };
     
-    ws.onclose = function(ev){
+    ws_message.onclose = function(ev){
       $message.attr("class", 'label label-important');
       $message.text('closed');
     };
 
-    ws.onerror = function(ev){
+    ws_message.onerror = function(ev){
       $message.attr("class", 'label label-warning');
       $message.text('error occurred');
     };
+
+    ws_message.onopen = function(){
+      $message.attr("class", 'label label-success');
+      $message.text('open');
+    };
+
+    ws_status.onmessage = function(ev) {
+       console.log(ev)
+       var json = JSON.parse(ev.data);
+       $status.html('milho: '+ json.corn+'<br>'+'trigo: '+ json.wheat)
+    }
+
   </script>
 </body>
 </html>

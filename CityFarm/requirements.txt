@@ -3,3 +3,4 @@ gunicorn
 celery
 redis
 tornado
+requests
