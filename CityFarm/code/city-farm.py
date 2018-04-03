@@ -14,22 +14,19 @@ def dashboard():
 @app.route('/work', methods=['POST'])
 def work():
 	if bool(random.getrandbits(1)):
-		eat.apply_async(("wheat",), queue='eating', serializer='json')
-		eat.apply_async(("corn",), queue='eating', serializer='json')
+		eat.apply_async(("wheat",), queue='eating', serializer='json', link=get_update())
+		eat.apply_async(("corn",), queue='eating', serializer='json', link=get_update())
 		return jsonify({'ip': request.remote_addr, 'eat':'citizen'}), 200
 
-	plant.apply_async(["corn"], queue='planting', serializer='json')
-	plant.apply_async(["wheat"], queue='planting', serializer='json')
+	plant.apply_async(["corn"], queue='planting', serializer='json', link=get_update())
+	plant.apply_async(["wheat"], queue='planting', serializer='json', link=get_update())
 	return jsonify({'ip': request.remote_addr,'plan':'farmer'}), 200
 
 
-@app.route('/update')
-def updateInfo():
+def get_update():
 	URL = "http://websocket:8888/update" # set into conf
 	r = requests.get(url = URL)
-
-	return 'OK', 200
-
+	
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True)

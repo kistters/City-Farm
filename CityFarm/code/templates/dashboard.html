@@ -69,7 +69,6 @@
     };
 
     ws_status.onmessage = function(ev) {
-       console.log(ev)
        var json = JSON.parse(ev.data);
        $status.html('milho: '+ json.corn+'<br>'+'trigo: '+ json.wheat)
     }
