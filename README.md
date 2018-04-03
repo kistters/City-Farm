@@ -1,10 +1,11 @@
 
-Hello Farmers
+Hello Farmers and Citizens
 
-Follow 
+Follow terminal command
 
 ```
 $ sudo bash untitled.sh
 ```
+
 
 :D

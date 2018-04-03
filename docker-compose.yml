@@ -19,8 +19,8 @@ services:
 #Python
   backend:
     build: CityFarm
-    #command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "city-farm:app"]
-    command: ["python", "city-farm.py"]
+    command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "city-farm:app"]
+    #command: ["python", "city-farm.py"]
     cpu_shares: 30
     mem_limit: 512M
     ports:
@@ -71,7 +71,5 @@ services:
     container_name: db_redis
     cpu_shares: 30
     mem_limit: 512M
-    volumes:
-      - ./scripts:/scripts
     ports:
       - "6379:6379"
