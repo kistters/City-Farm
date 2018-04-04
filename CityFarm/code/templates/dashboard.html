@@ -25,18 +25,18 @@
           })
   </script>
   <script>
-    var host = window.location.host;
-    var ws_message = new WebSocket('ws://'+host+':8888'+'/message');
+    var host = 'localhost';
     var ws_status = new WebSocket('ws://'+host+':8888'+'/status');
+    var ws_dash = new WebSocket('ws://'+host+':8888'+'/dashboard');
     var $message = $('#message');
     var $status = $('#status');
 
-    ws_message.onopen = function(){
+    ws_status.onopen = function(){
       $message.attr("class", 'label label-success');
       $message.text('open');
     };
   
-    ws_message.onmessage = function(ev){
+    ws_status.onmessage = function(ev){
 
       $message.attr("class", 'label label-info');
       $message.hide();
@@ -53,22 +53,22 @@
       }, 1000)
     };
     
-    ws_message.onclose = function(ev){
+    ws_status.onclose = function(ev){
       $message.attr("class", 'label label-important');
       $message.text('closed');
     };
 
-    ws_message.onerror = function(ev){
+    ws_status.onerror = function(ev){
       $message.attr("class", 'label label-warning');
       $message.text('error occurred');
     };
 
-    ws_message.onopen = function(){
+    ws_status.onopen = function(){
       $message.attr("class", 'label label-success');
       $message.text('open');
     };
 
-    ws_status.onmessage = function(ev) {
+    ws_dash.onmessage = function(ev) {
        var json = JSON.parse(ev.data);
        $status.html('milho: '+ json.corn+'<br>'+'trigo: '+ json.wheat)
     }

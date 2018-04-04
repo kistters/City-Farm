@@ -43,14 +43,15 @@ gnome-terminal --geometry 80x10+999 -e 'sh -c "docker-compose run --rm worker sh
 
 #gnome-terminal --geometry 39x9+-9+-8 -e 'sh -c "docker exec -it db_redis bash /scripts/getter-redis.sh"'
 
-ex-next 
+#ex-next 
 
 #gnome-terminal --geometry 999x10+999+999 -e 'sh -c "docker stats $(docker ps --format={{.Names}})"'
 gnome-terminal --geometry 67x11+-9+262   -e 'sh -c "docker-compose up --remove-orphans websocket"'
 
-ex-next
+#ex-next
 
 gnome-terminal --geometry 67x11-7+267   -e 'sh -c "docker-compose up --remove-orphans backend"'
-gnome-terminal --geometry 67x11-7+267    -e 'sh -c "docker-compose run --rm backend sh"'
+gnome-terminal --geometry 67x11-7+267   -e 'sh -c "docker-compose up --remove-orphans web"'
+#gnome-terminal --geometry 67x11-7+267    -e 'sh -c "docker-compose run --rm backend sh"'
 
 #xwininfo -id $(xprop -root | awk '/_NET_ACTIVE_WINDOW\(WINDOW\)/{print $NF}')

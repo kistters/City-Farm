@@ -12,7 +12,7 @@ services:
         - "443:443"
     volumes:
         - ./nginx/conf.d:/etc/nginx/conf.d
-        - ./CityFarm/code:/code
+        - ./CityFarm/front:/code
     depends_on:
       - backend
 
@@ -24,7 +24,7 @@ services:
     cpu_shares: 30
     mem_limit: 512M
     ports:
-      - "80:5000"
+      - "5000:5000"
     volumes:
       - ./CityFarm/code:/code
     depends_on:

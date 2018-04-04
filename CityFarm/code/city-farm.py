@@ -5,6 +5,11 @@ import random, requests
 app = Flask(__name__)
 
 @app.route('/')
+def index():
+	response = make_response(render_template('index.html'))
+	return response, 200
+
+@app.route('/dashboard')
 def dashboard():
 	response = make_response(render_template('dashboard.html'))
 	#jsonify({'ip': request.remote_addr, 'cookie': request.cookies.get('cityfarm')})
