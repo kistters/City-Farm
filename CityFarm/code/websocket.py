@@ -18,7 +18,7 @@ def farmer_or_citizen():
 
     plant.apply_async(["corn"], queue='planting', serializer='json', link=update_dash())
     plant.apply_async(["wheat"], queue='planting', serializer='json', link=update_dash())
-    return jsonify({'plant':'farmer'}), 200
+    return json.dumps({'plant':'farmer'}), 200
 
 def update_dash():
     data = []

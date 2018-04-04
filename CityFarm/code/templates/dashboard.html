@@ -25,7 +25,7 @@
           })
   </script>
   <script>
-    var host = 'localhost';
+    var host = window.location.hostname;
     var ws_status = new WebSocket('ws://'+host+':8888'+'/status');
     var ws_dash = new WebSocket('ws://'+host+':8888'+'/dashboard');
     var $message = $('#message');

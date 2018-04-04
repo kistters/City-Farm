@@ -28,9 +28,10 @@ var status = new Vue({
         connect: function(onOpen) {
 
             var self = this;
-
+            var host = window.location.hostname;
+            
             // Conectando
-            self.ws_status = new WebSocket('ws://localhost:8888'+'/status');
+            self.ws_status = new WebSocket('ws://'+host+':8888'+'/status');
 
             // Evento que será chamado ao abrir conexão
             self.ws_status.onopen = function() {
