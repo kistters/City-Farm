@@ -13,8 +13,6 @@ services:
     volumes:
         - ./nginx/conf.d:/etc/nginx/conf.d
         - ./CityFarm/front:/code
-    depends_on:
-      - websocket
 
 #Tornado
   websocket:

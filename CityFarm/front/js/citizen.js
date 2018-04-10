@@ -33,7 +33,7 @@ var status = new Vue({
             var self = this;
             var host = window.location.hostname;
             // Conectando
-            self.ws_dash = new WebSocket('ws://'+host+':8888'+'/dashboard');
+            self.ws_dash = new WebSocket('ws://'+host+':8888'+'/publihser');
 
             // Evento que será chamado ao abrir conexão
             self.ws_dash.onopen = function() {
@@ -68,9 +68,9 @@ var status = new Vue({
                 self.addMessage(JSON.parse(e.data));
 
                 setTimeout(() => {
-                    self.status = 'waiting'
+                    self.status = 'ready'
                     self.statusClass = {
-                        'label label-warning': true
+                        'label label-success': true
                     }
                 }, 1000)
             };

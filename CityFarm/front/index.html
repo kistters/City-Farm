@@ -11,9 +11,9 @@
 <body> 
 
     <!--  -->
-    <div id="status"  class="container col-md-2 col-sm-6 col-xs-6">
+    <div id="dashboard"  class="container col-md-2 col-sm-6 col-xs-6">
       <div class="panel-group">
-        <div class="panel panel-primary">
+        <div class="panel panel-default">
           <div class="panel-heading">
             Groceries : <span v-bind:class="statusClass" >{{ status }}</span> 
           </div>
@@ -25,15 +25,15 @@
           </div>
         </div>
 
-        <div class="panel panel-info">
+        <div class="panel panel-default">
           <div class="panel-heading">
-            WebSocket : <span v-bind:class="statusClass" >{{ status }}</span> 
+            WebSocket : <span v-bind:class="webStatusClass" >{{ web_status }}</span> 
           </div>
           <div class="panel-body">
 
-            <p>{{ message }}</p>
-            <div v-for="ip in ipList">
-              <span class="label label-success">{{ ip }}</span>
+            <p>{{ global_msg }}</p>
+            <div v-for="userIp in userIpList">
+              <span class="label label-success">{{ userIp }}</span>
             </div>
           </div>
         </div>
@@ -45,9 +45,9 @@
 
       <!--  -->
       <div id="farmer"  class="container col-md-3 col-sm-12 col-xs-12">
-        <div class="panel panel-info">
+        <div class="panel panel-default">
           <div class="panel-heading">
-            Farm Status : <span v-bind:class="statusClass" >{{ status }}</span> 
+            Farmer: <span v-bind:class="statusClass" >{{ status }}</span> 
           </div>
 
           <div class="panel-body">
@@ -66,19 +66,14 @@
             </div>
           </div>
         </div>
-
-        <!-- <div v-for="plant in groceries">
-            <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-            {{ plant.qty }}
-        </div> -->
       </div>
       <!--  -->
 
       <!--  --> 
       <div id="citizen" class="container col-md-3 col-sm-12 col-xs-12 ">
-        <div class="panel panel-info">
+        <div class="panel panel-default">
           <div class="panel-heading">
-            Citizen Status : <span v-bind:class="statusClass" >{{ status }}</span>
+            Citizen: <span v-bind:class="statusClass" >{{ status }}</span>
           </div>
           <div class="panel-body">
             <div class='radio-field'>
@@ -100,7 +95,7 @@
       <!--  -->
     </div>
 </body>
-    <script src="/js/status.js"></script>
+    <script src="/js/dashboard.js"></script>
     <script src="/js/farmer.js"></script>
     <script src="/js/citizen.js"></script>
 </html>
