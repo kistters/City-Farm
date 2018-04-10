@@ -106,7 +106,9 @@ var status = new Vue({
                 this.groceries = data.groceries
             }
 
-            this.global_msg = data.global_msg
+            if (data.global_msg) {
+                this.global_msg = data.global_msg
+            }
         }
     }
 

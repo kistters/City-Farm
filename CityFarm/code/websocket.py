@@ -8,7 +8,7 @@ import json, redis, logging
 r = redis.StrictRedis(host='redis', port=6379, db=0)
 #logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-cl_status = []
+storage = ['corn', 'wheat']
 cl_dashboard = []
 
 
@@ -19,7 +19,7 @@ def citizen(what):
     res = eat.apply_async((what,), queue='eating', serializer='json')
 
 def init():
-    for what in ['corn', 'wheat']:
+    for what in storage:
         r.incr(what)
         r.decr(what)
 
@@ -31,7 +31,7 @@ def cl_write(data, cl_list):
 """ application info """
 def dashboard_update():
     groceries = []
-    for what in ['corn', 'wheat']:
+    for what in storage:
         if r.get(what):
             groceries.append({
                 'what':what, 
@@ -82,6 +82,9 @@ class PublihserHandler(websocket.WebSocketHandler):
 
     def check_origin(self, origin):
         return True
+
+    def open(self):
+        self.write_message(json.dumps({"groceries": storage}))
 
     def on_message(self, message):
 

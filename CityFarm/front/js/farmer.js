@@ -99,9 +99,11 @@ var status = new Vue({
         handleUpdate: function(data) {
             if (data.work) {
                 this.tries = data.work
-                return;
             }
-            this.groceries = data
+
+            if (data.groceries) {
+                this.groceries = data.groceries
+            }
         },
 
         produce: function (plant) {
