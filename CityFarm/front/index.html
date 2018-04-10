@@ -6,73 +6,98 @@
       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
       <link rel="stylesheet" type="text/css" href="/css/dashboard.css">
       <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body>
-    <div id="status" class="container col-lg-2 col-md-5 col-xs-12 col-sm-12">
+<body> 
 
-        WebSocket Status : <span v-bind:class="statusClass" >{{ status }}</span> 
+    <!--  -->
+    <div id="status"  class="container col-md-2 col-sm-6 col-xs-6">
+      <div class="panel-group">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            Groceries : <span v-bind:class="statusClass" >{{ status }}</span> 
+          </div>
+          <div class="panel-body">
+          <div v-for="plant in groceries">
+              <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
+              {{ plant.qty }}
+          </div>
+          </div>
+        </div>
 
-        <p>{{ message }}</p>
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            WebSocket : <span v-bind:class="statusClass" >{{ status }}</span> 
+          </div>
+          <div class="panel-body">
 
-       <div v-for="ip in ipList">
-        <span class="label label-success">{{ ip }}</span>
-       </div>
+            <p>{{ message }}</p>
+            <div v-for="ip in ipList">
+              <span class="label label-success">{{ ip }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <!--  -->
+
+    <div  class="col-md-8 col-sm-6 col-xs-6 nogutter" >
 
       <!--  -->
-     <div id="farmer" class="container col-md-3">
+      <div id="farmer"  class="container col-md-3 col-sm-12 col-xs-12">
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            Farm Status : <span v-bind:class="statusClass" >{{ status }}</span> 
+          </div>
 
-        Farm Status : <span v-bind:class="statusClass" >{{ status }}</span> 
+          <div class="panel-body">
+            <div class='radio-field'>
+              <input type="radio" id="produce-corn" value="corn" v-model="plant" />
+              <label for="produce-corn">corn</label>
+            </div>
 
-      <div class="message-box">
-        <div class='radio-field'>
-          <input type="radio" id="produce-corn" value="corn" v-model="plant" />
-          <label for="produce-corn">corn</label>
+            <div class='radio-field'>
+              <input type="radio" id="produce-wheat" value="wheat" v-model="plant" />
+              <label for="produce-wheat">wheat</label>
+            </div>
+
+            <div class='button-work'>
+              <button v-on:click="produce(this)" class="btn-warning center" > {{ tries }} Produce {{ plant }} </button>
+            </div>
+          </div>
         </div>
 
-        <div class='radio-field'>
-          <input type="radio" id="produce-wheat" value="wheat" v-model="plant" />
-          <label for="produce-wheat">wheat</label>
-        </div>
+        <!-- <div v-for="plant in groceries">
+            <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
+            {{ plant.qty }}
+        </div> -->
+      </div>
+      <!--  -->
 
-        <div class='button-work'>
-          <button v-on:click="produce(this)" class="btn-warning center" > {{ tries }} Produce {{ plant }} </button>
+      <!--  --> 
+      <div id="citizen" class="container col-md-3 col-sm-12 col-xs-12 ">
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            Citizen Status : <span v-bind:class="statusClass" >{{ status }}</span>
+          </div>
+          <div class="panel-body">
+            <div class='radio-field'>
+              <input type="radio" id="eat-corn" value="corn" v-model="plant" />
+              <label for="eat-corn">corn</label>
+            </div>
+
+            <div class='radio-field'>
+              <input type="radio" id="eat-wheat" value="wheat" v-model="plant" />
+              <label for="eat-wheat">wheat</label>
+            </div>
+
+            <div class='button-work'>
+              <button v-on:click="consume(this)" class="btn-warning center" > {{ tries }} Eat {{ plant }} </button>
+            </div>
+          </div>
         </div>
       </div>
-
-
-      <div v-for="plant in groceries">
-          <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-                {{ plant.qty }}
-      </div>
-    </div>
-
-    <!--  -->
-     <div id="citizen" class="container col-md-3">
-
-        Citizen Status : <span v-bind:class="statusClass" >{{ status }}</span>
-
-      <div class="message-box">
-        <div class='radio-field'>
-          <input type="radio" id="eat-corn" value="corn" v-model="plant" />
-          <label for="eat-corn">corn</label>
-        </div>
-
-        <div class='radio-field'>
-          <input type="radio" id="eat-wheat" value="wheat" v-model="plant" />
-          <label for="eat-wheat">wheat</label>
-        </div>
-
-        <div class='button-work'>
-          <button v-on:click="produce(this)" class="btn-warning center" > {{ tries }} Eat {{ plant }} </button>
-        </div>
-      </div>
-
-      <div v-for="plant in groceries">
-          <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-                {{ plant.qty }}
-      </div>
+      <!--  -->
     </div>
 </body>
     <script src="/js/status.js"></script>

@@ -16,24 +16,10 @@ services:
     depends_on:
       - websocket
 
-#Python
-  backend:
-    build: CityFarm
-    command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:5000", "city-farm:app"]
-    #command: ["python", "city-farm.py"]
-    cpu_shares: 30
-    mem_limit: 512M
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./CityFarm/code:/code
-    depends_on:
-      - redis
-#Python
+#Tornado
   websocket:
     build: CityFarm
     command: ["python", "websocket.py"]
-    #command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:8888", "websocket:app"]
     cpu_shares: 30
     mem_limit: 512M
     ports:
@@ -43,7 +29,7 @@ services:
     depends_on:
       - redis
 
-#Python
+#Celery
   worker:
     build: CityFarm
     cpu_shares: 30

@@ -8,6 +8,7 @@ var status = new Vue({
         message: '',
         status: 'close',
         ws_status: null,
+        groceries: [],
         ipList: [],
         statusClass: {
             'label label-success': false,
@@ -65,9 +66,9 @@ var status = new Vue({
                 self.addMessage(JSON.parse(e.data));
 
                 setTimeout(() => {
-                    self.status = 'waiting'
+                    self.status = 'open'
                     self.statusClass = {
-                        'label label-warning': true
+                        'label label-success': true
                     }
                 }, 1000)
             };
@@ -89,6 +90,11 @@ var status = new Vue({
         addMessage: function(data) {
             if (data.listUser) {
                 this.ipList = data.listUser
+                return
+            }
+            if (data.groceries) {
+                this.groceries = data.groceries
+                return
             }
             this.message = data.message
         }

@@ -4,9 +4,6 @@
     height: 50px;
     border-radius: 50%;
 }
-.message-box {
-	margin-top : 10px;
-}
 
 .radio-field {
     float: left;
@@ -21,4 +18,13 @@
     width: 100%;
     margin-top: 10px;
     margin-bottom: 45px;
+}
+
+.nogutter{
+	padding: 0;
+	margin: 0;
+}
+
+@media screen and (max-width: 767px) {
+
 }

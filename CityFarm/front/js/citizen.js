@@ -60,7 +60,7 @@ var status = new Vue({
 
             // Evento que será chamado quando recebido dados do servidor
             self.ws_dash.onmessage = function(e) {
-                self.status = 'produce'
+                self.status = 'consume'
                 self.statusClass = {
                     'label label-info': true
                 }
@@ -119,10 +119,8 @@ var status = new Vue({
 
         },
 
-        produce: function (btn) {
-
-            this.ws_dash.send(JSON.stringify({produce: this.plant}));
-            console.log(btn)
+        consume: function (btn) {
+            this.ws_dash.send(JSON.stringify({consume: this.plant}));
         },
     }
 

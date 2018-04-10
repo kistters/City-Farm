@@ -1,7 +1,3 @@
-flask
-gunicorn
 celery
 redis
 tornado
-requests
-Flask-Sockets

@@ -120,9 +120,7 @@ var status = new Vue({
         },
 
         produce: function (btn) {
-
             this.ws_dash.send(JSON.stringify({produce: this.plant}));
-            console.log(btn)
         },
     }
 
