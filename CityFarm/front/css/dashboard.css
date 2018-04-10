@@ -1,14 +1,24 @@
-.avatar {
+.plant {
     vertical-align: middle;
     width: 50px;
     height: 50px;
     border-radius: 50%;
 }
+.message-box {
+	margin-top : 10px;
+}
 
+.radio-field {
+    float: left;
+    margin-right: 10px;
+}
+.radio-field label, .radio-field input[type='radio'] {
+    float: left;
+}
 
-.corn {
-    width:0;
-    height:0;
-    padding:61px 0 0 160px;/* image width (160px) and height (61px) */
-    background:url(https://www.w3schools.com/w3images/avatar5.png) no-repeat 0 0;
+.button-work {
+    display: inline-block;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 45px;
 }

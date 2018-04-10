@@ -1,11 +1,13 @@
 var status = new Vue({
 
     // Elemento que o aplicativo será iniciado
-    el: "#dashboard",
+    el: "#farmer",
 
     // Propriedades do aplicativo
     data: {
         message: '',
+        plant: '',
+        tries: null,
         groceries: [],
         status: 'close',
         ws_dash: null,
@@ -88,6 +90,10 @@ var status = new Vue({
 
         // Método responsável por adicionar uma mensagem de usuário
         addMessage: function(data) {
+            if (data.work) {
+                this.tries = data.work
+                return;
+            }
             this.groceries = data
         },
 
@@ -113,6 +119,11 @@ var status = new Vue({
 
         },
 
+        produce: function (btn) {
+
+            this.ws_dash.send(JSON.stringify({produce: this.plant}));
+            console.log(btn)
+        },
     }
 
 });

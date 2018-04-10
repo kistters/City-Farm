@@ -14,7 +14,7 @@ services:
         - ./nginx/conf.d:/etc/nginx/conf.d
         - ./CityFarm/front:/code
     depends_on:
-      - backend
+      - websocket
 
 #Python
   backend:
@@ -33,6 +33,7 @@ services:
   websocket:
     build: CityFarm
     command: ["python", "websocket.py"]
+    #command: ["gunicorn", "--workers=8", "--bind=0.0.0.0:8888", "websocket:app"]
     cpu_shares: 30
     mem_limit: 512M
     ports:

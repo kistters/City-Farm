@@ -50,7 +50,7 @@ gnome-terminal --geometry 67x11+-9+262   -e 'sh -c "docker-compose up --remove-o
 
 #ex-next
 
-gnome-terminal --geometry 67x11-7+267   -e 'sh -c "docker-compose up --remove-orphans backend"'
+#gnome-terminal --geometry 67x11-7+267   -e 'sh -c "docker-compose up --remove-orphans backend"'
 gnome-terminal --geometry 67x11-7+267   -e 'sh -c "docker-compose up --remove-orphans web"'
 #gnome-terminal --geometry 67x11-7+267    -e 'sh -c "docker-compose run --rm backend sh"'
 
