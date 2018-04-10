@@ -5,12 +5,12 @@ var status = new Vue({
 
     // Propriedades do aplicativo
     data: {
-        message: '',
+        global_msg: '',
         plant: '',
         tries: null,
         groceries: [],
         status: 'close',
-        ws_dash: null,
+        ws_publish: null,
         statusClass: {
             'label label-success': false,
             'label label-info': false,
@@ -27,45 +27,39 @@ var status = new Vue({
     // Métodos do aplicatvo
     methods: {
 
-        // Método responsável por iniciar conexão com o websocket
         connect: function(onOpen) {
 
             var self = this;
             var host = window.location.hostname;
             // Conectando
-            self.ws_dash = new WebSocket('ws://'+host+':8888'+'/publihser');
+            self.ws_publish = new WebSocket('ws://'+host+':8888'+'/publihser');
 
-            // Evento que será chamado ao abrir conexão
-            self.ws_dash.onopen = function() {
+            self.ws_publish.onopen = function() {
 
                 self.status = 'open'
                 self.statusClass = {
                     'label label-success': true
                 }
-                // Se houver método de retorno
+
                 if (onOpen) {
                     onOpen();
                 }
-
-                self.sendMessage();
             };
 
-            // Evento que será chamado quando houver erro na conexão
-            self.ws_dash.onerror = function() {
+            self.ws_publish.onerror = function() {
                 self.status = 'fail'
                 self.statusClass = {
                     'label label-important': true
                 }
             };
 
-            // Evento que será chamado quando recebido dados do servidor
-            self.ws_dash.onmessage = function(e) {
+            self.ws_publish.onmessage = function(e) {
                 self.status = 'produce'
                 self.statusClass = {
                     'label label-info': true
                 }
 
-                self.addMessage(JSON.parse(e.data));
+                self.handleUpdate(JSON.parse(e.data));
 
                 setTimeout(() => {
                     self.status = 'ready'
@@ -75,7 +69,7 @@ var status = new Vue({
                 }, 1000)
             };
 
-            self.ws_dash.onclose = function(){
+            self.ws_publish.onclose = function(){
                 self.status = 'closed'
                 self.statusClass = {
                     'label label-important': true
@@ -85,11 +79,24 @@ var status = new Vue({
                     self.connect();
                 }, 5000);
             };
-
         },
 
-        // Método responsável por adicionar uma mensagem de usuário
-        addMessage: function(data) {
+        publish: function(json_data) {
+
+            var self = this;
+
+            if (self.ws_publish.readyState !== self.ws_publish.OPEN) {
+                self.connect(function() {
+                    self.publish(JSON.stringify({update:true}));
+                });
+
+                return;
+            }
+
+            self.ws_publish.send(json_data);
+        },
+
+        handleUpdate: function(data) {
             if (data.work) {
                 this.tries = data.work
                 return;
@@ -97,30 +104,8 @@ var status = new Vue({
             this.groceries = data
         },
 
-        // Método responsável por enviar uma mensagem
-        sendMessage: function() {
-
-            var self = this;
-
-            // Se a conexão não estiver aberta
-            if (self.ws_dash.readyState !== self.ws_dash.OPEN) {
-                // Tentando conectar novamente e caso tenha sucesso
-                // envia a mensagem novamente
-                self.connect(function() {
-                    self.sendMessage();
-                });
-
-                // Saindo do método
-                return;
-            }
-
-            // Envia os dados para o servidor através do websocket
-            self.ws_dash.send(JSON.stringify({update: true}));
-
-        },
-
-        produce: function (btn) {
-            this.ws_dash.send(JSON.stringify({produce: this.plant}));
+        produce: function (plant) {
+            this.publish(JSON.stringify({produce: plant}));
         },
     }
 

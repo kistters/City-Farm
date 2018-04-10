@@ -8,7 +8,7 @@ var status = new Vue({
         global_msg: '',
         status: 'close',
         web_status: 'close',
-        ws_status: null,
+        ws_dashboard: null,
         groceries: [],
         userIpList: [],
         statusClass: {'label label-important': true },
@@ -28,37 +28,32 @@ var status = new Vue({
     // Métodos do aplicatvo
     methods: {
 
-        // Método responsável por iniciar conexão com o websocket
         connect: function(onOpen) {
 
             var self = this;
             var host = window.location.hostname;
             
-            // Conectando
-            self.ws_status = new WebSocket('ws://'+host+':8888'+'/dashboard');
+            self.ws_dashboard = new WebSocket('ws://'+host+':8888'+'/dashboard');
 
-            // Evento que será chamado ao abrir conexão
-            self.ws_status.onopen = function() {
+            self.ws_dashboard.onopen = function() {
                 self.web_status = 'open'
                 self.webStatusClass = {
                     'label label-success': true
                 }
-                // Se houver método de retorno
+
                 if (onOpen) {
                     onOpen();
                 }
             };
 
-            // Evento que será chamado quando houver erro na conexão
-            self.ws_status.onerror = function() {
+            self.ws_dashboard.onerror = function() {
                 self.status = 'fail'
                 self.statusClass = {
                     'label label-important': true
                 }
             };
 
-            // Evento que será chamado quando recebido dados do servidor
-            self.ws_status.onmessage = function(e) {
+            self.ws_dashboard.onmessage = function(e) {
                 self.status = 'recieved'
                 self.statusClass = {
                     'label label-info': true
@@ -74,7 +69,7 @@ var status = new Vue({
                 }, 1000)
             };
 
-            self.ws_status.onclose = function(){
+            self.ws_dashboard.onclose = function(){
                 self.web_status = 'closed'
                 self.webStatusClass = {
                     'label label-important': true
@@ -84,10 +79,24 @@ var status = new Vue({
                     self.connect();
                 }, 5000);
             };
-
         },
 
-        // Método responsável por adicionar uma mensagem de usuário
+        publish: function(json_data) {
+
+            var self = this;
+
+            if (self.ws_dashboard.readyState !== self.ws_dashboard.OPEN) {
+
+                self.connect(function() {
+                    self.publish(JSON.stringify({update:true}));
+                });
+
+                return;
+            }
+
+            self.ws_dashboard.send(json_data);
+        },
+
         handleUpdate: function(data) {
             if (data.userIpList) {
                 this.userIpList = data.userIpList

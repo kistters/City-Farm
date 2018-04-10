@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello World - Dashboard</title>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+      <link rel="stylesheet" type="text/css" href="/css/dashboard.css">
+      <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body> 
+
+    <!--  -->
+    <div id="dashboard"  class="container col-md-2 col-sm-6 col-xs-6">
+      <div class="panel-group">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Groceries : <span v-bind:class="statusClass" >{{ status }}</span> 
+          </div>
+          <div class="panel-body">
+          <div v-for="plant in groceries">
+              <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
+              {{ plant.qty }}
+          </div>
+          </div>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            WebSocket : <span v-bind:class="webStatusClass" >{{ web_status }}</span> 
+          </div>
+          <div class="panel-body">
+
+            <p>{{ global_msg }}</p>
+            <div v-for="userIp in userIpList">
+              <span class="label label-success">{{ userIp }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--  -->
+
+    <div  class="col-md-8 col-sm-6 col-xs-6 nogutter" >
+    </div>
+</body>
+    <script src="/js/dashboard.js"></script>
+</html>

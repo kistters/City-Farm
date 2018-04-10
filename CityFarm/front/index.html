@@ -18,22 +18,9 @@
             Groceries : <span v-bind:class="statusClass" >{{ status }}</span> 
           </div>
           <div class="panel-body">
-          <div v-for="plant in groceries">
-              <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-              {{ plant.qty }}
-          </div>
-          </div>
-        </div>
-
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            WebSocket : <span v-bind:class="webStatusClass" >{{ web_status }}</span> 
-          </div>
-          <div class="panel-body">
-
-            <p>{{ global_msg }}</p>
-            <div v-for="userIp in userIpList">
-              <span class="label label-success">{{ userIp }}</span>
+            <div v-for="plant in groceries">
+                <img v-bind:src="'/css/img/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
+                {{ plant.qty }}
             </div>
           </div>
         </div>
@@ -52,17 +39,12 @@
 
           <div class="panel-body">
             <div class='radio-field'>
-              <input type="radio" id="produce-corn" value="corn" v-model="plant" />
-              <label for="produce-corn">corn</label>
-            </div>
-
-            <div class='radio-field'>
-              <input type="radio" id="produce-wheat" value="wheat" v-model="plant" />
-              <label for="produce-wheat">wheat</label>
+             Produce: {{ tries }} 
             </div>
 
             <div class='button-work'>
-              <button v-on:click="produce(this)" class="btn-warning center" > {{ tries }} Produce {{ plant }} </button>
+              <button v-on:click="produce('wheat')" class="btn-warning center" >wheat</button>
+              <button v-on:click="produce('corn')"  class="btn-warning center" >corn</button>
             </div>
           </div>
         </div>
@@ -77,17 +59,13 @@
           </div>
           <div class="panel-body">
             <div class='radio-field'>
-              <input type="radio" id="eat-corn" value="corn" v-model="plant" />
-              <label for="eat-corn">corn</label>
-            </div>
-
-            <div class='radio-field'>
-              <input type="radio" id="eat-wheat" value="wheat" v-model="plant" />
-              <label for="eat-wheat">wheat</label>
+             Eat: {{ tries }} 
             </div>
 
             <div class='button-work'>
-              <button v-on:click="consume(this)" class="btn-warning center" > {{ tries }} Eat {{ plant }} </button>
+
+              <button v-on:click="consume('wheat')" class="btn-warning center">wheat</button>
+              <button v-on:click="consume('corn')"  class="btn-warning center">corn</button>
             </div>
           </div>
         </div>
