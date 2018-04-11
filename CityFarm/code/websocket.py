@@ -8,7 +8,7 @@ import json, redis, logging
 r = redis.StrictRedis(host='redis', port=6379, db=0)
 #logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-storage = ['corn', 'wheat']
+storage = ['corn', 'wheat', 'celery', 'carrot', 'lettuce', 'tomato']
 cl_dashboard = []
 
 
@@ -104,6 +104,9 @@ class PublihserHandler(websocket.WebSocketHandler):
             work = r.get(consume_key).decode('utf8')
             self.write_message(json.dumps({"work": work}))
 
+        userIp = self.request.remote_ip
+        data = {"ipClick": userIp}
+        cl_write(data, cl_dashboard)
 
 class FarmRequestHandler(web.RequestHandler):
 

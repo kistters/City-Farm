@@ -11,11 +11,12 @@ var status = new Vue({
         ws_dashboard: null,
         groceries: [],
         userIpList: [],
-        statusClass: {'label label-important': true },
+        ipClick: '',
+        statusClass: {'label label-danger': true },
         webStatusClass: {
             'label label-success': false,
             'label label-info': false,
-            'label label-important': true,
+            'label label-danger': true,
             'label label-warning': false
           }
     },
@@ -49,7 +50,7 @@ var status = new Vue({
             self.ws_dashboard.onerror = function() {
                 self.status = 'fail'
                 self.statusClass = {
-                    'label label-important': true
+                    'label label-danger': true
                 }
             };
 
@@ -72,7 +73,7 @@ var status = new Vue({
             self.ws_dashboard.onclose = function(){
                 self.web_status = 'closed'
                 self.webStatusClass = {
-                    'label label-important': true
+                    'label label-danger': true
                 }
 
                 setTimeout(() => {
@@ -108,6 +109,10 @@ var status = new Vue({
 
             if (data.global_msg) {
                 this.global_msg = data.global_msg
+            }
+
+            if (data.ipClick) {
+                this.ipClick = data.ipClick
             }
         }
     }

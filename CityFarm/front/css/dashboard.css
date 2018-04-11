@@ -5,24 +5,19 @@
     border-radius: 50%;
 }
 
-.radio-field {
-    float: left;
-    margin-right: 10px;
-}
-.radio-field label, .radio-field input[type='radio'] {
-    float: left;
+.control-panel {
+    padding-bottom: 10px;
+    /*border-radius: 50%;*/
 }
 
-.button-work {
-    display: inline-block;
-    width: 100%;
-    margin-top: 10px;
-    margin-bottom: 45px;
-}
-
-.nogutter{
+.nogutter {
 	padding: 0;
 	margin: 0;
+	padding-top: 4px;
+}
+
+.active {
+	background-color: #5bc0de;
 }
 
 @media screen and (max-width: 767px) {

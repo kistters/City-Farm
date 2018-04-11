@@ -14,7 +14,7 @@ var status = new Vue({
         statusClass: {
             'label label-success': false,
             'label label-info': false,
-            'label label-important': true,
+            'label label-danger': true,
             'label label-warning': false
           }
     },
@@ -49,7 +49,7 @@ var status = new Vue({
             self.ws_publish.onerror = function() {
                 self.status = 'fail'
                 self.statusClass = {
-                    'label label-important': true
+                    'label label-danger': true
                 }
             };
 
@@ -72,7 +72,7 @@ var status = new Vue({
             self.ws_publish.onclose = function(){
                 self.status = 'closed'
                 self.statusClass = {
-                    'label label-important': true
+                    'label label-danger': true
                 }
 
                 setTimeout(() => {
