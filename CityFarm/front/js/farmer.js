@@ -1,4 +1,4 @@
-var status = new Vue({
+var farmer = new Vue({
 
     // Elemento que o aplicativo será iniciado
     el: "#farmer",

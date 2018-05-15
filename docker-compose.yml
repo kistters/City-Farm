@@ -5,8 +5,8 @@ services:
 #Nginx
   web:
     image: nginx:1.13.8
-    cpu_shares: 30
-    mem_limit: 512M
+    #cpu_shares: 30
+    #mem_limit: 128M
     ports:
         - "80:80"
         - "443:443"
@@ -18,8 +18,8 @@ services:
   websocket:
     build: CityFarm
     command: ["python", "websocket.py"]
-    cpu_shares: 30
-    mem_limit: 512M
+    #cpu_shares: 30
+    #mem_limit: 256M
     ports:
       - "8888:8888"
     volumes:
@@ -30,8 +30,8 @@ services:
 #Celery
   worker:
     build: CityFarm
-    cpu_shares: 30
-    mem_limit: 512M
+    #cpu_shares: 30
+    #mem_limit: 128M
     command: ["sh","run-worker.sh"]
     volumes:
       - ./CityFarm/code:/code
@@ -43,8 +43,8 @@ services:
   rabbitmq:
     image: rabbitmq:3.6.15
     command: ["rabbitmq-server"]
-    cpu_shares: 30
-    mem_limit: 512M
+    #cpu_shares: 30
+    #mem_limit: 256M
     ports:
       - "15672:15672"
     volumes:
@@ -54,7 +54,7 @@ services:
   redis:
     image: redis
     container_name: db_redis
-    cpu_shares: 30
-    mem_limit: 512M
+    #cpu_shares: 30
+    #mem_limit: 256M
     ports:
       - "6379:6379"

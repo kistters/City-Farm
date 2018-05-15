@@ -1,4 +1,4 @@
-var status = new Vue({
+var dashboard = new Vue({
 
     // Elemento que o aplicativo será iniciado
     el: "#dashboard",

@@ -12,3 +12,7 @@ Go to your browser
 http://localhost
 
 :D
+
+RabbitMQ
+
+http://localhost:15672
