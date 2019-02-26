@@ -34,24 +34,9 @@ ex-next() {
 }
 
 docker rm -f $(docker ps -a -q)
-#docker-compose build
-docker-compose up -d rabbitmq redis
-
+docker-compose build
 ex-next
-
-gnome-terminal --geometry 80x10+999 -e 'sh -c "docker-compose run --rm worker sh run-worker.sh; echo bye friend; sleep 1;"'
-
-#gnome-terminal --geometry 39x9+-9+-8 -e 'sh -c "docker exec -it db_redis bash /scripts/getter-redis.sh"'
-
-#ex-next 
-
-#gnome-terminal --geometry 999x10+999+999 -e 'sh -c "docker stats $(docker ps --format={{.Names}})"'
-gnome-terminal --geometry 67x11+-9+262   -e 'sh -c "docker-compose up --remove-orphans websocket"'
-
-#ex-next
-
-#gnome-terminal --geometry 67x11-7+267   -e 'sh -c "docker-compose up --remove-orphans backend"'
-gnome-terminal --geometry 67x11-7+267   -e 'sh -c "docker-compose up --remove-orphans web"'
-#gnome-terminal --geometry 67x11-7+267    -e 'sh -c "docker-compose run --rm backend sh"'
-
-#xwininfo -id $(xprop -root | awk '/_NET_ACTIVE_WINDOW\(WINDOW\)/{print $NF}')
+docker-compose up -d rabbitmq redis
+docker-compose up -d --remove-orphans websocket web
+ex-next
+docker-compose run --rm worker sh run-worker.sh
