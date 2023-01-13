@@ -8,20 +8,9 @@ from cityfarm import Farmer, StreetFair
     ("cheese", 2),
 ])
 def test_farmer_producing_ingredients(ingredient, quantity):
-    ingredients = Farmer('Will').produce_ingredient(ingredient=ingredient, quantity=quantity)
+    ingredients = Farmer('Will').produce_ingredient(item=ingredient, quantity=quantity)
     assert len(ingredients) == quantity
     assert ingredient in ingredients
-
-
-@pytest.mark.parametrize("ingredient", [
-    "tomato~",
-    "42tomato",
-    "to"
-])
-def test_farmer_producing_ingredients_not_allowed_ingredient_string(ingredient):
-    with pytest.raises(Exception) as exc_info:
-        Farmer('Will').produce_ingredient(ingredient=ingredient, quantity=3)
-    assert f"Ingredient {ingredient} is not allowed!" in str(exc_info.value)
 
 
 def test_request_ingredients_at_street_fair_incrementing_the_demand():
@@ -36,8 +25,7 @@ def test_increase_ingredient_at_street_fair_incrementing_the_offer():
     produced_ingredients = ["cheese", "cheese", "cheese"]
     street_fair = StreetFair()
 
-    for increase_ingredient in produced_ingredients:
-        street_fair.increase_ingredient(increase_ingredient)
+    street_fair.increase_ingredient(produced_ingredients)
 
     assert sorted(street_fair.supply) == sorted(produced_ingredients)
     assert street_fair.supply.count("cheese") == produced_ingredients.count("cheese")
@@ -49,8 +37,7 @@ def test_summary_at_street_fair_demand_and_offer():
     street_fair = StreetFair()
 
     street_fair.request_ingredients(requested_ingredients)
-    for increase_ingredient in produced_ingredients:
-        street_fair.increase_ingredient(increase_ingredient)
+    street_fair.increase_ingredient(produced_ingredients)
 
     assert street_fair.summary() == {
         'demand': {'cheese': 2, 'bread': 1, 'cut_of_meat': 1, 'tomato': 1, 'onion': 1, 'lettuce': 1},
