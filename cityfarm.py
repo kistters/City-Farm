@@ -1,12 +1,10 @@
-import hashlib
 import itertools
-import json
+import os
 import random
 import uuid
-from base64 import b64encode
 from collections import Counter
-from dataclasses import dataclass, field, asdict
-from typing import List
+from dataclasses import dataclass, field
+from datetime import datetime
 
 MEALS = {
     "hamburger": ["bread", "meat", "cheese", "tomato", "onion", "lettuce"]
@@ -43,28 +41,38 @@ class Citizen:
 
 
 @dataclass
+class Transaction:
+    citizen: Citizen
+    farmer: Farmer
+    ingredient: str
+    created_at: datetime
+
+
+@dataclass
 class StreetFair:
     citizens: list[Citizen] = field(default_factory=list)
     farmers: list[Farmer] = field(default_factory=list)
-    transactions: list = field(default_factory=list)
+    transactions: list[Transaction] = field(default_factory=list)
 
     def bargain_the_ingredients(self, citizen: Citizen):
+        random.shuffle(self.farmers)
         for farmer in self.farmers:
-            items_found = [item for item in citizen.ingredients_list if item in farmer.ingredients_produced]
-            for item in items_found:
-                farmer.ingredients_produced.remove(item)
-                citizen.ingredients_list.remove(item)
-                self.transactions.append(f"{citizen} bought [{item}] from {farmer}")
+            ingredients_found = [item for item in citizen.ingredients_list if item in farmer.ingredients_produced]
+            for ingredient in ingredients_found:
+                farmer.ingredients_produced.remove(ingredient)
+                citizen.ingredients_list.remove(ingredient)
+                item = Transaction(citizen=citizen, farmer=farmer, ingredient=ingredient, created_at=datetime.now())
+                self.transactions.append(item)
 
     def clock(self):
         # Citizens arriving at the Street Fair
         arrived_citizens = [Citizen()] * random.choice([0, 1, 1, 1, 2])
 
         # Farmers arriving to produce the demand
-        arrived_farmers = [Farmer()] * random.choice([0, 0, 1, 1, 2])
+        arrived_farmers = [Farmer()] * random.choice([0, 0, 0, 1, 1])
 
         self.citizens.extend(arrived_citizens)
-        self.farmers.extend(arrived_farmers)
+        self.farmers.extend(arrived_farmers if len(self.farmers) < 10 else [])
 
         for farmer in self.farmers:
             farmer.produce_ingredient()
@@ -75,20 +83,33 @@ class StreetFair:
     def summary(self):
         demand_ingredients = [citizen.ingredients_list for citizen in self.citizens]
         supply_ingredients = [farmer.ingredients_produced for farmer in self.farmers]
+        transactions_by_farmer = [transaction.farmer for transaction in self.transactions]
+        transactions_by_citizen = [transaction.citizen for transaction in self.transactions]
+        transactions_by_ingredient = [transaction.ingredient for transaction in self.transactions]
         return {
             'demand': Counter(list(itertools.chain.from_iterable(demand_ingredients))),
             'supply': Counter(list(itertools.chain.from_iterable(supply_ingredients))),
+            'transactions_by_farmer': Counter([str(farmer) for farmer in transactions_by_farmer]),
+            'transactions_by_citizen': Counter(
+                [str(citizen) for citizen in transactions_by_citizen if not citizen.ingredients_list]),
+            'transactions_by_ingredients': Counter([ingredient for ingredient in transactions_by_ingredient]),
         }
 
 
-# print(f"citizen: {citizen}\n"
-#       f"demand: {dict(sorted(summary['demand'].items(), key=lambda pair: pair[0]))}\n"
-#       f"supply: {dict(sorted(summary['supply'].items(), key=lambda pair: pair[0]))}")
+def print_ascii_bar_chart(data, symbol=None):
+    if not data:
+        return
 
-# print("{:<11}  {:<10}".format('demand', 'supply'))
-# print("{:<11}  {:<10}".format('------', '------'))
-# for demand, supply in zip(summary['demand'].items(), summary['supply'].items()):
-#     print("| {:<10} {} | {:<10} {} ".format(*demand, *supply))
+    counter = Counter(data).items()
+    if not symbol:
+        print(dict(counter))
+        return
+
+    chart = {category: symbol * frequency for category, frequency in counter}
+    max_len = max(len(category) for category in chart)
+    for category, frequency in chart.items():
+        padding = (max_len - len(category)) * " "
+        print(f"{category}{padding} |{frequency}{len(frequency)}")
 
 
 if __name__ == '__main__':
@@ -98,11 +119,12 @@ if __name__ == '__main__':
 
     while True:
         street_fair_city.clock()
+        os.system('clear')
+        print(f"ingredients:", )
+        print_ascii_bar_chart(street_fair_city.summary()['transactions_by_ingredients'])
+        print(f"\nsatisfied citizens: {len(street_fair_city.summary()['transactions_by_citizen'].keys())}")
+        print("\nfarmer sales:")
+        print_ascii_bar_chart(street_fair_city.summary()['transactions_by_farmer'], symbol='.')
         sleep(0.3)
-        if not street_fair_city.summary()['demand']:
+        if street_fair_city.citizens and not street_fair_city.summary()['demand']:
             break
-
-    for transaction in street_fair_city.transactions:
-        print(transaction)
-
-    print(len(street_fair_city.transactions))
