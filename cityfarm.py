@@ -17,11 +17,11 @@ def generate_unique_key() -> str:
 
 @dataclass
 class Farmer:
-    id: str = field(default_factory=generate_unique_key)
+    id: str = field(default_factory=uuid.uuid4)
     ingredients_produced: list[str] = field(default_factory=list)
 
     def __str__(self):
-        return self.id[:5]
+        return f"{self.id}"[:5]
 
     def produce_ingredient(self):
         ingredients = random.sample(MEALS['hamburger'], random.choice([1, 1, 1, 2]))
@@ -30,14 +30,14 @@ class Farmer:
 
 @dataclass
 class Citizen:
-    id: str = field(default_factory=generate_unique_key)
+    id: str = field(default_factory=uuid.uuid4)
     ingredients_list: list[str] = field(init=False)
 
     def __post_init__(self):
         self.ingredients_list = MEALS['hamburger'].copy()
 
     def __str__(self):
-        return self.id[:5]
+        return f"{self.id}"[:5]
 
 
 @dataclass
@@ -80,20 +80,22 @@ class StreetFair:
         for citizen in self.citizens:
             self.bargain_the_ingredients(citizen)
 
-    def summary(self):
-        demand_ingredients = [citizen.ingredients_list for citizen in self.citizens]
-        supply_ingredients = [farmer.ingredients_produced for farmer in self.farmers]
-        transactions_by_farmer = [transaction.farmer for transaction in self.transactions]
-        transactions_by_citizen = [transaction.citizen for transaction in self.transactions]
-        transactions_by_ingredient = [transaction.ingredient for transaction in self.transactions]
-        return {
-            'demand': Counter(list(itertools.chain.from_iterable(demand_ingredients))),
-            'supply': Counter(list(itertools.chain.from_iterable(supply_ingredients))),
-            'transactions_by_farmer': Counter([str(farmer) for farmer in transactions_by_farmer]),
-            'transactions_by_citizen': Counter(
-                [str(citizen) for citizen in transactions_by_citizen if not citizen.ingredients_list]),
-            'transactions_by_ingredients': Counter([ingredient for ingredient in transactions_by_ingredient]),
-        }
+
+def summary(street_fair: StreetFair):
+    demand_ingredients = [citizen.ingredients_list for citizen in street_fair.citizens]
+    supply_ingredients = [farmer.ingredients_produced for farmer in street_fair.farmers]
+    transactions_by_farmer = [transaction.farmer for transaction in street_fair.transactions]
+    transactions_by_citizen = [transaction.citizen for transaction in street_fair.transactions]
+    transactions_by_ingredient = [transaction.ingredient for transaction in street_fair.transactions]
+
+    return {
+        'demand': Counter(list(itertools.chain.from_iterable(demand_ingredients))),
+        'supply': Counter(list(itertools.chain.from_iterable(supply_ingredients))),
+        'transactions_by_farmer': Counter([str(farmer) for farmer in transactions_by_farmer]),
+        'transactions_by_citizen': Counter(
+            [str(citizen) for citizen in transactions_by_citizen if not citizen.ingredients_list]),
+        'transactions_by_ingredients': Counter([ingredient for ingredient in transactions_by_ingredient]),
+    }
 
 
 def print_ascii_bar_chart(data, symbol=None):
@@ -121,10 +123,10 @@ if __name__ == '__main__':
         street_fair_city.clock()
         os.system('clear')
         print(f"ingredients:", )
-        print_ascii_bar_chart(street_fair_city.summary()['transactions_by_ingredients'])
-        print(f"\nsatisfied citizens: {len(street_fair_city.summary()['transactions_by_citizen'].keys())}")
-        print("\nfarmer sales:")
-        print_ascii_bar_chart(street_fair_city.summary()['transactions_by_farmer'], symbol='.')
+        print_ascii_bar_chart(summary(street_fair_city)['transactions_by_ingredients'])
+        print(f"\nsatisfied citizens: {len(summary(street_fair_city)['transactions_by_citizen'].keys())}")
+        print(f"\nfarmer sales({len(street_fair_city.transactions)}):")
+        print_ascii_bar_chart(summary(street_fair_city)['transactions_by_farmer'], symbol='.')
         sleep(0.3)
-        if street_fair_city.citizens and not street_fair_city.summary()['demand']:
+        if street_fair_city.citizens and not summary(street_fair_city)['demand']:
             break
