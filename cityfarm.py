@@ -1,6 +1,9 @@
+import hashlib
 import itertools
 import json
 import random
+import uuid
+from base64 import b64encode
 from collections import Counter
 from dataclasses import dataclass, field, asdict
 from typing import List
@@ -10,9 +13,17 @@ MEALS = {
 }
 
 
+def generate_unique_key() -> str:
+    return str(uuid.uuid4())
+
+
 @dataclass
 class Farmer:
+    id: str = field(default_factory=generate_unique_key)
     ingredients_produced: list[str] = field(default_factory=list)
+
+    def __str__(self):
+        return self.id[:5]
 
     def produce_ingredient(self):
         ingredients = random.sample(MEALS['hamburger'], random.choice([1, 1, 1, 2]))
@@ -21,16 +32,21 @@ class Farmer:
 
 @dataclass
 class Citizen:
+    id: str = field(default_factory=generate_unique_key)
     ingredients_list: list[str] = field(init=False)
 
     def __post_init__(self):
         self.ingredients_list = MEALS['hamburger'].copy()
+
+    def __str__(self):
+        return self.id[:5]
 
 
 @dataclass
 class StreetFair:
     citizens: list[Citizen] = field(default_factory=list)
     farmers: list[Farmer] = field(default_factory=list)
+    transactions: list = field(default_factory=list)
 
     def bargain_the_ingredients(self, citizen: Citizen):
         for farmer in self.farmers:
@@ -38,33 +54,31 @@ class StreetFair:
             for item in items_found:
                 farmer.ingredients_produced.remove(item)
                 citizen.ingredients_list.remove(item)
-
-    def summary_demand(self) -> Counter:
-        return Counter(list(itertools.chain.from_iterable([citizen.ingredients_list for citizen in self.citizens])))
-
-    def summary_supply(self) -> Counter:
-        return Counter(list(itertools.chain.from_iterable([farmer.ingredients_produced for farmer in self.farmers])))
+                self.transactions.append(f"{citizen} bought [{item}] from {farmer}")
 
     def clock(self):
         # Citizens arriving at the Street Fair
-        arrived_citizens = [Citizen()] * random.choice([0, 0, 1, 1, 2])
+        arrived_citizens = [Citizen()] * random.choice([0, 1, 1, 1, 2])
 
         # Farmers arriving to produce the demand
         arrived_farmers = [Farmer()] * random.choice([0, 0, 1, 1, 2])
 
         self.citizens.extend(arrived_citizens)
-        if self.summary_demand().keys():
-            self.farmers.extend(arrived_farmers)
-
-        for citizen in self.citizens:
-            self.bargain_the_ingredients(citizen)
+        self.farmers.extend(arrived_farmers)
 
         for farmer in self.farmers:
             farmer.produce_ingredient()
 
-        print(f"\n------")
-        for key, value in asdict(self).items():
-            print(key, value)
+        for citizen in self.citizens:
+            self.bargain_the_ingredients(citizen)
+
+    def summary(self):
+        demand_ingredients = [citizen.ingredients_list for citizen in self.citizens]
+        supply_ingredients = [farmer.ingredients_produced for farmer in self.farmers]
+        return {
+            'demand': Counter(list(itertools.chain.from_iterable(demand_ingredients))),
+            'supply': Counter(list(itertools.chain.from_iterable(supply_ingredients))),
+        }
 
 
 # print(f"citizen: {citizen}\n"
@@ -78,7 +92,17 @@ class StreetFair:
 
 
 if __name__ == '__main__':
+    from time import sleep
+
     street_fair_city = StreetFair()
 
-    for day in range(1, 10):
+    while True:
         street_fair_city.clock()
+        sleep(0.3)
+        if not street_fair_city.summary()['demand']:
+            break
+
+    for transaction in street_fair_city.transactions:
+        print(transaction)
+
+    print(len(street_fair_city.transactions))
