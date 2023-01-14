@@ -1,6 +1,8 @@
+import itertools
+import json
 import random
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import List
 
 MEALS = {
@@ -10,80 +12,73 @@ MEALS = {
 
 @dataclass
 class Farmer:
-    name: str
+    ingredients_produced: list[str] = field(default_factory=list)
 
-    @staticmethod
-    def produce_ingredient(item: str, quantity: int) -> List[str]:
-        return [item] * (quantity - random.choice([0, 1]))
+    def produce_ingredient(self):
+        ingredients = random.sample(MEALS['hamburger'], random.choice([1, 1, 1, 2]))
+        self.ingredients_produced = ingredients * random.choice([0, 1, 1, 1, 2])
 
 
 @dataclass
 class Citizen:
-    name: str
-    ingredients_list: list[str] = field(default_factory=list)
+    ingredients_list: list[str] = field(init=False)
 
-    def wish_meal(self):
-        print(self.ingredients_list)
-        if not self.ingredients_list:
-            self.ingredients_list = MEALS['hamburger'].copy()
+    def __post_init__(self):
+        self.ingredients_list = MEALS['hamburger'].copy()
 
 
 @dataclass
 class StreetFair:
-    demand: list[str] = field(default_factory=list)
-    supply: list[str] = field(default_factory=list)
+    citizens: list[Citizen] = field(default_factory=list)
+    farmers: list[Farmer] = field(default_factory=list)
 
-    def request_ingredients(self, items: List[str]):
-        # self.demand.extend([item for item in items if item not in self.demand])  # easy
-        self.demand.extend(items)
+    def bargain_the_ingredients(self, citizen: Citizen):
+        for farmer in self.farmers:
+            items_found = [item for item in citizen.ingredients_list if item in farmer.ingredients_produced]
+            for item in items_found:
+                farmer.ingredients_produced.remove(item)
+                citizen.ingredients_list.remove(item)
 
-    def increase_ingredient(self, items: List[str]):
-        self.supply.extend(items)
+    def summary_demand(self) -> Counter:
+        return Counter(list(itertools.chain.from_iterable([citizen.ingredients_list for citizen in self.citizens])))
 
-    def buy_ingredients(self, items: List[str]):
-        items_found = [item for item in items if item in self.supply]
-        for item in items_found:
-            self.supply.remove(item)
-            self.demand.remove(item)
-            items.remove(item)
+    def summary_supply(self) -> Counter:
+        return Counter(list(itertools.chain.from_iterable([farmer.ingredients_produced for farmer in self.farmers])))
 
-    def summary(self):
-        return {
-            'demand': Counter(self.demand),
-            'supply': Counter(self.supply)
-        }
+    def clock(self):
+        # Citizens arriving at the Street Fair
+        arrived_citizens = [Citizen()] * random.choice([0, 0, 1, 1, 2])
+
+        # Farmers arriving to produce the demand
+        arrived_farmers = [Farmer()] * random.choice([0, 0, 1, 1, 2])
+
+        self.citizens.extend(arrived_citizens)
+        if self.summary_demand().keys():
+            self.farmers.extend(arrived_farmers)
+
+        for citizen in self.citizens:
+            self.bargain_the_ingredients(citizen)
+
+        for farmer in self.farmers:
+            farmer.produce_ingredient()
+
+        print(f"\n------")
+        for key, value in asdict(self).items():
+            print(key, value)
 
 
-def pretty_print_street_fair(idx, street_fair, citizen):
-    summary = street_fair.summary()
-    print(f"---\nday: [{idx}]")
+# print(f"citizen: {citizen}\n"
+#       f"demand: {dict(sorted(summary['demand'].items(), key=lambda pair: pair[0]))}\n"
+#       f"supply: {dict(sorted(summary['supply'].items(), key=lambda pair: pair[0]))}")
 
-    print(f"citizen: {citizen}\n"
-          f"demand: {dict(sorted(summary['demand'].items(), key=lambda pair: pair[0]))}\n"
-          f"supply: {dict(sorted(summary['supply'].items(), key=lambda pair: pair[0]))}")
-
-    # print("{:<11}  {:<10}".format('demand', 'supply'))
-    # print("{:<11}  {:<10}".format('------', '------'))
-    # for demand, supply in zip(summary['demand'].items(), summary['supply'].items()):
-    #     print("| {:<10} {} | {:<10} {} ".format(*demand, *supply))
+# print("{:<11}  {:<10}".format('demand', 'supply'))
+# print("{:<11}  {:<10}".format('------', '------'))
+# for demand, supply in zip(summary['demand'].items(), summary['supply'].items()):
+#     print("| {:<10} {} | {:<10} {} ".format(*demand, *supply))
 
 
 if __name__ == '__main__':
     street_fair_city = StreetFair()
 
-    citizen_luck = Citizen('Luck')
-    farmer_will = Farmer('Will')
-    citizen_luck.wish_meal()
-
     for day in range(1, 10):
-        street_fair_city.buy_ingredients(citizen_luck.ingredients_list)
-
-        street_fair_city.request_ingredients(citizen_luck.ingredients_list)
-
-        produced_ingredients = []
-        for ingredients, qty in street_fair_city.summary()['demand'].items():
-            produced_ingredients += farmer_will.produce_ingredient(ingredients, qty)
-
-        street_fair_city.increase_ingredient(produced_ingredients)
-
-        pretty_print_street_fair(day, street_fair_city, citizen_luck)
+        street_fair_city.clock()
