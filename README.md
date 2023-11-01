@@ -18,6 +18,7 @@ _keep coding..._
 * Citizen needs ingredients to cook a meal :hamburger:
 * Farmer needs to sell produced ingredients :bread: :cut_of_meat: :cheese: :tomato: :onion: :leafy_green:
 * At Street fair is where the bargaining takes place
+* select ingredients cheapest and shelf life
 
 
 
