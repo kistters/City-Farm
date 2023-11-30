@@ -1,60 +1,32 @@
 version: '2'
 services:
 
-  
-#Nginx
-  web:
+  web-nginx:
     image: nginx:1.13.8
     #cpu_shares: 30
     #mem_limit: 128M
     ports:
-        - "80:80"
-        - "443:443"
+      - "80:80"
+      - "443:443"
     volumes:
-        - ./nginx/conf.d:/etc/nginx/conf.d
-        - ./CityFarm/front:/code
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./frontend-vue:/code
+    networks:
+      - compose-network
 
-#Tornado
-  websocket:
-    build: CityFarm
-    command: ["python", "websocket.py"]
+
+  backend-django:
+    build: backend-django
+#    command: [ "pipenv", "run", "python", "manage.py", "runserver", "0.0.0.0:8080" ]
     #cpu_shares: 30
     #mem_limit: 256M
     ports:
-      - "8888:8888"
+      - "8080:8080"
     volumes:
-      - ./CityFarm/code:/code
-    depends_on:
-      - redis
+      - ./backend-django:/app
+    networks:
+      - compose-network
 
-#Celery
-  worker:
-    build: CityFarm
-    #cpu_shares: 30
-    #mem_limit: 128M
-    command: ["sh","run-worker.sh"]
-    volumes:
-      - ./CityFarm/code:/code
-    depends_on:
-      - rabbitmq
-      - redis
-
-#RabbitMQ
-  rabbitmq:
-    image: rabbitmq:3.6.15
-    command: ["rabbitmq-server"]
-    #cpu_shares: 30
-    #mem_limit: 256M
-    ports:
-      - "15672:15672"
-    volumes:
-      - "./rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins"
-
-#Database
-  redis:
-    image: redis
-    container_name: db_redis
-    #cpu_shares: 30
-    #mem_limit: 256M
-    ports:
-      - "6379:6379"
+networks:
+  compose-network:
+    driver: bridge

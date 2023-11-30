@@ -4,15 +4,14 @@ Hello Farmers and Citizens
 Follow terminal command
 
 ```
-$ sudo bash untitled.sh
+$ sudo sh -c 'echo "0.0.0.0 api.cityfarm.com cityfarm.com" >> /etc/hosts'
+$ docker-compose up
 ```
 
-Go to your browser
+access: 
 
-http://localhost
+http://api.cityfarm.com
 
-:D
+http://api.cityfarm.com/admin
 
-RabbitMQ
-
-http://localhost:15672
+http://cityfarm.com
