@@ -17,7 +17,7 @@ services:
 
   backend-django:
     build: backend-django
-#    command: [ "pipenv", "run", "python", "manage.py", "runserver", "0.0.0.0:8080" ]
+#    command: [ "python", "manage.py", "runserver", "0.0.0.0:8080" ]
     #cpu_shares: 30
     #mem_limit: 256M
     ports:
