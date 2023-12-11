@@ -9,51 +9,7 @@
 </head>
 <body>
   <div id="app">
-    <user-list></user-list>
+    Vue app
   </div>
-
-  <script>
-    Vue.component('user-list', {
-      template: `
-        <div>
-          <h1>User List</h1>
-          <ul>
-            <li v-for="user in users" :key="user.id">{{ user.username }} - {{ getRoleLabel(user) }} </li>
-          </ul>
-        </div>
-      `,
-      data() {
-        return {
-          users: [],
-        };
-      },
-      mounted() {
-        this.fetchUsers();
-      },
-      methods: {
-        async fetchUsers() {
-          try {
-            const response = await axios.get('http://api.cityfarm.com/users/');
-            this.users = response.data;
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          }
-        },
-          getRoleLabel(user) {
-          if (user.is_farmer) {
-            return 'Farmer';
-          } else if (user.is_citizen) {
-            return 'Citizen';
-          } else {
-            return 'Unknown Role';
-          }
-        },
-      },
-    });
-
-    new Vue({
-      el: '#app',
-    });
-  </script>
 </body>
 </html>
