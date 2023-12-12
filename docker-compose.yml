@@ -3,27 +3,32 @@ services:
 
   web-nginx:
     image: nginx:1.13.8
-    #cpu_shares: 30
-    #mem_limit: 128M
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./frontend-vue:/code
     networks:
       - compose-network
 
 
   backend-django:
     build: backend-django
-#    command: [ "python", "manage.py", "runserver", "0.0.0.0:8080" ]
-    #cpu_shares: 30
-    #mem_limit: 256M
+    command: [ "python", "manage.py", "runserver", "0.0.0.0:8080" ]
     ports:
-      - "8080:8080"
+      - "8000:8080"
     volumes:
       - ./backend-django:/app
+    networks:
+      - compose-network
+
+  frontend-vue:
+    build: frontend-vue
+    command: [ "yarn", "serve", "--port=8080" ]
+    ports:
+      - "9000:8080"
+    volumes:
+      - ./frontend-vue:/app
     networks:
       - compose-network
 

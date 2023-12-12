@@ -3,6 +3,13 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import CreateAPIView
+
+from .serializers import UserSerializer
+
+
+class RegisterView(CreateAPIView):
+    serializer_class = UserSerializer
 
 
 class LoginView(APIView):
@@ -12,7 +19,7 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
         if user:
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key})
+            return Response({"token": token.key}, status=200)
         else:
             return Response({"error": "Wrong Credentials"}, status=400)
 
