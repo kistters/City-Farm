@@ -1,11 +1,11 @@
 import {createWebHistory, createRouter} from "vue-router";
-import UserRegister from "@/views/UserRegister";
+import SecretPage from "@/views/SecretPage";
 import HomePage from "@/views/HomePage";
 
 const routes = [{
     path: "/", name: "HomePage", component: HomePage,
 }, {
-    path: "/user-register", name: "UserRegister", component: UserRegister,
+    path: "/secret-page", name: "SecretPage", component: SecretPage,
 }];
 
 const router = createRouter({
