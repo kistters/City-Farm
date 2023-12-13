@@ -18,7 +18,7 @@
 
 <script>
 export default {
-  name: 'LoginForm',
+  name: 'AuthForm',
   data() {
     return {
       username: '',
