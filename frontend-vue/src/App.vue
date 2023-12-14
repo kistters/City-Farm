@@ -2,21 +2,22 @@
   <div id="app">
     <div id="nav">
       <div id="links">
-        <router-link to="/">Home</router-link> |
-        <router-link to="/user-register">User Register</router-link>
+        <router-link to="/">Home</router-link>
+        <router-link to="/secret-page">Secret Page</router-link>
       </div>
-      <LoginForm />
+      <AuthForm></AuthForm>
     </div>
-    <router-view />
+    <router-view/>
   </div>
 </template>
 
 <script>
-import LoginForm from "@/components/LoginForm";
+
+import AuthForm from "@/components/AuthForm";
 
 export default {
   name: 'App',
-  components: { LoginForm }
+  components: {AuthForm}
 }
 </script>
 

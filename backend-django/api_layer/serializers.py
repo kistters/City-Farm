@@ -13,10 +13,6 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
-
-        if User.objects.filter(username__iexact=attrs['username']).exists():
-            raise serializers.ValidationError({"username": "A user with that username already exists."})
-
         return attrs
 
     def create(self, validated_data):
