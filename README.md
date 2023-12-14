@@ -15,3 +15,10 @@ http://api.cityfarm.com
 http://api.cityfarm.com/admin
 
 http://cityfarm.com
+
+
+useful commands:
+
+```shell
+$ docker-compose run --rm backend-django python manage.py migrate
+```

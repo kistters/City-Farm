@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED 1
 ENV PIPENV_SYSTEM=1
 
 # Install system dependencies
-RUN apk add --no-cache postgresql-dev gcc python3-dev musl-dev
+RUN apk add --no-cache gcc musl-dev
 
 RUN pip install pipenv
 

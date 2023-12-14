@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 services:
 
   web-nginx:
@@ -8,19 +8,26 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - backend-django
+      - frontend-vue
     networks:
       - compose-network
-
 
   backend-django:
     build: backend-django
     command: [ "python", "manage.py", "runserver", "0.0.0.0:8080" ]
     ports:
       - "8000:8080"
+    env_file:
+      - .env.backend-django
     volumes:
       - ./backend-django:/app
     networks:
       - compose-network
+    depends_on:
+      postgres-resource:
+        condition: service_healthy
 
   frontend-vue:
     build: frontend-vue
@@ -29,6 +36,24 @@ services:
       - "9000:8080"
     volumes:
       - ./frontend-vue:/app
+    networks:
+      - compose-network
+
+  postgres-resource:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "secret"
+      POSTGRES_DB: "city_farm"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5333:5432"
+    volumes:
+      - .data/postgres:/var/lib/postgresql/data
     networks:
       - compose-network
 
