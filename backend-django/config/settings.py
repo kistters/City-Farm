@@ -16,6 +16,8 @@ ALLOWED_HOSTS = os.environ["ALLOWED_HOSTS"].split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -23,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'channels',
     'rest_framework',
     'rest_framework.authtoken',
 ]
@@ -62,6 +65,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+# Daphne
+ASGI_APPLICATION = 'config.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -78,6 +83,18 @@ DATABASES = {
     }
 }
 
+# Channels Websocket
+# https://channels.readthedocs.io/en/stable/topics/channel_layers.html#redis-channel-layer
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.environ["REDIS_HOST"], os.environ["REDIS_PORT"])],
+        },
+    },
+}
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 

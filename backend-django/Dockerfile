@@ -5,7 +5,9 @@ ENV PYTHONUNBUFFERED 1
 ENV PIPENV_SYSTEM=1
 
 # Install system dependencies
-RUN apk add --no-cache gcc musl-dev
+RUN apk add --no-cache  \
+    gcc musl-dev \
+    libffi-dev
 
 RUN pip install pipenv
 
@@ -17,7 +19,5 @@ COPY Pipfile Pipfile.lock /app/
 RUN pipenv install --deploy --ignore-pipfile
 COPY . /app/
 
-RUN python manage.py collectstatic --noinput
-RUN python manage.py migrate
-
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "config.wsgi:application"]
+EXPOSE 8080
+CMD ["daphne", "-b", "0.0.0.0","-p", "8080", "config.asgi:application"]

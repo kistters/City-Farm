@@ -20,5 +20,6 @@ http://cityfarm.com
 useful commands:
 
 ```shell
+$ docker-compose run --rm backend-django python manage.py collectstatic --noinput
 $ docker-compose run --rm backend-django python manage.py migrate
 ```
