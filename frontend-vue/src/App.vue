@@ -3,7 +3,6 @@
     <div id="nav">
       <div id="links">
         <router-link to="/">Home</router-link>
-        <router-link to="/secret-page">Secret Page</router-link>
       </div>
       <AuthForm></AuthForm>
     </div>

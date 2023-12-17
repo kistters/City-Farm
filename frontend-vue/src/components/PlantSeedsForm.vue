@@ -1,10 +1,8 @@
 <template>
   <div>
     <form @submit.prevent="submitForm">
-      <input type="text" v-model="username" placeholder="Username"/>
-      <input type="password" v-model="password" placeholder="Password"/>
-      <input type="password" v-model="password2" placeholder="Confirm Password"/>
-      <button type="submit">Register</button>
+      <input type="text" v-model="ingredientName" placeholder="Ingredient Seed"/>
+      <button type="submit">Plant Seeds</button>
     </form>
   </div>
 </template>
@@ -18,25 +16,16 @@ input {
 
 <script>
 export default {
-  name: 'RegisterForm',
+  name: 'PlantSeedsForm',
   data() {
     return {
-      username: '',
-      password: '',
-      password2: '',
-    }
-  },
-  computed: {
-    isAuthenticated() {
-      return !!this.authToken;
+      ingredientName: '',
     }
   },
   methods: {
     async submitForm() {
-      this.$axios.post('/v1/register/', {
-        username: this.username,
-        password: this.password,
-        password2: this.password2
+      this.$axios.post('/v1/produce-ingredient/', {
+        name: this.ingredientName,
       }, {})
           .then(function (response) {
             console.log(response);

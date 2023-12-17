@@ -33,7 +33,12 @@
       </form>
     </div>
 
-    <button v-if="isAuthenticated" @click="logout">Log out</button>
+    <div class="form-box" v-if="isAuthenticated">
+      <button  @click="logout">Log out</button>
+      <br />
+      <PlantSeedsForm />
+    </div>
+
   </div>
 </template>
 
@@ -72,8 +77,11 @@
 </style>
 
 <script>
+import PlantSeedsForm from "@/components/PlantSeedsForm.vue";
+
 export default {
   name: 'AuthForm',
+  components: {PlantSeedsForm},
   data() {
     return {
       username: '',
