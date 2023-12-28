@@ -5,10 +5,11 @@
       <div class="tab-option" :class="formChoice === 'register' ? 'active' : ''" @click="formChoice = 'register'">
         Register
       </div>
-      <div class="tab-option" :class="formChoice === 'forgot' ? 'active' : ''" @click="formChoice = 'forgot'">Forgot</div>
+      <div class="tab-option" :class="formChoice === 'forgot' ? 'active' : ''" @click="formChoice = 'forgot'">Forgot
+      </div>
     </div>
 
-    <div class="form-box" v-if="!isAuthenticated && formChoice === 'login'">
+    <div class="form-box login" v-if="!isAuthenticated && formChoice === 'login'">
       <form @submit.prevent="loginForm">
         <input type="text" v-model="username" placeholder="Username"/>
         <input type="password" v-model="password" placeholder="Password"/>
@@ -17,7 +18,7 @@
 
     </div>
 
-    <div class="form-box" v-if="!isAuthenticated && formChoice === 'register'">
+    <div class="form-box register" v-if="!isAuthenticated && formChoice === 'register'">
       <form @submit.prevent="registerForm">
         <input type="text" v-model="username" placeholder="Username"/>
         <input type="password" v-model="password" placeholder="Password"/>
@@ -26,17 +27,17 @@
       </form>
     </div>
 
-    <div class="form-box" v-if="!isAuthenticated && formChoice === 'forgot'">
+    <div class="form-box forgot" v-if="!isAuthenticated && formChoice === 'forgot'">
       <form @submit.prevent="forgotForm">
         <input type="text" v-model="email" placeholder="Email"/>
         <button type="submit">Forgot</button>
       </form>
     </div>
 
-    <div class="form-box" v-if="isAuthenticated">
-      <button  @click="logout">Log out</button>
-      <br />
-      <PlantSeedsForm />
+    <div class="form-box logged" v-if="isAuthenticated">
+      <p>{{ username }}</p>
+      <button @click="logout">Log out</button>
+      <br/>
     </div>
 
   </div>
@@ -60,12 +61,17 @@
 .form-box {
   border: 1px solid #dae1e7;
   padding: 15px;
-  height: 100px;
+  min-height: 100px;
   position: relative;
 }
 
-.form-content {
-  overflow: auto;
+.form-box.logged {
+  border: none;
+  padding: 0;
+  display: flex;
+  min-height: 100px;
+  align-items: center;
+  gap: 10px;
 }
 
 .form-box input, .form-box button {
@@ -77,18 +83,15 @@
 </style>
 
 <script>
-import PlantSeedsForm from "@/components/PlantSeedsForm.vue";
-
 export default {
   name: 'AuthForm',
-  components: {PlantSeedsForm},
   data() {
     return {
-      username: '',
+      username: sessionStorage.getItem('username') || '',
       email: '',
       password: '',
       password2: '',
-      authToken: localStorage.getItem('authToken') || '',
+      authToken: sessionStorage.getItem('authToken') || '',
       formChoice: 'login'
     }
   },
@@ -96,6 +99,11 @@ export default {
     isAuthenticated() {
       return !!this.authToken;
     }
+  },
+  watch: {
+    username(newUser) {
+      sessionStorage.setItem('username', newUser);
+    },
   },
   methods: {
     async registerForm() {
@@ -131,7 +139,7 @@ export default {
           password: this.password
         });
         this.authToken = response.data.token;
-        localStorage.setItem('authToken', this.authToken);
+        sessionStorage.setItem('authToken', this.authToken);
       } catch (error) {
         console.log('Login failed: ', error);
       }
@@ -142,7 +150,7 @@ export default {
         this.username = '';
         this.password = '';
         this.password2 = '';
-        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
       });
     },
     async forgotForm() {

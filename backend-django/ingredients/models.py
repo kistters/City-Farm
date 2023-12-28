@@ -19,8 +19,4 @@ class Ingredient(models.Model):
         ]
 
     def __str__(self):
-        text = f"{self.name} produced by {self.producer}"
-        if self.buyer:
-            text += f" bought by {self.buyer}"
-
-        return text
+        return f"{self.name}"

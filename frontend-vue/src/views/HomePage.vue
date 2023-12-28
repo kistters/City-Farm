@@ -1,30 +1,35 @@
 <template>
   <div id="home-page">
-    <div id="feed-container">
+    <div class="centered-content">
+      <PlantSeedsForm/>
+    </div>
+    <div class="centered-content">
       <BroadcastDashboard/>
-
     </div>
     <router-view></router-view>
   </div>
 </template>
 <script>
 
+import PlantSeedsForm from "@/components/PlantSeedsForm.vue";
 import BroadcastDashboard from "@/components/BroadcastDashboard.vue";
 
 export default {
   name: 'HomePage',
-  components: {BroadcastDashboard}
+  components: {BroadcastDashboard, PlantSeedsForm}
 }
 </script>
 
 <style scoped>
-#feed-container {
-  width: 50%; /* Use full width */
-  height: 70vh; /* Use full viewport height */
-  overflow-y: auto; /* Enable vertical scrollbar if content overflows */
-  scrollbar-width: thin; /* Optional: make the scrollbar thin */
-  scrollbar-color: lightgray; /* Optional: change scrollbar color */
-  border: 2px solid black; /* Change 'black' to desired border color */
+#home-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+      height: 325px;
+}
 
+.centered-content {
+  margin-bottom: 20px;
 }
 </style>
