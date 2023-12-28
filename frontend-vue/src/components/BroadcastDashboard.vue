@@ -10,6 +10,14 @@
         </div>
       </div>
 
+      <div class="dashboard-box top-citizen">
+        <h2>Top Citizen</h2>
+        <div v-for="(entry, index) in insightCitizen" :key="index">
+          <b>{{ entry.username }}:</b>
+          <span>{{ entry.score }}</span>
+        </div>
+      </div>
+
       <div class="dashboard-box missing-ingredients">
         <h2>Missing Ingredients</h2>
         <div v-for="(message, index) in missingIngredients" :key="index">
@@ -18,10 +26,10 @@
       </div>
 
       <div class="dashboard-box top-citizen">
-        <h2>Top Citizen</h2>
-        <div v-for="(entry, index) in insightCitizen" :key="index">
-          <b>{{ entry.username }}:</b> <!-- Name -->
-          <span>{{ entry.score }}</span> <!-- Score -->
+        <h2>Ingredient Stats</h2>
+        <div v-for="(entry, index) in insightIngredientStats" :key="index">
+          <b>{{ entry.name }}:</b>
+          <span>{{ entry.score }}</span>
         </div>
       </div>
 
@@ -49,7 +57,7 @@
 }
 
 .missing-ingredients {
-  height: 200px;
+  height: 250px;
   overflow-y: auto;
 }
 </style>
@@ -68,6 +76,7 @@ export default {
       insightFarmer: [],
       insightCitizen: [],
       missingIngredients: [],
+      insightIngredientStats: [],
     };
   },
   methods: {
@@ -87,6 +96,7 @@ export default {
       var insights = JSON.parse(event.data)
       this.insightFarmer = insights.top_farmer ?? this.insightFarmer
       this.insightCitizen = insights.top_citizen ?? this.insightCitizen
+      this.insightIngredientStats = insights.ingredient_stats ?? this.insightIngredientStats
 
       this.missingIngredients.unshift(insights.missing_ingredient)
 

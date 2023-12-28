@@ -4,6 +4,8 @@ from channels.layers import get_channel_layer
 from django.contrib.auth.models import User
 from django.db.models import Count
 
+from ingredients.models import Ingredient
+
 
 def update_websocket_dashboard():
     channel_layer = get_channel_layer()
@@ -19,11 +21,22 @@ def update_websocket_dashboard():
         '-score'
     ).values('username', 'score')
 
+    ingredient_stats = Ingredient.objects.values(
+        'name'
+    ).annotate(
+        score=Count('id')
+    ).filter(
+        score__gt=0,
+        buyer__isnull=True,
+        bought_at__isnull=True,
+    ).order_by('-score')
+
     message = {
         'type': 'broadcast_message',
         'message': {
             'top_farmer': list(top_farmer),
             'top_citizen': list(top_citizen),
+            'ingredient_stats': list(ingredient_stats),
         }
     }
     async_to_sync(channel_layer.group_send)('broadcast', message)
@@ -53,12 +66,6 @@ class StatusConsumer(JsonWebsocketConsumer):
             # self.send_json({
             #     'reply': 'received your message: {}'.format(content)
             # })
-
-    # def receive(self, text_data=None, bytes_data=None):
-    #     User.objects.all()
-    #     async_to_sync(self.channel_layer.group_send)(
-    #         'broadcast', {"type": "chat.message", "message": text_data}
-    #     )
 
     def broadcast_message(self, content):
         message = content['message']
