@@ -1,12 +1,10 @@
 from django.urls import path, include
 
-from api_layer.views import LogoutView, LoginView, RegisterView, ProduceIngredientView, BuyIngredientView
+from api_layer.views import LogoutView, LoginView, RegisterView
 
 urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('register/', RegisterView.as_view(), name='register'),
-    path('produce-ingredient/', ProduceIngredientView.as_view(), name='produce-ingredient'),
-    path('buy-ingredient/', BuyIngredientView.as_view(), name='buy-ingredient'),
     path('farm/', include('farm.urls'), name='farm-view')
 ]
