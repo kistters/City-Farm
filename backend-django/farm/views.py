@@ -61,15 +61,10 @@ class FoodSummaryAPIView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        subquery = Food.objects.filter(
-            farmer_owner=self.request.user,
-            commodity=OuterRef('pk')
-        ).values(
-            'commodity'
-        ).annotate(
-            count=Count('id')
-        ).values('count').order_by()
-
-        queryset = Commodity.objects.annotate(summary=Subquery(subquery))
-
+        queryset = Commodity.objects.annotate(
+            summary=Count(
+                'food_related',
+                filter=Q(food_related__farmer_owner=self.request.user)
+            )
+        )
         return queryset
