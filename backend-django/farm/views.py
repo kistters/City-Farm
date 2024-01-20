@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.db.models import Count, Subquery, OuterRef, Q
+from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import serializers, generics, permissions
 from rest_framework.authentication import TokenAuthentication
@@ -20,12 +20,11 @@ class CommoditySerializer(serializers.ModelSerializer):
 
 
 class FoodSerializer(serializers.ModelSerializer):
-    farmer_owner = FarmerSerializer(read_only=True)
 
     class Meta:
         model = Food
         fields = ('id', 'commodity', 'farmer_owner', 'produced_at')
-        read_only_fields = ['produced_at']
+        read_only_fields = ['farmer_owner', 'produced_at']
 
 
 class CommodityList(generics.ListAPIView):
@@ -55,7 +54,7 @@ class CommoditySummarySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'summary')
 
 
-class FoodSummaryAPIView(generics.ListAPIView):
+class SummaryAPIView(generics.ListAPIView):
     serializer_class = CommoditySummarySerializer
     authentication_classes = (TokenAuthentication,)
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

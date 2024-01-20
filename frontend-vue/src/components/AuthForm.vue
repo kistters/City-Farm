@@ -140,6 +140,7 @@ export default {
         });
         this.authToken = response.data.token;
         sessionStorage.setItem('authToken', this.authToken);
+        this.$router.push('/secret')
       } catch (error) {
         console.log('Login failed: ', error);
       }
@@ -151,6 +152,7 @@ export default {
         this.password = '';
         this.password2 = '';
         sessionStorage.removeItem('authToken');
+        this.$router.push('/')
       });
     },
     async forgotForm() {

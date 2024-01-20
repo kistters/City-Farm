@@ -1,20 +1,24 @@
 <template>
-  <div id="home-page">
+  <div id="secret-page">
     <div class="centered-content">
-      <p>HomePage</p>
+      <FarmDashboard/>
+
     </div>
     <router-view></router-view>
   </div>
 </template>
 <script>
 
+import FarmDashboard from "@/components/FarmDashboard";
+
 export default {
-  name: 'HomePage',
+  name: 'SecretPage',
+  components: {FarmDashboard}
 }
 </script>
 
 <style scoped>
-#home-page {
+#secret-page {
   display: flex;
   flex-direction: column;
   justify-content: center;
