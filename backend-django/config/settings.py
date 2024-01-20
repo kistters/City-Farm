@@ -29,7 +29,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
-    'ingredients'
+    'ingredients',
+    'farm',
 ]
 
 MIDDLEWARE = [

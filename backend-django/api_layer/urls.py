@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 
 from api_layer.views import LogoutView, LoginView, RegisterView, ProduceIngredientView, BuyIngredientView
 
@@ -8,4 +8,5 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('produce-ingredient/', ProduceIngredientView.as_view(), name='produce-ingredient'),
     path('buy-ingredient/', BuyIngredientView.as_view(), name='buy-ingredient'),
+    path('farm/', include('farm.urls'), name='farm-view')
 ]
