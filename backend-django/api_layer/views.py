@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView
 
-from ingredients.models import Ingredient
 from .consumers import update_websocket_dashboard, message_websocket_dashboard
 from .serializers import UserSerializer, IngredientSerializer
 
@@ -35,48 +34,3 @@ class LogoutView(APIView):
         if request.user.is_authenticated:
             request.user.auth_token.delete()
         return Response(status=204)
-
-
-class ProduceIngredientView(APIView):
-    authentication_classes = (TokenAuthentication,)
-
-    def post(self, request):
-        data = request.data
-        data['producer'] = request.user.id
-        data['produced_at'] = timezone.now()
-
-        serializer = IngredientSerializer(data=data)
-        if serializer.is_valid():
-            ingredient = serializer.save()
-            update_websocket_dashboard()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class BuyIngredientView(APIView):
-    authentication_classes = (TokenAuthentication,)
-
-    def post(self, request):
-        data = request.data
-
-        chosen_ingredient = Ingredient.objects.filter(
-            buyer__isnull=True,
-            bought_at__isnull=True,
-            name__iexact=data.get('name'),
-        ).exclude(
-            producer=request.user
-        ).order_by('?').first()
-
-        if not chosen_ingredient:
-            message_websocket_dashboard(data.get('name'))
-
-        data['id'] = chosen_ingredient.id
-        data['buyer'] = request.user.id
-        data['bought_at'] = timezone.now()
-
-        serializer = IngredientSerializer(instance=chosen_ingredient, data=data, partial=True)
-        if serializer.is_valid():
-            ingredient = serializer.save()
-            update_websocket_dashboard()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
