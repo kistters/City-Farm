@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from ingredients.models import Ingredient
+from farm.models import Commodity, Food
+from city.models import Job, Money
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -26,7 +27,43 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-class IngredientSerializer(serializers.ModelSerializer):
+class CommoditySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Ingredient
-        fields = ['name', 'producer', 'produced_at', 'buyer', 'bought_at']
+        model = Commodity
+        fields = ('id', 'name')
+
+
+class FoodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Food
+        fields = ('id', 'commodity', 'farmer_owner', 'produced_at')
+        read_only_fields = ['farmer_owner', 'produced_at']
+
+
+class CommoditySummarySerializer(serializers.ModelSerializer):
+    summary = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Commodity
+        fields = ('id', 'name', 'summary')
+
+
+class JobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = ('id', 'name')
+
+
+class MoneySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Money
+        fields = ('id', 'job', 'citizen_owner', 'produced_at')
+        read_only_fields = ['citizen_owner', 'produced_at']
+
+
+class JobSummarySerializer(serializers.ModelSerializer):
+    summary = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Job
+        fields = ('id', 'name', 'summary')

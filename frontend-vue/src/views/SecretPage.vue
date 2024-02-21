@@ -1,7 +1,8 @@
 <template>
   <div id="secret-page">
     <div class="centered-content">
-      <FarmDashboard/>
+      <FarmDashboard />
+      <CityDashboard />
 
     </div>
     <router-view></router-view>
@@ -10,10 +11,11 @@
 <script>
 
 import FarmDashboard from "@/components/FarmDashboard";
+import CityDashboard from "@/components/CityDashboard";
 
 export default {
   name: 'SecretPage',
-  components: {FarmDashboard}
+  components: {FarmDashboard, CityDashboard}
 }
 </script>
 
@@ -28,5 +30,7 @@ export default {
 
 .centered-content {
   margin-bottom: 20px;
+  display: flex;
+  gap: 50px;
 }
 </style>

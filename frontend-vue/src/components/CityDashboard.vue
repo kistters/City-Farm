@@ -2,17 +2,17 @@
   <div>
     <div class="grid">
       <button
-          v-for="{id, name} in commodities"
+          v-for="{id, name} in jobs"
           :key="id"
-          @click="produceFood(id)"
-          class="button-produce"
+          @click="doTheWork(id)"
+          class="button-do-the-work"
       >
         {{ name }}
       </button>
     </div>
     <div class="grid">
       <la>
-        <li :key="id" v-for="{id, name, summary} in commoditySummary">
+        <li :key="id" v-for="{id, name, summary} in jobsSummary">
           {{ summary }} - ({{ name }})
         </li>
       </la>
@@ -31,29 +31,27 @@
   border: 1px solid #ccc;
 }
 
-.button-produce {
+.button-do-the-work {
   margin: 5px;
   display: block;
-  width: 70px; /* Define the width according to your requirement */
-  height: 25px; /* Define the height according to your requirement */
   text-align: center;
 }
 </style>
 
 <script>
 export default {
-  name: 'CommoditiesForm',
+  name: 'CityDashboard',
   data() {
     return {
-      commodities: [],
-      commoditySummary: [],
+      jobs: [],
+      jobsSummary: [],
     }
   },
 
   created() {
-    this.$axios.get('/v1/commodities/')
+    this.$axios.get('/v1/jobs/')
         .then((response) => {
-          this.commodities = response.data
+          this.jobs = response.data
         })
         .catch(function (error) {
           if (error.response) {
@@ -68,9 +66,9 @@ export default {
           console.log('Error config', error.config);
         });
 
-    this.$axios.get('/v1/commodity-summary/')
+    this.$axios.get('/v1/job-summary/')
         .then((response) => {
-          this.commoditySummary = response.data
+          this.jobsSummary = response.data
         })
         .catch(function (error) {
           if (error.response) {
@@ -87,10 +85,10 @@ export default {
   },
 
   methods: {
-    async produceFood(commodityId) {
+    async doTheWork(jobId) {
 
-      this.$axios.post(`/v1/produce-food/`, {
-        commodity: commodityId,
+      this.$axios.post(`/v1/do-the-work/`, {
+        job: jobId,
       }, {})
           .then((response) => {
             console.log(response);
