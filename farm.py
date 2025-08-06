@@ -3,7 +3,7 @@
 from datetime import datetime
 import random
 import uuid
-from utils import write_to_file
+from utils import proof_of_work, write_to_file
 
 
 FARM_PRODUCTS = {
@@ -139,14 +139,15 @@ class Farmer:
         box = f"data/farm/{self.name}/"
         filename = f"{product_name}.{uuid.uuid4().hex}"
         barcode = f"{product_name}:{datetime.now().timestamp()}:{self.name}"
-        write_to_file(box, filename, barcode)
+        data_with_proof_of_work = proof_of_work(data=barcode, required_days=product_info['required_days'])
+        write_to_file(box, filename, data_with_proof_of_work)
 
 
 
 
 def main():
     farmer = Farmer("John")
-    farmer.produce()
+    # farmer.produce()
     farmer.produce({"produce": 'honey' })
 
 
