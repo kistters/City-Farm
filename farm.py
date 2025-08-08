@@ -2,8 +2,9 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+import os
 import random
-from utils import load_json, proof_of_work, to_hash, verify_proof_of_work, write_json
+from utils import get_files_path_by_patterns, load_json, proof_of_work, to_hash, verify_proof_of_work, write_json
 
 
 FARM_PRODUCTS = load_json('data/farm.json')
@@ -43,6 +44,7 @@ class Seed:
     name: str
     farmer: str
     planted_at: float
+    produced_by: str = None
 
 
 class Farmer:
@@ -52,53 +54,37 @@ class Farmer:
     def what_to_produce(self, context: dict = {}):
         return random.choice(get_all_product_names())
 
-    def check_existing_animal(self, animal_name: str) -> bool:
-        """Check if a specific animal already exists for this farmer"""
-        import os
-        import glob
-        
-        animal_path = f"data/farm/{self.name}/"
-        if not os.path.exists(animal_path):
-            return False
-            
-        pattern = os.path.join(animal_path, f"{animal_name}.*")
-        existing_files = glob.glob(pattern)
-        return len(existing_files) > 0
-
     def produce(self, context: dict = {}):
-        seed_name = context.get('produce', self.what_to_produce(context))
+        seed_name = context.get('produce') or self.what_to_produce(context)
         seed_info = get_product_info(seed_name)
-
-
+        animal = None
         if seed_info["type"] == "derivatives":
             required_animals = seed_info['required_animal']
-
-            existing_animal = None
-            for animal in required_animals:
-                if self.check_existing_animal(animal):
-                    existing_animal = animal
-                    break
+            animal_patterns = [f"data/farm/{self.name}/{animal}.*" for animal in required_animals]
+            animal_paths = get_files_path_by_patterns(patterns=animal_patterns)
             
-            if existing_animal is None:
-                animal_to_create = random.choice(required_animals)
-                print(f"No {required_animals} found. Creating {animal_to_create}...")
-                self.produce({'produce': animal_to_create})
+            if not animal_paths:
+                seed_name = random.choice(required_animals)
+                print(f"No {required_animals} found. Creating {seed_name}...")
             else:
-                print(f"Using existing {existing_animal} for {seed_name}")
+                animal = os.path.basename(random.choice(animal_paths))
+                print(f"Using existing {animal} for {seed_name}")
 
-        seed = Seed(name=seed_name, farmer=self.name, planted_at=datetime.now().timestamp() )
-        product = growth_daily(seed=seed, required_days=seed_info['required_days'])
-        product_path = labeling(product=product)
-        verify_growth(product_path)
-        return product
+        seed = Seed(name=seed_name, farmer=self.name, planted_at=datetime.now().timestamp(), produced_by=animal)
+        planting(seed=seed)
 
+
+def planting(seed: Seed) -> str:
+    filename = to_hash(seed)[:9]
+    return write_json(seed, f"farm/{seed.farmer}/", f"seed.{seed.name}.{filename}")
 
 def print_progress(seed, days):
-    print(f"Day {len(days)}: Growing {seed.name}...")
+    print(f"Day {len(days)}: {seed.farmer}'s {seed.name} is growing...")
     
 def growth_daily(seed: Seed, required_days: int) -> dict:
     proof = proof_of_work(data=seed, interactions=required_days, progress_callback=print_progress)
     proof['seed'] = proof.pop('data')
+    print(f"{seed.farmer}'s {seed.name} is done.")
     return proof
 
 def labeling(product) -> str:
@@ -112,10 +98,21 @@ def verify_growth(product_path):
     return verify_proof_of_work(data=seed, nonces=product['nonces'])
 
 
+    
+def clock(): # TODO create a background process for this
+    seed_paths = get_files_path_by_patterns(patterns=["data/farm/*/seed.*"])
+    for seed_path in seed_paths:
+        seed = Seed(**load_json(seed_path))
+        seed_info = get_product_info(seed.name)
+        product = growth_daily(seed=seed, required_days=seed_info['required_days'])
+        product_path = labeling(product=product)
+        verify_growth(product_path)
+        os.remove(seed_path)
+        
+
 def main():
     farmer = Farmer("John")
-    # farmer.produce()
-    farmer.produce({"produce": 'honey' })
+    farmer.produce()
 
 
 if __name__ == "__main__":

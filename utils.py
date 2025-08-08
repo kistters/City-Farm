@@ -3,11 +3,13 @@ import json
 import os
 import hashlib
 import time
-
+import os
+import glob
+        
 def to_hash(data):
     return hashlib.sha256(str(data).encode()).hexdigest()
 
-def proof_of_work(data, interactions, prefix='0000', progress_callback=None) -> dict:
+def proof_of_work(data, interactions, prefix='000', progress_callback=None) -> dict:
     nonce = 0
     start = time.time()
     nonces = []
@@ -30,7 +32,7 @@ def proof_of_work(data, interactions, prefix='0000', progress_callback=None) -> 
         'time_spent': round(end - start, 2)
     }
 
-def verify_proof_of_work(data, nonces, prefix='0000'):
+def verify_proof_of_work(data, nonces, prefix='000'):
     for nonce in nonces:
         attempt = f"{data}|{nonce}"
         hash_result = to_hash(attempt)
@@ -58,3 +60,10 @@ def write_json(contents, folder, filename):
 def load_json(full_path):
     with open(full_path, 'r') as file:
         return json.load(file)  
+
+
+def get_files_path_by_patterns(patterns: list) -> list:
+    results = []    
+    for pattern in patterns:
+        results.extend(glob.glob(pattern))
+    return results
