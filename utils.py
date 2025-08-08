@@ -1,45 +1,24 @@
+from dataclasses import asdict, is_dataclass
 import json
 import os
-import shutil
 import hashlib
 import time
 
+def to_hash(data):
+    return hashlib.sha256(str(data).encode()).hexdigest()
 
-def write_to_file(path, filename, contents):
-    full_path = os.path.join(path, filename)
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    
-    with open(full_path, 'w') as file:
-        if isinstance(contents, dict):
-            json.dump(contents, file, indent=4)
-        elif isinstance(contents, str):
-            file.write(contents)
-        else:
-            raise TypeError("Contents must be either a string or a dictionary")
-
-
-def move_file(file_path, target_directory):
-    if not os.path.exists(target_directory):
-        os.makedirs(target_directory)
-
-    shutil.move(file_path, target_directory)
-
-
-
-def proof_of_work(data, required_days):
+def proof_of_work(data, interactions, prefix='0000', progress_callback=None) -> dict:
     nonce = 0
-    prefix = '00000'
     start = time.time()
     nonces = []
-    for _ in range(required_days):
+    for _ in range(interactions):
         while True:
             attempt = f"{data}|{nonce}"
-            hash_result = hashlib.sha256(attempt.encode()).hexdigest()
+            hash_result = to_hash(attempt)
             if hash_result.startswith(prefix):
                 nonces.append(nonce)
-                print("find one more, ", nonces)
+                if progress_callback:
+                    progress_callback(data, nonces)
                 nonce += 1
                 break
             nonce += 1
@@ -51,19 +30,31 @@ def proof_of_work(data, required_days):
         'time_spent': round(end - start, 2)
     }
 
-def verify_pow(data, nonces, required_days):
-    prefix = '00000'
-
+def verify_proof_of_work(data, nonces, prefix='0000'):
     for nonce in nonces:
         attempt = f"{data}|{nonce}"
-        hash_result = hashlib.sha256(attempt.encode()).hexdigest()
+        hash_result = to_hash(attempt)
         if not hash_result.startswith(prefix):
             return False
+    return True
     
-    return required_days == len(nonces)
-
-
-
-if __name__ == "__main__":
-    result = proof_of_work('tomato', required_days=5)
-    print(result, verify_pow('tomato', nonces=result.get('nonces'), required_days=5))
+def serialize(obj):
+    if is_dataclass(obj):
+        return asdict(obj)
+    raise TypeError(f"Type {type(obj)} not serializable")
+    
+def write_json(contents, folder, filename):    
+    folder = f'data/{folder}'
+    full_path = os.path.join(folder, filename)
+    
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    
+    with open(full_path, 'w') as file:
+        json.dump(contents, file, indent=4, default=serialize)
+    
+    return full_path
+    
+def load_json(full_path):
+    with open(full_path, 'r') as file:
+        return json.load(file)  
