@@ -1,16 +1,36 @@
 import glob
 import os
 import random
+import shutil
 import threading
 import time
 import uuid
 from datetime import datetime, timedelta
-
-from utils import write_to_file, move_file
+import json
 
 FRUITS = (("grapes", 4), ("banana", 4), ("orange", 3), ("apple", 5))
 
 
+
+def write_to_file(path, filename, contents):
+    full_path = os.path.join(path, filename)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    with open(full_path, 'w') as file:
+        if isinstance(contents, dict):
+            json.dump(contents, file, indent=4)
+        elif isinstance(contents, str):
+            file.write(contents)
+        else:
+            raise TypeError("Contents must be either a string or a dictionary")
+        
+def move_file(file_path, target_directory):
+    if not os.path.exists(target_directory):
+        os.makedirs(target_directory)
+
+    shutil.move(file_path, target_directory)
+    
 class InvalidBarcode(Exception):
     pass
 
