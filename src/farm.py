@@ -9,46 +9,46 @@ from utils import get_files_path_by_patterns, load_json, proof_of_work, to_hash,
 
 # Constants for paths
 DATA_DIR = os.path.join("data")
-FARM_JSON_PATH = os.path.join(DATA_DIR, "farm.json")
+SEEDS_JSON_PATH = os.path.join("src/seeds.json")
 FARM_DIR = os.path.join(DATA_DIR, "farm")
 
-FARM_PRODUCTS = load_json(FARM_JSON_PATH)
+FARM_SEEDS = load_json(SEEDS_JSON_PATH)
 
-def get_product_info(product_name: str) -> Optional[Dict[str, Any]]:
+def get_seed_info(seed_name: str) -> Optional[Dict[str, Any]]:
     """
-    Get farm product information by name from any type.
-    Returns a dict with product info, or None if not found.
+    Get farm seed information by name from any type.
+    Returns a dict with seed info, or None if not found.
     """
-    for product_type, products in FARM_PRODUCTS.items():
-        if product_name in products:
+    for seed_type, seeds in FARM_SEEDS.items():
+        if seed_name in seeds:
             return {
-                "name": product_name,
-                "type": product_type,
-                **products[product_name]
+                "name": seed_name,
+                "type": seed_type,
+                **seeds[seed_name]
             }
-    print(f"Warning: Product '{product_name}' not found in FARM_PRODUCTS.")
+    print(f"Warning: Seed '{seed_name}' not found in FARM_SEEDS.")
     return None
 
-def get_all_product_names() -> List[str]:
-    """Get all available farm product names."""
-    all_products = []
-    for products in FARM_PRODUCTS.values():
-        all_products.extend(products.keys())
-    return all_products
+def get_all_seeds_names() -> List[str]:
+    """Get all available farm seed names."""
+    all_seeds = []
+    for seeds in FARM_SEEDS.values():
+        all_seeds.extend(seeds.keys())
+    return all_seeds
 
 def get_all_crop_names() -> List[str]:
     """Get all available crop names (excluding animals)."""
     crop_names = []
-    for product_type, products in FARM_PRODUCTS.items():
-        if product_type != "animals":
-            crop_names.extend(products.keys())
+    for seed_type, seeds in FARM_SEEDS.items():
+        if seed_type != "animals":
+            crop_names.extend(seeds.keys())
     return crop_names
 
 def get_all_animal_names() -> List[str]:
     """Get all available animal names."""
-    animals = FARM_PRODUCTS.get("animals", {})
+    animals = FARM_SEEDS.get("animals", {})
     if not animals:
-        print("Warning: No animals found in FARM_PRODUCTS.")
+        print("Warning: No animals found in FARM_SEEDS.")
     return list(animals.keys())
 
 @dataclass
@@ -65,7 +65,7 @@ class Farmer:
     def what_to_produce(self, context: Optional[Dict[str, Any]] = None) -> str:
         """Decide what to produce next."""
         context = context or {}
-        return random.choice(get_all_product_names())
+        return random.choice(get_all_seeds_names())
 
     def produce(self, context: Optional[Dict[str, Any]] = None) -> Optional[Seed]:
         """
@@ -74,7 +74,7 @@ class Farmer:
         """
         context = context or {}
         seed_name = context.get('produce') or self.what_to_produce(context)
-        seed_info = get_product_info(seed_name)
+        seed_info = get_seed_info(seed_name)
         if not seed_info:
             print(f"Error: Could not find info for seed '{seed_name}'.")
             return None
@@ -132,16 +132,17 @@ def verify_growth(product_path: str) -> bool:
         print(f"Error verifying growth for {product_path}: {e}")
         return False
 
-def clock() -> None:
+def lifecycle_manager() -> None:
     """
     Process all seeds in the farm directory, grow them, label, verify, and remove the seed file.
+    Manages the complete lifecycle of plants and animals from seed to mature product.
     """
     seed_patterns = [os.path.join(FARM_DIR, "*", "seed.*")]
     seed_paths = get_files_path_by_patterns(patterns=seed_patterns)
     for seed_path in seed_paths:
         try:
             seed = Seed(**load_json(seed_path))
-            seed_info = get_product_info(seed.name)
+            seed_info = get_seed_info(seed.name)
             if not seed_info:
                 print(f"Error: No info for seed {seed.name}.")
                 continue

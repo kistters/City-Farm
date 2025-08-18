@@ -12,13 +12,27 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "run Farm",
+            "name": " Lifecycle Manager",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/farm.py",
+            "program": "${workspaceFolder}/src/lifecycle.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": [
+                "--interval",
+                "10",
+                "--verbose"
+            ]
+        },
+        {
+            "name": " Farm Manager",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/farm.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
         }
     ]
 }
