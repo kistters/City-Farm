@@ -85,8 +85,9 @@ class Farmer:
         for ripe_path in ripe_paths:
             try:
                 product = load_json(ripe_path)
+                product_id = to_hash(Seed(**product.get('data')))[:9]
                 filename = os.path.basename(ripe_path)
-                if self.verify_growth(product):
+                if self.verify_growth(product) and filename.endswith(product_id):
                     os.rename(ripe_path, ripe_path.replace("ripe.", ""))
                     print(f"{filename}.harvested")
                 else:
