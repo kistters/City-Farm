@@ -19,11 +19,6 @@
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
-            "args": [
-                "--interval",
-                "10",
-                "--verbose"
-            ]
         },
         {
             "name": " Farm Manager",

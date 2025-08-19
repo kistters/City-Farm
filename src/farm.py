@@ -1,164 +1,127 @@
-
-
 from dataclasses import dataclass
 from datetime import datetime
 import os
 import random
+import time
 from typing import Any, Dict, List, Optional
-from utils import get_files_path_by_patterns, load_json, proof_of_work, to_hash, verify_proof_of_work, write_json
+from utils import get_files_path_by_patterns, load_json, to_hash, verify_proof_of_work, write_json
+from settings import FARM_DIR, FARM_SEEDS
 
-# Constants for paths
-DATA_DIR = os.path.join("data")
-SEEDS_JSON_PATH = os.path.join("src/seeds.json")
-FARM_DIR = os.path.join(DATA_DIR, "farm")
 
-FARM_SEEDS = load_json(SEEDS_JSON_PATH)
-
-def get_seed_info(seed_name: str) -> Optional[Dict[str, Any]]:
-    """
-    Get farm seed information by name from any type.
-    Returns a dict with seed info, or None if not found.
-    """
-    for seed_type, seeds in FARM_SEEDS.items():
-        if seed_name in seeds:
-            return {
-                "name": seed_name,
-                "type": seed_type,
-                **seeds[seed_name]
-            }
-    print(f"Warning: Seed '{seed_name}' not found in FARM_SEEDS.")
-    return None
-
-def get_all_seeds_names() -> List[str]:
-    """Get all available farm seed names."""
-    all_seeds = []
-    for seeds in FARM_SEEDS.values():
-        all_seeds.extend(seeds.keys())
-    return all_seeds
-
-def get_all_crop_names() -> List[str]:
-    """Get all available crop names (excluding animals)."""
-    crop_names = []
-    for seed_type, seeds in FARM_SEEDS.items():
-        if seed_type != "animals":
-            crop_names.extend(seeds.keys())
-    return crop_names
-
-def get_all_animal_names() -> List[str]:
-    """Get all available animal names."""
-    animals = FARM_SEEDS.get("animals", {})
-    if not animals:
-        print("Warning: No animals found in FARM_SEEDS.")
-    return list(animals.keys())
 
 @dataclass
 class Seed:
     name: str
-    farmer: str
-    planted_at: float
-    produced_by: Optional[str] = None
+    farmer: str = None
+    planted_at: float = None
+    
+    @classmethod
+    def get_info(cls, seed_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get farm seed information by name from any type.
+        Returns a dict with seed info, or None if not found.
+        """
+    
+        for seed_type, seeds in FARM_SEEDS.items():
+            if seed_name in seeds:
+                return {
+                    "name": seed_name,
+                    "type": seed_type,
+                    **seeds[seed_name]
+                }
+                
+        raise Exception(f"seed.{seed_name}.not_found")
+    
+    @classmethod
+    def get_all_names(cls) -> List[str]:
+        """Get all available farm seed names."""
+        all_seeds = []
+        for seeds in FARM_SEEDS.values():
+            all_seeds.extend(seeds.keys())
+        return all_seeds
+
+# @dataclass
+# class Product:
+#     id: str
+#     seed: Seed
+#     nonces: List[int]
+    
+#     def verify(self) -> bool:
+#         return verify_proof_of_work(data=self.seed, nonces=self.nonces)
+    
+#     def __str__(self) -> str:
+#         return f"{self.data['name']}.{to_hash(self.data)[:9]}"
 
 class Farmer:
     def __init__(self, name: str):
         self.name = name
 
-    def what_to_produce(self, context: Optional[Dict[str, Any]] = None) -> str:
+    def what_to_produce(self, context: Optional[Dict[str, Any]] = None) -> Seed:
         """Decide what to produce next."""
         context = context or {}
-        return random.choice(get_all_seeds_names())
+        
+        seed_name = random.choice(Seed.get_all_names())
+        seed_info = Seed.get_info(seed_name=seed_name)
+        
+        return Seed(name=seed_info['name'])
 
-    def produce(self, context: Optional[Dict[str, Any]] = None) -> Optional[Seed]:
+    def plant(self, seed: Seed) -> str:
         """
-        Produce a seed, possibly using an animal if required.
-        Returns the Seed object or None if failed.
+        Plant the seed in the ground.
         """
-        context = context or {}
-        seed_name = context.get('produce') or self.what_to_produce(context)
-        seed_info = get_seed_info(seed_name)
-        if not seed_info:
-            print(f"Error: Could not find info for seed '{seed_name}'.")
-            return None
-        animal = None
-        if seed_info["type"] == "derivatives":
-            required_animals = seed_info.get('required_animal', [])
-            animal_patterns = [os.path.join(FARM_DIR, self.name, f"{animal}.*") for animal in required_animals]
-            animal_paths = get_files_path_by_patterns(patterns=animal_patterns)
-            if not animal_paths:
-                seed_name = random.choice(required_animals)
-                print(f"No {required_animals} found. Creating {seed_name}...")
-            else:
-                animal = os.path.basename(random.choice(animal_paths))
-                print(f"Using existing {animal} for {seed_name}")
-        seed = Seed(name=seed_name, farmer=self.name, planted_at=datetime.now().timestamp(), produced_by=animal)
-        planting(seed=seed)
-        return seed
+        seed.farmer = self.name
+        seed.planted_at = datetime.now().timestamp()
+        
+        filename = f"seed.{seed.name}.{to_hash(seed)[:9]}"
+        print(f"{filename}.planted")
+        return write_json(seed, os.path.join(FARM_DIR, seed.farmer), filename)
 
-def planting(seed: Seed) -> str:
-    """
-    Save the seed to a file and return the file path.
-    """
-    filename = to_hash(seed)[:9]
-    return write_json(seed, os.path.join(FARM_DIR, seed.farmer), f"seed.{seed.name}.{filename}")
+    def harvest(self) -> str:
+        """
+        Harvest the product from the ground.
+        """
+        ripe_patterns = [os.path.join(FARM_DIR, "*", "ripe.*")]
+        ripe_paths = get_files_path_by_patterns(patterns=ripe_patterns)
+        for ripe_path in ripe_paths:
+            try:
+                product = load_json(ripe_path)
+                filename = os.path.basename(ripe_path)
+                if self.verify_growth(product):
+                    os.rename(ripe_path, ripe_path.replace("ripe.", ""))
+                    print(f"{filename}.harvested")
+                else:
+                    os.remove(ripe_path)
+                    print(f"{filename}.is_rotten")
+            except Exception as e:
+                print(f"Error harvesting at {ripe_path}: {e}")
 
-def print_progress(seed: Seed, days: List[Any]) -> None:
-    print(f"Day {len(days)}: {seed.farmer}'s {seed.name} is growing...")
-
-def growth_daily(seed: Seed, required_days: int) -> Dict[str, Any]:
-    """
-    Simulate daily growth and return the proof object.
-    """
-    proof = proof_of_work(data=seed, interactions=required_days, progress_callback=print_progress)
-    proof['seed'] = proof.pop('data')
-    print(f"{seed.farmer}'s {seed.name} is done.")
-    return proof
-
-def labeling(product: Dict[str, Any]) -> str:
-    """
-    Save the product to a file and return the file path.
-    """
-    filename = to_hash(product)[:9]
-    seed = product['seed']
-    return write_json(product, os.path.join(FARM_DIR, seed.farmer), f"{seed.name}.{filename}")
-
-def verify_growth(product_path: str) -> bool:
-    """
-    Verify the proof of work for a grown product.
-    """
-    try:
-        product = load_json(product_path)
-        seed = Seed(**product['seed'])
-        return verify_proof_of_work(data=seed, nonces=product['nonces'])
-    except Exception as e:
-        print(f"Error verifying growth for {product_path}: {e}")
-        return False
-
-def lifecycle_manager() -> None:
-    """
-    Process all seeds in the farm directory, grow them, label, verify, and remove the seed file.
-    Manages the complete lifecycle of plants and animals from seed to mature product.
-    """
-    seed_patterns = [os.path.join(FARM_DIR, "*", "seed.*")]
-    seed_paths = get_files_path_by_patterns(patterns=seed_patterns)
-    for seed_path in seed_paths:
+    def verify_growth(self, product: Dict[str, Any]) -> bool:
+        """
+        Verify the proof of work for a grown product.
+        """
         try:
-            seed = Seed(**load_json(seed_path))
-            seed_info = get_seed_info(seed.name)
-            if not seed_info:
-                print(f"Error: No info for seed {seed.name}.")
-                continue
-            product = growth_daily(seed=seed, required_days=seed_info['required_days'])
-            product_path = labeling(product=product)
-            verify_growth(product_path)
-            os.remove(seed_path)
+            seed = Seed(**product['data'])
+            return verify_proof_of_work(data=seed, nonces=product['nonces'])
         except Exception as e:
-            print(f"Error processing seed at {seed_path}: {e}")
+            print(f"Error verifying growth for {product}: {e}")
+            return False
+
 
 def main() -> None:
     """
     Main entrypoint for running the farm simulation.
     """
     farmer = Farmer("John")
-    farmer.produce()
+    while True:
+        try:
+            seed = farmer.what_to_produce()
+            farmer.plant(seed=seed)
+            farmer.harvest()
+        except Exception as e:
+            print(f"Error: {e}")
+            pass
+        time.sleep(7)
+
 
 if __name__ == "__main__":
     main()
