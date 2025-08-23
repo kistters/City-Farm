@@ -3,7 +3,7 @@ import random
 import time
 from typing import Any, Dict, List
 from farm import Seed
-from settings import FARM_DIR
+from settings import DISASTERS, FARM_DIR
 from utils import get_files_path_by_patterns, load_json, proof_of_work, write_json
 
 
@@ -30,7 +30,11 @@ def lifecycle_manager() -> None:
     """    
     
     def misfortunate_event() -> bool:
-        return random.choices([False, True], weights=[10, 1])[0]
+        all_disasters = []
+        for disasters in DISASTERS.values():
+            all_disasters.extend(disasters.keys())
+        disaster = random.choice(all_disasters)
+        return random.choices([False, True], weights=[10, 1])[0], disaster
     
     seed_patterns = [os.path.join(FARM_DIR, "*", "seed.*")]
     seed_paths = get_files_path_by_patterns(patterns=seed_patterns)
@@ -38,8 +42,9 @@ def lifecycle_manager() -> None:
         try:
             seed = Seed(**load_json(seed_path))
             product = growth_daily(seed=seed)
-            if misfortunate_event():
-                product['nonces'] = [nonce * random.randint(1, 7) for nonce in product['nonces']]
+            happened, which_disaster = misfortunate_event()
+            if happened:
+                product['nonces'] = product['nonces'][:random.randint(1, len(product['nonces']))] + [which_disaster]
                 
             folder, filename = os.path.dirname(seed_path), os.path.basename(seed_path)
             write_json(product, folder=folder, filename=filename)

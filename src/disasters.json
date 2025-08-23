@@ -1,0 +1,105 @@
+{
+    "weather": {
+        "drought": {
+            "description": "Severe lack of water kills the plant"
+        },
+        "flood": {
+            "description": "Too much rain drowns the plant"
+        },
+        "frost": {
+            "description": "Unexpected freeze kills tender plants"
+        },
+        "heatwave": {
+            "description": "Extreme heat withers the plant"
+        },
+        "hail_storm": {
+            "description": "Hail physically damages plants"
+        },
+        "strong_wind": {
+            "description": "High winds uproot or break plants"
+        }
+    },
+    "pests": {
+        "aphid_infestation": {
+            "description": "Aphids suck plant juices"
+        },
+        "fungal_infection": {
+            "description": "Fungus spreads and kills plant"
+        },
+        "root_rot": {
+            "description": "Roots rot from too much moisture"
+        },
+        "caterpillar_damage": {
+            "description": "Caterpillars eat all the leaves"
+        },
+        "virus_infection": {
+            "description": "Plant virus causes death"
+        },
+        "bacterial_blight": {
+            "description": "Bacterial disease spreads quickly"
+        }
+    },
+    "environmental": {
+        "nutrient_deficiency": {
+            "description": "Missing nutrients stunt growth"
+
+        },
+        "soil_contamination": {
+            "description": "Toxic soil poisons plant"
+
+        },
+        "ph_imbalance": {
+            "description": "Wrong soil pH kills plant"
+
+        },
+        "salt_buildup": {
+            "description": "Too much salt burns plant roots"
+
+        },
+        "oxygen_shortage": {
+            "description": "Waterlogged soil suffocates roots"
+
+        }
+    },
+    "animals": {
+        "rabbit_eaten": {
+            "description": "Rabbits eat the entire plant"
+
+        },
+        "bird_damage": {
+            "description": "Birds eat seeds and young shoots"
+
+        },
+        "deer_trampled": {
+            "description": "Deer step on and crush plants"
+
+        },
+        "mole_damage": {
+            "description": "Moles damage plant roots underground"
+
+        },
+        "insect_swarm": {
+            "description": "Swarm of insects devour plants"
+        }
+    },
+    "human_error": {
+        "over_watered": {
+            "description": "Farmer gives too much water"
+        },
+        "under_watered": {
+            "description": "Farmer forgets to water"
+        },
+        "over_fertilized": {
+            "description": "Too much fertilizer burns plant"
+        },
+        "accidental_damage": {
+            "description": "Farmer accidentally damages plant"
+        },
+        "wrong_planting_depth": {
+            "description": "Seed planted too deep or shallow"
+        },
+        "pesticide_overdose": {
+            "description": "Too much pesticide harms the plant"
+        }
+    }
+}

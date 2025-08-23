@@ -6,6 +6,9 @@ import time
 import glob
 from typing import Any, Callable, Dict, List, Optional, Union
 
+DEFAULT_PREFIX = '0'
+
+
 def to_hash(data: Any) -> str:
     """
     Generate a SHA-256 hash for the given data.
@@ -15,7 +18,7 @@ def to_hash(data: Any) -> str:
 def proof_of_work(
     data: Any,
     interactions: int,
-    prefix: str = '000',
+    prefix: str = DEFAULT_PREFIX,
     progress_callback: Optional[Callable[[Any, List[int]], None]] = None
 ) -> Dict[str, Any]:
     """
@@ -46,7 +49,7 @@ def proof_of_work(
 def verify_proof_of_work(
     data: Any,
     nonces: List[int],
-    prefix: str = '000'
+    prefix: str = DEFAULT_PREFIX
 ) -> bool:
     """
     Verify a proof-of-work by checking that each nonce produces a hash with the required prefix.

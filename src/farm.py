@@ -40,22 +40,48 @@ class Seed:
             all_seeds.extend(seeds.keys())
         return all_seeds
 
-# @dataclass
-# class Product:
-#     id: str
-#     seed: Seed
-#     nonces: List[int]
+    def id(self) -> str:
+        return to_hash(self)[:9]
+
+@dataclass
+class Product:
+    seed: Seed
+    nonces: List[Any]
+    additional_info: Optional[Dict[str, Any]] = None
     
-#     def verify(self) -> bool:
-#         return verify_proof_of_work(data=self.seed, nonces=self.nonces)
+    def verify(self) -> bool:
+        return verify_proof_of_work(data=self.seed, nonces=self.nonces)
     
-#     def __str__(self) -> str:
-#         return f"{self.data['name']}.{to_hash(self.data)[:9]}"
+    def id(self) -> str:
+        return to_hash(self)[:9]
 
 class Farmer:
     def __init__(self, name: str):
         self.name = name
+        try:
+            self.events = load_json(os.path.join(FARM_DIR, f"{self.name}.events.json"))
+        except Exception as e:
+            self.events = []
 
+    def _add_event(self, event_type: str, data: Dict[str, Any]) -> None:
+        """Add event to memory (don't save yet)."""
+        event = {
+            "event_type": event_type,
+            "timestamp": datetime.now().isoformat(),
+            "data": data
+        }
+        self.events.append(event)  # ← Just keep in memory
+        print(f"event: {event_type}")
+    
+    def save_events(self) -> None:
+        """Save all events to disk."""
+        try:
+            os.makedirs(FARM_DIR, exist_ok=True)
+            write_json(self.events, FARM_DIR, f"{self.name}.events.json")
+        except Exception as e:
+            print(f"Error saving events: {e}")
+    
+    
     def what_to_produce(self, context: Optional[Dict[str, Any]] = None) -> Seed:
         """Decide what to produce next."""
         context = context or {}
@@ -72,8 +98,9 @@ class Farmer:
         seed.farmer = self.name
         seed.planted_at = datetime.now().timestamp()
         
-        filename = f"seed.{seed.name}.{to_hash(seed)[:9]}"
-        print(f"{filename}.planted")
+        # filename = f"seed.{seed.name}.{to_hash(seed)[:9]}"
+        filename = f"seed.{seed.name}.{seed.id()}"
+        self._add_event(event_type=f"{seed.name}.seed.planted", data=seed)
         return write_json(seed, os.path.join(FARM_DIR, seed.farmer), filename)
 
     def harvest(self) -> str:
@@ -84,25 +111,26 @@ class Farmer:
         ripe_paths = get_files_path_by_patterns(patterns=ripe_patterns)
         for ripe_path in ripe_paths:
             try:
-                product = load_json(ripe_path)
-                product_id = to_hash(Seed(**product.get('data')))[:9]
+                data = load_json(ripe_path)
+                product = Product(seed=Seed(**data.get('data')), nonces=data.get('nonces'))
+                
                 filename = os.path.basename(ripe_path)
-                if self.verify_growth(product) and filename.endswith(product_id):
+                if self.verify_growth(product) and filename.endswith(product.seed.id()):
                     os.rename(ripe_path, ripe_path.replace("ripe.", ""))
-                    print(f"{filename}.harvested")
+                    self._add_event(event_type=f"{product.seed.name}.harvested", data=product)
                 else:
                     os.remove(ripe_path)
-                    print(f"{filename}.is_rotten")
+                    what_happened = product.nonces[-1]
+                    self._add_event(event_type=f"{product.seed.name}.{what_happened}", data=product)
             except Exception as e:
                 print(f"Error harvesting at {ripe_path}: {e}")
 
-    def verify_growth(self, product: Dict[str, Any]) -> bool:
+    def verify_growth(self, product: Product) -> bool:
         """
         Verify the proof of work for a grown product.
         """
         try:
-            seed = Seed(**product['data'])
-            return verify_proof_of_work(data=seed, nonces=product['nonces'])
+            return verify_proof_of_work(data=product.seed, nonces=product.nonces)
         except Exception as e:
             print(f"Error verifying growth for {product}: {e}")
             return False
@@ -118,6 +146,7 @@ def main() -> None:
             seed = farmer.what_to_produce()
             farmer.plant(seed=seed)
             farmer.harvest()
+            farmer.save_events()
         except Exception as e:
             print(f"Error: {e}")
             pass
