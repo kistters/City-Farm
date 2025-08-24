@@ -49,9 +49,6 @@ class Product:
     nonces: List[Any]
     additional_info: Optional[Dict[str, Any]] = None
     
-    def verify(self) -> bool:
-        return verify_proof_of_work(data=self.seed, nonces=self.nonces)
-    
     def id(self) -> str:
         return to_hash(self)[:9]
 
@@ -81,7 +78,6 @@ class Farmer:
         except Exception as e:
             print(f"Error saving events: {e}")
     
-    
     def what_to_produce(self, context: Optional[Dict[str, Any]] = None) -> Seed:
         """Decide what to produce next."""
         context = context or {}
@@ -98,7 +94,6 @@ class Farmer:
         seed.farmer = self.name
         seed.planted_at = datetime.now().timestamp()
         
-        # filename = f"seed.{seed.name}.{to_hash(seed)[:9]}"
         filename = f"seed.{seed.name}.{seed.id()}"
         self._add_event(event_type=f"{seed.name}.seed.planted", data=seed)
         return write_json(seed, os.path.join(FARM_DIR, seed.farmer), filename)
@@ -115,13 +110,16 @@ class Farmer:
                 product = Product(seed=Seed(**data.get('data')), nonces=data.get('nonces'))
                 
                 filename = os.path.basename(ripe_path)
-                if self.verify_growth(product) and filename.endswith(product.seed.id()):
+                can_be_harvested = self.verify_growth(product) and filename.endswith(product.seed.id())
+                
+                if can_be_harvested:
                     os.rename(ripe_path, ripe_path.replace("ripe.", ""))
                     self._add_event(event_type=f"{product.seed.name}.harvested", data=product)
                 else:
                     os.remove(ripe_path)
                     what_happened = product.nonces[-1]
-                    self._add_event(event_type=f"{product.seed.name}.{what_happened}", data=product)
+                    self._add_event(event_type=f"{product.seed.name}.disaster.{what_happened}", data=product)
+
             except Exception as e:
                 print(f"Error harvesting at {ripe_path}: {e}")
 
