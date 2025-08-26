@@ -28,6 +28,15 @@
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
+        },
+        {
+            "name": " City Manager",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/city.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
         }
     ]
 }

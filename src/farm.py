@@ -5,7 +5,7 @@ import random
 import time
 from typing import Any, Dict, List, Optional
 from utils import get_files_path_by_patterns, load_json, to_hash, verify_proof_of_work, write_json
-from settings import FARM_DIR, FARM_SEEDS
+from settings import FARM_DIR, SEEDS
 
 
 
@@ -22,7 +22,7 @@ class Seed:
         Returns a dict with seed info, or None if not found.
         """
     
-        for seed_type, seeds in FARM_SEEDS.items():
+        for seed_type, seeds in SEEDS.items():
             if seed_name in seeds:
                 return {
                     "name": seed_name,
@@ -36,7 +36,7 @@ class Seed:
     def get_all_names(cls) -> List[str]:
         """Get all available farm seed names."""
         all_seeds = []
-        for seeds in FARM_SEEDS.values():
+        for seeds in SEEDS.values():
             all_seeds.extend(seeds.keys())
         return all_seeds
 
@@ -44,7 +44,7 @@ class Seed:
         return to_hash(self)[:9]
 
 @dataclass
-class Product:
+class Ingredient:
     seed: Seed
     nonces: List[Any]
     additional_info: Optional[Dict[str, Any]] = None
@@ -100,37 +100,37 @@ class Farmer:
 
     def harvest(self) -> str:
         """
-        Harvest the product from the ground.
+        Harvest the ingredient from the ground.
         """
         ripe_patterns = [os.path.join(FARM_DIR, "*", "ripe.*")]
         ripe_paths = get_files_path_by_patterns(patterns=ripe_patterns)
         for ripe_path in ripe_paths:
             try:
                 data = load_json(ripe_path)
-                product = Product(seed=Seed(**data.get('data')), nonces=data.get('nonces'))
+                ingredient = Ingredient(seed=Seed(**data.get('data')), nonces=data.get('nonces'))
                 
                 filename = os.path.basename(ripe_path)
-                can_be_harvested = self.verify_growth(product) and filename.endswith(product.seed.id())
+                can_be_harvested = self.verify_growth(ingredient) and filename.endswith(ingredient.seed.id())
                 
                 if can_be_harvested:
                     os.rename(ripe_path, ripe_path.replace("ripe.", ""))
-                    self._add_event(event_type=f"{product.seed.name}.harvested", data=product)
+                    self._add_event(event_type=f"{ingredient.seed.name}.harvested", data=ingredient)
                 else:
                     os.remove(ripe_path)
-                    what_happened = product.nonces[-1]
-                    self._add_event(event_type=f"{product.seed.name}.disaster.{what_happened}", data=product)
+                    what_happened = ingredient.nonces[-1]
+                    self._add_event(event_type=f"{ingredient.seed.name}.disaster.{what_happened}", data=ingredient)
 
             except Exception as e:
                 print(f"Error harvesting at {ripe_path}: {e}")
 
-    def verify_growth(self, product: Product) -> bool:
+    def verify_growth(self, ingredient: Ingredient) -> bool:
         """
-        Verify the proof of work for a grown product.
+        Verify the proof of work for a grown ingredient.
         """
         try:
-            return verify_proof_of_work(data=product.seed, nonces=product.nonces)
+            return verify_proof_of_work(data=ingredient.seed, nonces=ingredient.nonces)
         except Exception as e:
-            print(f"Error verifying growth for {product}: {e}")
+            print(f"Error verifying growth for {ingredient}: {e}")
             return False
 
 
