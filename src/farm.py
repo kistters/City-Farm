@@ -5,7 +5,7 @@ import random
 import time
 from typing import Any, Dict, List, Optional
 from utils import get_files_path_by_patterns, load_json, to_hash, verify_proof_of_work, write_json
-from settings import FARM_DIR, SEEDS
+from settings import DATA_DIR, FARM_DIR, SEEDS
 
 
 
@@ -52,13 +52,14 @@ class Ingredient:
     def id(self) -> str:
         return to_hash(self)[:9]
 
-class Farmer:
+class Entity:
     def __init__(self, name: str):
         self.name = name
         try:
-            self.events = load_json(os.path.join(FARM_DIR, f"{self.name}.events.json"))
+            self.events = load_json(f"{DATA_DIR}/{self.name}.{self.__class__.__name__.lower()}.json")
         except Exception as e:
             self.events = []
+            self.save_events()
 
     def _add_event(self, event_type: str, data: Dict[str, Any]) -> None:
         """Add event to memory (don't save yet)."""
@@ -69,15 +70,19 @@ class Farmer:
         }
         self.events.append(event)  # ← Just keep in memory
         print(f"event: {event_type}")
-    
+
     def save_events(self) -> None:
         """Save all events to disk."""
         try:
-            os.makedirs(FARM_DIR, exist_ok=True)
-            write_json(self.events, FARM_DIR, f"{self.name}.events.json")
+            os.makedirs(DATA_DIR, exist_ok=True)
+            write_json(self.events, DATA_DIR, f"{self.name}.{self.__class__.__name__.lower()}.json")
         except Exception as e:
             print(f"Error saving events: {e}")
-    
+
+class Farmer(Entity):
+    def __init__(self, name: str):
+        super().__init__(name)
+
     def what_to_produce(self, context: Optional[Dict[str, Any]] = None) -> Seed:
         """Decide what to produce next."""
         context = context or {}

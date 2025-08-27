@@ -4,8 +4,8 @@ import os
 import random
 import time
 from typing import Any, Dict, List, Optional
-from farm import Ingredient, Seed
-from utils import get_files_path_by_patterns, load_json, to_hash, verify_proof_of_work, write_json
+from farm import Entity, Ingredient, Seed
+from utils import get_files_path_by_patterns, load_json, to_hash, write_json
 from settings import CITY_DIR, DISHES, FARM_DIR, WISH_DIR
 
 
@@ -45,31 +45,9 @@ class Dishe:
         return to_hash(self)[:9]
 
 
-class Citizen:
+class Citizen(Entity):
     def __init__(self, name: str):
-        self.name = name
-        try:
-            self.events = load_json(os.path.join(CITY_DIR, f"{self.name}.events.json"))
-        except Exception as e:
-            self.events = []
-
-    def _add_event(self, event_type: str, data: Dict[str, Any]) -> None:
-        """Add event to memory (don't save yet)."""
-        event = {
-            "event_type": event_type,
-            "timestamp": datetime.now().isoformat(),
-            "data": data
-        }
-        self.events.append(event)  # ← Just keep in memory
-        print(f"event: {event_type}")
-    
-    def save_events(self) -> None:
-        """Save all events to disk."""
-        try:
-            os.makedirs(CITY_DIR, exist_ok=True)
-            write_json(self.events, CITY_DIR, f"{self.name}.events.json")
-        except Exception as e:
-            print(f"Error saving events: {e}")
+        super().__init__(name)
     
     def what_to_prepare(self, context: Optional[Dict[str, Any]] = None) -> Dishe:
         """Decide what to produce next."""
@@ -106,13 +84,12 @@ class Citizen:
                 
                 if ingredient_name in ingredient_path:
                     filename = f"{ingredient.seed.name}.{ingredient.seed.id()}"
-                    write_json(ingredient, os.path.join(CITY_DIR, self.name), filename)
+                    write_json(ingredient, os.path.join(CITY_DIR, self.name, "ingredients"), filename)
                     os.remove(ingredient_path)
                     ingredient_paths.remove(ingredient_path)
                     self._add_event(event_type=f"{ingredient.seed.name}.bought.from.{ingredient.seed.farmer}", data=ingredient)
                     break
 
-    
     def cook(self, dishe: Dishe) -> None:
         """
         Cook the dishe.
@@ -140,7 +117,7 @@ def main() -> None:
         except Exception as e:
             print(f"Error: {e}")
             pass
-        time.sleep(7 * 2)
+        time.sleep(7 / 2)
 
 
 if __name__ == "__main__":
