@@ -1,0 +1,17 @@
+{
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.terminal.activateEnvironment": true,
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.pytest_cache": true,
+        "**/__pycache__": true,
+        "**/pytest": true   // Add this line to hide the 'pytest' folder
+  }
+}

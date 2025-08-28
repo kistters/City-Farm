@@ -1,0 +1,39 @@
+{
+    "vegetables": {
+        "tomato": {"required_days": 70},
+        "lettuce": {"required_days": 45},
+        "carrot": {"required_days": 75},
+        "potato": {"required_days": 90},
+        "onion": {"required_days": 100},
+        "cucumber": {"required_days": 60},
+        "pepper": {"required_days": 80},
+        "broccoli": {"required_days": 85},
+        "cauliflower": {"required_days": 80}
+    },
+    "fruits": {
+        "apple": {"required_days": 365},
+        "orange": {"required_days": 730},
+        "strawberry": {"required_days": 90},
+        "grape": {"required_days": 180},
+        "banana": {"required_days": 365},
+        "peach": {"required_days": 365},
+        "pear": {"required_days": 365},
+        "cherry": {"required_days": 120}
+    },
+    "grains": {
+        "wheat": {"required_days": 120},
+        "corn": {"required_days": 80},
+        "rice": {"required_days": 150},
+        "oats": {"required_days": 100},
+        "barley": {"required_days": 110}
+    },
+    "herbs": {
+        "basil": {"required_days": 30},
+        "mint": {"required_days": 45},
+        "rosemary": {"required_days": 60},
+        "thyme": {"required_days": 40},
+        "sage": {"required_days": 50},
+        "oregano": {"required_days": 35},
+        "parsley": {"required_days": 55}
+    }
+}

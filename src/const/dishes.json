@@ -1,0 +1,74 @@
+{
+  "dishes": {
+    "rustic_vegetable_stew": {
+      "name": "Rustic Vegetable Stew",
+      "required_ingredients": ["potato", "carrot", "onion", "tomato", "broccoli", "cauliflower", "thyme", "sage"],
+      "description": "A hearty stew perfect for cold days, simmered with fresh herbs",
+      "cooking_time": 45,
+      "difficulty": "medium"
+    },
+    "herb_crusted_wheat_bread": {
+      "name": "Herb-Crusted Wheat Bread",
+      "required_ingredients": ["wheat", "rosemary", "thyme", "oregano"],
+      "description": "Artisanal bread with a fragrant herb crust",
+      "cooking_time": 120,
+      "difficulty": "hard"
+    },
+    "fresh_garden_salad": {
+      "name": "Fresh Garden Salad",
+      "required_ingredients": ["lettuce", "cucumber", "tomato", "carrot", "basil", "oregano"],
+      "description": "Crisp salad with homegrown vegetables and aromatic herb dressing",
+      "cooking_time": 10,
+      "difficulty": "easy"
+    },
+    "stuffed_bell_peppers": {
+      "name": "Stuffed Bell Peppers",
+      "required_ingredients": ["pepper", "rice", "onion", "tomato", "parsley"],
+      "description": "Bell peppers stuffed with seasoned rice and vegetables",
+      "cooking_time": 60,
+      "difficulty": "medium"
+    },
+    "apple_pear_crisp": {
+      "name": "Apple-Pear Crisp with Oat Topping",
+      "required_ingredients": ["apple", "pear", "oats"],
+      "description": "Classic fruit dessert with a crunchy oat crumble",
+      "cooking_time": 35,
+      "difficulty": "medium"
+    },
+    "corn_potato_chowder": {
+      "name": "Corn and Potato Chowder",
+      "required_ingredients": ["corn", "potato", "onion", "parsley", "thyme"],
+      "description": "Creamy, comforting soup with sweet corn and tender potatoes",
+      "cooking_time": 40,
+      "difficulty": "medium"
+    },
+    "strawberry_cherry_fruit_salad": {
+      "name": "Strawberry-Cherry Fruit Salad",
+      "required_ingredients": ["strawberry", "cherry", "grape", "mint"],
+      "description": "Refreshing fruit medley with cooling mint",
+      "cooking_time": 15,
+      "difficulty": "easy"
+    },
+    "barley_risotto": {
+      "name": "Barley Risotto with Roasted Vegetables",
+      "required_ingredients": ["barley", "broccoli", "cauliflower", "onion", "sage"],
+      "description": "Nutty barley cooked risotto-style with seasonal vegetables",
+      "cooking_time": 50,
+      "difficulty": "hard"
+    },
+    "tomato_basil_flatbread": {
+      "name": "Tomato-Basil Flatbread",
+      "required_ingredients": ["wheat", "tomato", "basil", "oregano"],
+      "description": "Rustic flatbread topped with fresh tomatoes and herbs",
+      "cooking_time": 30,
+      "difficulty": "medium"
+    },
+    "banana_peach_smoothie_bowl": {
+      "name": "Banana-Peach Smoothie Bowl",
+      "required_ingredients": ["banana", "peach", "orange", "mint"],
+      "description": "Nutritious breakfast bowl topped with fresh fruit and mint",
+      "cooking_time": 5,
+      "difficulty": "easy"
+    }
+  }
+}

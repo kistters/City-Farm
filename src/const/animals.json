@@ -1,0 +1,16 @@
+{
+    "animals": {
+        "chicken": {"required_days": 180},
+        "pig": {"required_days": 365},
+        "fish": {"required_days": 90},
+        "cow": {"required_days": 730},
+        "bee": {"required_days": 30},
+        "duck": {"required_days": 120},
+        "goat": {"required_days": 365}
+    },
+    "derivatives": {
+        "milk": {"required_days": 1, "required_animal": ["cow", "goat"]},
+        "honey": {"required_days": 7, "required_animal": ["bee"]},
+        "eggs": {"required_days": 1, "required_animal": ["chicken", "duck"]}
+    }
+}
