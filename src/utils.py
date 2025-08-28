@@ -6,7 +6,7 @@ import time
 import glob
 from typing import Any, Callable, Dict, List, Optional, Union
 
-DEFAULT_PREFIX = '0'
+DEFAULT_PREFIX = "0"
 
 
 def to_hash(data: Any) -> str:
@@ -15,11 +15,12 @@ def to_hash(data: Any) -> str:
     """
     return hashlib.sha256(str(data).encode()).hexdigest()
 
+
 def proof_of_work(
     data: Any,
     interactions: int,
     prefix: str = DEFAULT_PREFIX,
-    progress_callback: Optional[Callable[[Any, List[int]], None]] = None
+    progress_callback: Optional[Callable[[Any, List[int]], None]] = None,
 ) -> Dict[str, Any]:
     """
     Perform a proof-of-work algorithm for a given number of interactions.
@@ -40,16 +41,11 @@ def proof_of_work(
                 break
             nonce += 1
     end = time.time()
-    return {
-        'data': data,
-        'nonces': nonces,
-        'time_spent': round(end - start, 2)
-    }
+    return {"data": data, "nonces": nonces, "time_spent": round(end - start, 2)}
+
 
 def verify_proof_of_work(
-    data: Any,
-    nonces: List[int],
-    prefix: str = DEFAULT_PREFIX
+    data: Any, nonces: List[int], prefix: str = DEFAULT_PREFIX
 ) -> bool:
     """
     Verify a proof-of-work by checking that each nonce produces a hash with the required prefix.
@@ -61,6 +57,7 @@ def verify_proof_of_work(
             return False
     return True
 
+
 def serialize(obj: Any) -> Dict[str, Any]:
     """
     Serialize a dataclass object to a dictionary.
@@ -69,6 +66,7 @@ def serialize(obj: Any) -> Dict[str, Any]:
     if is_dataclass(obj):
         return asdict(obj)
     raise TypeError(f"Type {type(obj)} not serializable")
+
 
 def write_json(contents: Any, folder: str, filename: str) -> str:
     """
@@ -79,23 +77,25 @@ def write_json(contents: Any, folder: str, filename: str) -> str:
     try:
         if not os.path.exists(folder):
             os.makedirs(folder)
-        with open(full_path, 'w') as file:
+        with open(full_path, "w") as file:
             json.dump(contents, file, indent=4, default=serialize)
     except Exception as e:
         print(f"Error writing JSON to {full_path}: {e}")
         raise
     return full_path
 
+
 def load_json(full_path: str) -> Any:
     """
     Load and return JSON data from the specified file path.
     """
     try:
-        with open(full_path, 'r') as file:
+        with open(full_path, "r") as file:
             return json.load(file)
     except Exception as e:
         print(f"Error loading JSON from {full_path}: {e}")
         raise
+
 
 def get_files_path_by_patterns(patterns: List[str]) -> List[str]:
     """
