@@ -54,10 +54,10 @@ class RolePageTests(unittest.TestCase):
         dashboard = parse("dashboard.html")
 
         self.assertIn("farmer", farmer.ids)
-        self.assertIn("dashboard", farmer.ids)
+        self.assertNotIn("dashboard", farmer.ids)
         self.assertNotIn("citizen", farmer.ids)
         self.assertIn("/js/farmer.js", farmer.scripts)
-        self.assertIn("/js/dashboard.js", farmer.scripts)
+        self.assertNotIn("/js/dashboard.js", farmer.scripts)
         self.assertNotIn("/js/citizen.js", farmer.scripts)
 
         self.assertIn("citizen", citizen.ids)
@@ -151,6 +151,40 @@ class RolePageTests(unittest.TestCase):
         self.assertNotIn("Buy and eat", citizen)
         self.assertIn("resource-actions", farmer)
         self.assertIn("resource-actions", citizen)
+
+    def test_dashboard_market_character_counters_and_resource_symmetry(self):
+        farmer = (FRONT / "farmer.html").read_text(encoding="utf-8")
+        citizen = (FRONT / "citizen.html").read_text(encoding="utf-8")
+        dashboard = (FRONT / "dashboard.html").read_text(encoding="utf-8")
+        dashboard_js = (FRONT / "js/dashboard.js").read_text(encoding="utf-8")
+        farmer_js = (FRONT / "js/farmer.js").read_text(encoding="utf-8")
+        citizen_js = (FRONT / "js/citizen.js").read_text(encoding="utf-8")
+        websocket = (ROOT / "CityFarm/code/websocket.py").read_text(
+            encoding="utf-8")
+        css = (FRONT / "css/dashboard.css").read_text(encoding="utf-8")
+
+        self.assertNotIn("Food available", farmer)
+        self.assertNotIn("market.food", farmer)
+        self.assertIn("Food available", dashboard)
+        self.assertIn("Food supplied by all Farmers", dashboard)
+        for field in ("food_produced", "food_eaten", "coins_earned_work",
+                      "coins_spent_soil"):
+            self.assertIn("character." + field, dashboard)
+        self.assertIn("characters: []", dashboard_js)
+        self.assertIn('if (data.characters)', dashboard_js)
+        self.assertIn("register_character(", websocket)
+        self.assertIn("dashboard_update()", websocket)
+
+        for html in (farmer, citizen):
+            self.assertIn('class="resource-health"', html)
+            self.assertIn('class="section-head compact"', html)
+            self.assertIn('class="resource-actions"', html)
+        self.assertIn("<h3>Saúde do Solo</h3>", farmer)
+        self.assertIn("<h3>Energia</h3>", citizen)
+        self.assertIn(".resource-health", css)
+        self.assertNotIn("soil-health", css)
+        self.assertIn("profile.role = 'farmer'", farmer_js)
+        self.assertIn("profile.role = 'citizen'", citizen_js)
 
     def test_nginx_routes_and_responsive_css(self):
         nginx = (ROOT / "nginx/conf.d/city-farm.conf").read_text()
