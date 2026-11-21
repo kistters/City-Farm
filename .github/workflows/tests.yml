@@ -1,0 +1,26 @@
+name: City-Farm tests
+on:
+  push:
+  pull_request:
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r CityFarm/requirements.txt
+      - name: Puzzle and Redis tests
+        env:
+          REDIS_HOST: localhost
+          PYTHONPATH: CityFarm/code
+        run: python -m unittest test_puzzles test_economy_redis
+        working-directory: CityFarm/code
+      - name: Page structure
+        run: python -m unittest discover -s tests -p 'test_role_pages.py'

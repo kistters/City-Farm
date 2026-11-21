@@ -16,28 +16,6 @@ services:
       - ./CityFarm/code:/code:ro
     depends_on:
       - redis
-      - rabbitmq
-    environment:
-      CELERY_BROKER_URL: amqp://cityfarm:cityfarm_dev@rabbitmq:5672//
-
-  worker:
-    build: ./CityFarm
-    command: ["sh", "run-worker.sh"]
-    volumes:
-      - ./CityFarm/code:/code:ro
-    depends_on:
-      - rabbitmq
-      - redis
-    environment:
-      CELERY_BROKER_URL: amqp://cityfarm:cityfarm_dev@rabbitmq:5672//
-
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: cityfarm
-      RABBITMQ_DEFAULT_PASS: cityfarm_dev
-    ports:
-      - "127.0.0.1:15672:15672"
 
   redis:
     image: redis:7.4-alpine
