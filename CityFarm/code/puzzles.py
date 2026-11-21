@@ -1,37 +1,44 @@
-"""Desafios do City-Farm: geração isolada das regras de jogo.
+"""Desafios visuais e aritméticos. Regras simples, sem persistência.
 
-A resposta correta nunca é aceita do navegador por confiança: é comparada
-com a versão armazenada no Redis. Os padrões são enviados para observação,
-portanto não constituem proteção contra bots.
+O navegador recebe o padrão para visualização. Isso não impede automação;
+o servidor ainda valida cada resposta e só concede uma recompensa por desafio.
 """
 import secrets
 
 from products import PRODUCTS
 
 RANDOM = secrets.SystemRandom()
-LEVEL_REWARD = {1: 1, 2: 2, 3: 3}
+FARM_LEVELS = {
+    1: {"size": 3, "cells": 3, "production": 1, "soil_cost": 10, "observe_seconds": 5},
+    2: {"size": 6, "cells": 6, "production": 3, "soil_cost": 35, "observe_seconds": 5},
+    3: {"size": 3, "cells": 4, "production": 4, "soil_cost": 20, "observe_seconds": 6},
+}
+WORK_REWARDS = {1: 5, 2: 10, 3: 15}
 PRODUCT_NAMES = tuple(PRODUCTS)
 
 
 def create_farm(level, product):
-    if type(level) is not int or level not in LEVEL_REWARD:
+    if type(level) is not int or level not in FARM_LEVELS:
         raise ValueError("Invalid level")
     if product not in PRODUCTS:
         raise ValueError("Unknown ingredient")
-    size, count = {1: (3, 3), 2: (6, 6), 3: (3, 4)}[level]
-    board = [None] * (size * size)
-    for index in RANDOM.sample(range(len(board)), count):
-        board[index] = RANDOM.choice(PRODUCT_NAMES) if level == 3 else product
+    rules = FARM_LEVELS[level]
+    board = [None] * (rules["size"] ** 2)
+    positions = RANDOM.sample(range(len(board)), rules["cells"])
+    # Multicultura: quatro ingredientes distintos, como no padrão visual.
+    ingredients = RANDOM.sample(PRODUCT_NAMES, rules["cells"]) if level == 3 else [product] * len(positions)
+    for position, ingredient in zip(positions, ingredients):
+        board[position] = ingredient
     public = {
         "kind": "farmer", "level": level, "product": product,
-        "size": size, "pattern": board,
-        "observe_seconds": 6 if level == 3 else 5,
+        "size": rules["size"], "pattern": board,
+        "observe_seconds": rules["observe_seconds"],
     }
     return public, board
 
 
 def create_work(level):
-    if type(level) is not int or level not in LEVEL_REWARD:
+    if type(level) is not int or level not in WORK_REWARDS:
         raise ValueError("Invalid level")
     if level == 1:
         a, b = RANDOM.randint(1, 25), RANDOM.randint(1, 25)
