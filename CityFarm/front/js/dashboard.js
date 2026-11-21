@@ -1,9 +1,10 @@
-/* Read-only market and activity dashboard; also used in Farmer sidebar. */
+/* Read-only dashboard: market, characters and recent activity. */
 var dashboard = new Vue({
     el: '#dashboard',
     data: {
         web_status: 'connecting',
         market: {},
+        characters: [],
         history: [],
         ws_dashboard: null
     },
@@ -22,6 +23,7 @@ var dashboard = new Vue({
                 try { data = JSON.parse(event.data); }
                 catch (e) { return; }
                 if (data.market) self.market = data.market;
+                if (data.characters) self.characters = data.characters;
                 if (data.history) self.history = data.history;
             };
             socket.onerror = function () { self.web_status = 'error'; };
