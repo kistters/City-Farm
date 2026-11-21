@@ -152,7 +152,7 @@ class PublihserHandler(websocket.WebSocketHandler):
                 return
             self.pending_proof = None
             verify_product_proof.apply_async(
-                args=[challenge_id, nonce, self.player["name"] if self.player else "Unknown"],
+                args=[challenge_id, nonce, self.player],
                 queue="planting", serializer="json",
             )
             self.write_message(json.dumps({"pow_status": "submitted"}))
