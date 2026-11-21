@@ -20,6 +20,8 @@ local function drain_orders(stock, items, queue, waiting, fulfilled, product)
         if redis.call('GET', marker) == product then
             redis.call('DEL', marker)
             redis.call('DEL', 'eat:queued:' .. order_id)
+            -- Keep a bounded idempotency tombstone for old Celery retries.
+            redis.call('SETEX', 'eat:completed:' .. order_id, 604800, '1')
             redis.call('DECR', stock)
             if redis.call('LLEN', items) > 0 then
                 redis.call('RPOP', items)
@@ -37,7 +39,10 @@ end
 
 ENQUEUE = LUA_DRAIN + """
 local completed = drain_orders(KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5], ARGV[2])
-if redis.call('EXISTS', KEYS[6]) == 1 then return {-2, completed} end
+if redis.call('EXISTS', KEYS[6]) == 1 or
+   redis.call('EXISTS', 'eat:completed:' .. ARGV[1]) == 1 then
+    return {-2, 0}
+end
 if redis.call('LLEN', KEYS[3]) >= tonumber(ARGV[3]) then return {-1, completed} end
 redis.call('SET', KEYS[6], ARGV[2])
 redis.call('SET', KEYS[7], '1')
