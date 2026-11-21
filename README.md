@@ -112,18 +112,14 @@ mas usa `Math.random()`, impróprio para identificadores de segurança.
 ## Pedidos de consumo pendentes
 
 A página principal mostra **Pending Eat requests** no lugar do painel de
-estoque. Cada clique do Citizen registra um pedido com ID no Redis, incrementa
-o contador por produto e agenda a tarefa Celery de consumo. Quando a tarefa
-consegue consumir o alimento, o mesmo script Redis que baixa o estoque
-remove o pedido e decrementa seu contador atomicamente.
+estoque. Cada clique do Citizen registra um pedido individual no Redis.
+Se houver estoque, o consumo ocorre imediatamente; caso contrário, o
+pedido fica aguardando na fila por ingrediente, sem tarefas Celery
+repetitivas. O contador é atualizado atomicamente após o atendimento.
 
-O `dashboard.html` continua exibindo o estoque completo, conexões e
-histórico PoW. O painel de pedidos inclui somente solicitações criadas depois
-desta alteração; tarefas antigas sem identificador continuam funcionando,
-mas não aparecem nos contadores. Os retries infinitos continuam **sem
-alteração** nesta etapa; a issue #12 acompanha sua revisão.
-
-Teste: `docker compose exec worker python -m unittest test_pending_eat`.
+Os ingredientes necessários a pratos também aparecem nos contadores.
+O dashboard separado mantém estoque, histórico PoW, conexões e agora
+métricas de pedidos pendentes e atendidos.
 
 ## Variedade, fontes de produção e pratos
 
