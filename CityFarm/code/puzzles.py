@@ -26,8 +26,8 @@ def create_farm(level):
     # Vegetais são símbolos de memória; a recompensa econômica segue sendo Food.
     symbol = RANDOM.choice(MEMORY_SYMBOLS) if level != 3 else None
     symbols = RANDOM.sample(MEMORY_SYMBOLS, rules["cells"]) if level == 3 else [symbol] * len(positions)
-    for position, symbol in zip(positions, symbols):
-        board[position] = symbol
+    for position, icon in zip(positions, symbols):
+        board[position] = icon
     public = {
         "kind": "farmer", "level": level, "symbol": symbol,
         "size": rules["size"], "pattern": board,
