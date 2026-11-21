@@ -35,8 +35,8 @@ class EconomyRedisTests(unittest.TestCase):
         public = economy.start(self.red, self.farmer, "farmer", 2, "tomato", 0)
         self.ready(public)
         outcome = economy.submit(self.red, self.farmer, public["id"], public["pattern"])
-        self.assertEqual(outcome["reward"], {"product": "tomato", "qty": 2})
-        self.assertEqual(economy.market(self.red)["tomato"], 2)
+        self.assertEqual(outcome["reward"], {"product": "tomato", "qty": 3, "products": {"tomato": 3}, "soil_cost": 35})
+        self.assertEqual(economy.market(self.red)["tomato"], 3)
         with self.assertRaises(ValueError):
             economy.submit(self.red, self.farmer, public["id"], public["pattern"])
         self.assertEqual(economy.market(self.red)["tomato"], 2)
@@ -94,17 +94,76 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(economy.state(self.red, self.farmer)["coins"], 5)
         self.assertEqual(sum(economy.state(self.red, x)["coins"] for x in others), 15)
 
-    def test_upgrade_requires_coins_and_respects_limit(self):
+    def test_basic_recovery_has_cap_and_is_free(self):
+        self.red.set("game:soil:" + self.farmer, 0)
+        self.assertEqual(economy.recover_basic(self.red, self.farmer, "farmer")["value"], 10)
+        with self.assertRaisesRegex(ValueError, "only below 10"):
+            economy.recover_basic(self.red, self.farmer, "farmer")
+        self.red.set("game:soil:" + self.farmer, 7)
+        self.assertEqual(economy.recover_basic(self.red, self.farmer, "farmer")["value"], 10)
+        self.red.set("game:energy:" + self.citizen, 1)
+        self.assertEqual(economy.recover_basic(self.red, self.citizen, "citizen")["value"], 10)
+        self.assertEqual(economy.state(self.red, self.citizen)["coins"], 0)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 0)
+
+    def test_paid_soil_care_charges_only_when_possible(self):
+        self.red.set("game:soil:" + self.farmer, 45)
         with self.assertRaisesRegex(ValueError, "Not enough coins"):
-            economy.upgrade_plot(self.red, self.farmer)
-        self.red.set("game:coins:" + self.farmer, 100)
-        for limit in (4, 5, 6):
-            self.assertEqual(economy.upgrade_plot(self.red, self.farmer)["plots"], limit)
-        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 40)
-        self.assertEqual(len(economy.state(self.red, self.farmer)["plots"]), 6)
-        with self.assertRaisesRegex(ValueError, "Maximum"):
-            economy.upgrade_plot(self.red, self.farmer)
-        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 40)
+            economy.prepare_soil(self.red, self.farmer)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 45)
+        self.red.set("game:coins:" + self.farmer, 10)
+        self.assertEqual(economy.prepare_soil(self.red, self.farmer),
+                         {"soil_health": 85, "cost": 5})
+        self.assertEqual(economy.prepare_soil(self.red, self.farmer),
+                         {"soil_health": 100, "cost": 5})
+        with self.assertRaisesRegex(ValueError, "already full"):
+            economy.prepare_soil(self.red, self.farmer)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 0)
+
+    def test_soil_is_consumed_once_and_insufficient_soil_blocks_farm(self):
+        self.red.set("game:soil:" + self.farmer, 10)
+        with self.assertRaisesRegex(ValueError, "Not enough soil"):
+            economy.start(self.red, self.farmer, "farmer", 2, "corn", 0)
+        farm = economy.start(self.red, self.farmer, "farmer", 1, "corn", 0)
+        self.ready(farm)
+        economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 0)
+        with self.assertRaisesRegex(ValueError, "expired or already"):
+            economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 0)
+        self.assertEqual(economy.market(self.red)["corn"], 1)
+
+    def test_multiculture_harvest_contains_pattern_ingredients(self):
+        farm = economy.start(self.red, self.farmer, "farmer", 3, "tomato", 0)
+        self.ready(farm)
+        expected = {name: farm["pattern"].count(name)
+                    for name in economy.PRODUCTS if name in farm["pattern"]}
+        outcome = economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
+        self.assertEqual(outcome["reward"]["products"], expected)
+        self.assertEqual(sum(economy.market(self.red).values()), 4)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 80)
+        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["products"], expected)
+        self.red.set("game:coins:" + self.citizen, 25)
+        for product, count in expected.items():
+            for _ in range(count):
+                economy.buy(self.red, self.citizen, product)
+        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["qty"], 0)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 20)
+
+    def test_concurrent_paid_care_debits_balance_once_if_only_one_payment(self):
+        self.red.set("game:soil:" + self.farmer, 0)
+        self.red.set("game:coins:" + self.farmer, 5)
+        def action(_):
+            try:
+                economy.prepare_soil(self.red, self.farmer)
+                return True
+            except ValueError:
+                return False
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(action, range(2)))
+        self.assertEqual(results.count(True), 1)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 40)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 0)
 
     def test_observation_period_and_same_challenge_reuse(self):
         first = economy.start(self.red, self.farmer, "farmer", 1, "tomato", 0)
@@ -126,7 +185,8 @@ class EconomyRedisTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=4) as executor:
             results = list(executor.map(action, range(8)))
         self.assertEqual(results.count(True), 1)
-        self.assertEqual(economy.market(self.red)["lettuce"], 3)
+        self.assertEqual(sum(economy.market(self.red).values()), 4)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 80)
 
 
 if __name__ == "__main__":
