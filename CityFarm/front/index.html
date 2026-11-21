@@ -90,7 +90,7 @@
               <button v-on:click="orderDish(dish.id)" class="btn btn-default btn-block">
                 <img v-bind:src="'/css/images/dish-' + dish.id + '.svg'" class="plant" v-bind:alt="dish.name" />
                 <strong>{{ dish.name }}</strong>
-                <small class="dish-ingredients">{{ ingredientList(dish.ingredients) }}</small>
+                <small class="dish-ingredients">{{ dish.ingredients_text }}</small>
               </button>
             </div>
             <p v-if="dishMessage" class="text-info" aria-live="polite">{{ dishMessage }}</p>
@@ -110,5 +110,5 @@
 </body>
     <script src="/js/dashboard.js"></script>
     <script src="/js/farmer.js"></script>
-    <script src="/js/citizen.js"></script>
+    <script src="/js/citizen.js?v=2"></script>
 </html>
