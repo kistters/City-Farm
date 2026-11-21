@@ -15,7 +15,21 @@ cl_dashboard = []
 
 
 def citizen(what):
-    res = eat.apply_async((what,), queue='eating', serializer='json')
+    if what not in storage:
+        raise ValueError("Unknown product")
+    request_id = secrets.token_hex(16)
+    marker = "eat:pending:" + request_id
+    counter = "eat:waiting:" + what
+    # Register the order before queuing so a fast worker can settle it.
+    r.set(marker, what)
+    r.incr(counter)
+    try:
+        eat.apply_async((what, request_id), queue='eating', serializer='json')
+    except Exception:
+        r.delete(marker)
+        r.decr(counter)
+        raise
+    dashboard_update()
 
 def init():
     for what in storage:
@@ -38,7 +52,14 @@ def dashboard_update():
                 })
 
     history = [json.loads(item) for item in r.lrange("pow:history", 0, 49)]
-    data = {'groceries': groceries, 'pow_history': history}
+    pending_orders = [
+        {"what": what, "qty": max(0, int(r.get("eat:waiting:" + what) or 0))}
+        for what in storage
+    ]
+    data = {
+        'groceries': groceries, 'pow_history': history,
+        'pending_orders': pending_orders,
+    }
     cl_write(data, cl_dashboard)
 
 
@@ -163,6 +184,9 @@ class PublihserHandler(websocket.WebSocketHandler):
             return
 
         if message.get('consume'):
+            if message['consume'] not in storage:
+                self.write_message(json.dumps({"eat_error": "Unknown product"}))
+                return
             citizen(message.get('consume'))
             consume_key = "consume:{}".format(self.request.remote_ip)
             r.incr(consume_key)
