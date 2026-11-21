@@ -146,6 +146,7 @@ class EconomyRedisTests(unittest.TestCase):
         self.red.set("game:coins:" + self.citizen, 25)
         for product, count in expected.items():
             for _ in range(count):
+                self.red.set("game:energy:" + self.citizen, 0)
                 economy.buy(self.red, self.citizen, product)
         self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["qty"], 0)
         self.assertEqual(economy.state(self.red, self.farmer)["coins"], 20)
