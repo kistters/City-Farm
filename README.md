@@ -108,3 +108,19 @@ O Farmer pode mudar o apelido sem perder o ID no navegador.
 não use como prova de identidade, proteção contra trapaça ou base de
 recompensas reais. A geração funciona também no HTTP da rede local,
 mas usa `Math.random()`, impróprio para identificadores de segurança.
+
+## Pedidos de consumo pendentes
+
+A página principal mostra **Pending Eat requests** no lugar do painel de
+estoque. Cada clique do Citizen registra um pedido com ID no Redis, incrementa
+o contador por produto e agenda a tarefa Celery de consumo. Quando a tarefa
+consegue consumir o alimento, o mesmo script Redis que baixa o estoque
+remove o pedido e decrementa seu contador atomicamente.
+
+O `dashboard.html` continua exibindo o estoque completo, conexões e
+histórico PoW. O painel de pedidos inclui somente solicitações criadas depois
+desta alteração; tarefas antigas sem identificador continuam funcionando,
+mas não aparecem nos contadores. Os retries infinitos continuam **sem
+alteração** nesta etapa; a issue #12 acompanha sua revisão.
+
+Teste: `docker compose exec worker python -m unittest test_pending_eat`.
