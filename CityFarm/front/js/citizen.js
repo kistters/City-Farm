@@ -105,7 +105,9 @@ var citizen = new Vue({
             if (data.product_catalog) this.productCatalog = data.product_catalog;
             if (data.dishes) this.dishes = data.dishes;
             if (data.dish_ordered) {
-                this.dishMessage = 'Order placed: ' + data.dish_ordered.dish + '. The kitchen will prepare it when all ingredients are available.';
+                this.dishMessage = data.dish_ordered.status === 'prepared' ?
+                    'Dish prepared: ' + data.dish_ordered.dish :
+                    'Dish ordered: ' + data.dish_ordered.dish + '. Waiting for ingredients.';
             }
             if (data.dish_error) this.dishMessage = data.dish_error;
             if (data.work) {
