@@ -38,7 +38,8 @@ def dashboard_update():
                 'qty':r.get(what).decode('utf8')
                 })
 
-    data = {'groceries':groceries}
+    history = [json.loads(item) for item in r.lrange("pow:history", 0, 49)]
+    data = {'groceries': groceries, 'pow_history': history}
     cl_write(data, cl_dashboard)
 
 
