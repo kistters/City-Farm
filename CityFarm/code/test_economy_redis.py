@@ -73,6 +73,47 @@ class EconomyRedisTests(unittest.TestCase):
             economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
         self.assertEqual(economy.market(self.red)["wheat"], 0)
 
+
+    def test_buy_is_atomic_under_concurrent_customers(self):
+        farm = economy.start(self.red, self.farmer, "farmer", 1, "carrot", 0)
+        self.ready(farm)
+        economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
+        others = ["b" * 32, "c" * 32]
+        for buyer in others:
+            self.red.set("game:coins:" + buyer, 10)
+        def purchase(owner):
+            try:
+                economy.buy(self.red, owner, "carrot")
+                return True
+            except ValueError:
+                return False
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            result = list(executor.map(purchase, others))
+        self.assertEqual(result.count(True), 1)
+        self.assertEqual(economy.market(self.red)["carrot"], 0)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 5)
+        self.assertEqual(sum(economy.state(self.red, x)["coins"] for x in others), 15)
+
+    def test_upgrade_requires_coins_and_respects_limit(self):
+        with self.assertRaisesRegex(ValueError, "Not enough coins"):
+            economy.upgrade_plot(self.red, self.farmer)
+        self.red.set("game:coins:" + self.farmer, 100)
+        for limit in (4, 5, 6):
+            self.assertEqual(economy.upgrade_plot(self.red, self.farmer)["plots"], limit)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 40)
+        self.assertEqual(len(economy.state(self.red, self.farmer)["plots"]), 6)
+        with self.assertRaisesRegex(ValueError, "Maximum"):
+            economy.upgrade_plot(self.red, self.farmer)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 40)
+
+    def test_observation_period_and_same_challenge_reuse(self):
+        first = economy.start(self.red, self.farmer, "farmer", 1, "tomato", 0)
+        self.assertEqual(economy.start(self.red, self.farmer, "farmer", 1, "tomato", 0), first)
+        with self.assertRaisesRegex(ValueError, "Wait"):
+            economy.submit(self.red, self.farmer, first["id"], first["pattern"])
+        self.ready(first)
+        economy.submit(self.red, self.farmer, first["id"], first["pattern"])
+
     def test_concurrent_submissions_reward_once(self):
         farm = economy.start(self.red, self.farmer, "farmer", 3, "lettuce", 0)
         self.ready(farm)
