@@ -1,4 +1,4 @@
-/* Citizen: aritmética, energia e mercado. Vue 2.1. */
+/* Citizen arithmetic, energy and market interface. Vue 2.1. */
 var citizen = new Vue({
     el: '#citizen',
     data: {
@@ -10,7 +10,7 @@ var citizen = new Vue({
         market: {},
         playerState: {coins: 0, energy: 60},
         level: 1,
-        levelNames: {1: 'Estagiário', 2: 'Efetivo', 3: 'Consultor'},
+        levelNames: {1: 'Intern', 2: 'Employee', 3: 'Consultant'},
         challenge: null,
         answer: '',
         busy: false,

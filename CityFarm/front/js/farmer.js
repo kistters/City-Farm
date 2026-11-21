@@ -1,4 +1,4 @@
-/* Farmer: somente interface e transporte. Regras no backend. Vue 2.1. */
+/* Farmer interface and transport; game rules live on the server. Vue 2.1. */
 var farmer = new Vue({
     el: '#farmer',
     data: {
@@ -9,7 +9,7 @@ var farmer = new Vue({
         playerMessage: '',
         playerState: {coins: 0, energy: 60, soil_health: 100},
         soilCosts: {1: 10, 2: 35, 3: 20},
-        levelNames: {1: 'Monocultura familiar', 2: 'Monocultura latifúndio', 3: 'Multicultura'},
+        levelNames: {1: 'Family Monoculture', 2: 'Large-Scale Monoculture', 3: 'Polyculture'},
         level: 1,
         challenge: null,
         showPattern: false,
@@ -69,7 +69,7 @@ var farmer = new Vue({
                     self.showPattern = false;
                     self.answer = [];
                     self.busy = false;
-                    self.gameMessage = 'Desafio cancelado. Nenhum alimento ou ponto de solo foi gasto.';
+                    self.gameMessage = 'Challenge cancelled. No Food or Soil Health was spent.';
                 }
                 if (data.challenge_result && data.challenge_result.kind === 'farmer') {
                     var reward = data.challenge_result.reward;
@@ -153,12 +153,12 @@ var farmer = new Vue({
         reviewPattern: function () {
             if (!this.challenge || this.busy || this.showPattern) return;
             this.beginObservation();
-            this.gameMessage = 'Memorize novamente. Sua resposta foi preservada.';
+            this.gameMessage = 'Look at the pattern again. Your answer has been preserved.';
         },
         cancelChallenge: function () {
             if (!this.challenge || this.busy) return;
             this.busy = true;
-            this.gameMessage = 'Cancelando desafio...';
+            this.gameMessage = 'Cancelling challenge...';
             if (!this.send({farm_cancel: {id: this.challenge.id}})) this.busy = false;
         },
         startFarm: function () {

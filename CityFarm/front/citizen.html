@@ -43,9 +43,9 @@
       </div>
       <div class="resource-health">
         <div class="section-head compact">
-          <h3>Energia</h3><strong>{{ playerState.energy }}/100</strong>
+          <h3>Energy</h3><strong>{{ playerState.energy }}/100</strong>
         </div>
-        <div class="energy-track" role="progressbar" aria-label="Energia"
+        <div class="energy-track" role="progressbar" aria-label="Energy"
         aria-valuemin="0" aria-valuemax="100" v-bind:aria-valuenow="playerState.energy">
         <div class="energy-fill" v-bind:style="{width:playerState.energy + '%'}"></div>
       </div>
@@ -53,15 +53,15 @@
         <button class="action-tile" type="button" v-on:click="rest"
           v-bind:disabled="!playerReady || busy || playerState.energy>=10">
           <span class="pixel-sprite sprite-citizen-rest" aria-hidden="true"></span>
-          <strong>Descansar</strong><small>Grátis · energia até 10</small>
+          <strong>Rest</strong><small>Free · energy up to 10</small>
         </button>
         <button class="action-tile" type="button" v-on:click="buyFood"
           v-bind:disabled="!playerReady || busy || (market.food||0)<1 || playerState.coins<5 || playerState.energy>=100">
           <span class="pixel-sprite sprite-food" aria-hidden="true"></span>
-          <strong>Comer Food</strong><small>5 moedas · energia +30</small>
+          <strong>Eat Food</strong><small>5 coins · energy +30</small>
         </button>
       </div>
-        <p class="hint">Food disponível no mercado: <strong>{{ market.food || 0 }}</strong></p>
+        <p class="hint">Food available in the market: <strong>{{ market.food || 0 }}</strong></p>
       </div>
     </section>
     <section class="panel">
@@ -98,6 +98,6 @@
     <p class="feedback" role="status" aria-live="polite" v-if="gameMessage">{{ gameMessage }}</p>
   </main>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/citizen.js?v=30"></script>
+  <script src="/js/citizen.js?v=31"></script>
 </body>
 </html>
