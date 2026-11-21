@@ -17,8 +17,8 @@ def notify():
 """ citizen eating """
 #@app.task(bind=True, max_retries=3)
 @app.task(bind=True, max_retries=None)
-def eat(self, what):
-	if not decr_resource_if_available(r, what):
+def eat(self, what, request_id=None):
+	if not decr_resource_if_available(r, what, request_id=request_id):
 		self.retry(countdown=3)
 
 	notify()
