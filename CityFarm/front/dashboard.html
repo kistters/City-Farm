@@ -43,6 +43,23 @@
           </div>
         </div>
 
+      <div class="col-md-12">
+      <div class="panel panel-default pow-panel">
+        <div class="panel-heading">Proof of Work — backend verification (last 50)</div>
+        <div class="panel-body">
+          <p v-if="!powHistory.length" class="text-muted">No verified proofs yet. Produce a tomato to see the result.</p>
+          <div v-for="proof in powHistory" v-bind:key="proof.id + proof.timestamp" class="pow-event">
+            <strong v-bind:class="proof.valid ? 'text-success' : 'text-danger'">
+              {{ proof.valid ? '✓ VALID' : '✗ INVALID' }}
+            </strong>
+            <span class="text-muted">🍅 tomato · {{ proof.reason }}</span>
+            <div><small>Farmer: {{ proof.farmer }} · Nonce: {{ proof.nonce }}</small></div>
+            <div class="pow-hash"><code>{{ proof.hash || 'Hash unavailable (expired / invalid request)' }}</code></div>
+            <small class="text-muted">{{ proof.timestamp }}</small>
+          </div>
+        </div>
+      </div>
+      </div>
     </div>
     <!--  -->
 
