@@ -107,7 +107,7 @@ var farmer = new Vue({
                 var worker = new Worker('/js/pow-worker.js');
                 this.powWorker = worker;
                 var self = this;
-                this.powMessage = 'Mining tomato in browser...';
+                this.powMessage = 'Mining ' + data.pow_challenge.product + ' in browser...';
                 worker.onmessage = function(event) {
                     if (event.data.error) {
                         self.powMessage = event.data.error;
@@ -147,15 +147,15 @@ var farmer = new Vue({
         },
 
         produce: function (plant) {
-            if (plant === 'tomato') {
+            if (this.groceries.indexOf(plant) !== -1) {
                 if (this.powBusy) return;
                 if (!this.ws_publish || this.ws_publish.readyState !== WebSocket.OPEN) {
                     this.powMessage = 'Wait for WebSocket connection';
                     return;
                 }
                 this.powBusy = true;
-                this.powMessage = 'Requesting a tomato challenge...';
-                this.publish(JSON.stringify({pow_start: 'tomato'}));
+                this.powMessage = 'Requesting a ' + plant + ' challenge...';
+                this.publish(JSON.stringify({pow_start: plant}));
                 return;
             }
             this.publish(JSON.stringify({produce: plant}));

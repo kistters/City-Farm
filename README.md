@@ -75,3 +75,23 @@ As rejeições exibem um motivo como `invalid_hash`, `expired_or_used`
 ou `already_used`. Ao atualizar a página, o dashboard busca o histórico
 novamente. Não armazena os desafios completos nem apresenta o IP como
 autenticação. O histórico permanece enquanto os dados no Redis existirem.
+
+## PoW para todos os produtos
+
+A produção dos seis vegetais é calculada no navegador e validada pelo
+Celery. Dificuldades por produto ficam em `CityFarm/code/products.py`.
+Cada prova gera **uma unidade**; o histórico registra o produto correspondente.
+O backend mantém dificuldade, produto e desafio no Redis e não aceita
+valores de dificuldade enviados pelo cliente.
+
+| Produto | Zeros SHA-256 |
+| --- | ---: |
+| Corn | 3 |
+| Wheat | 4 |
+| Celery | 3 |
+| Carrot | 3 |
+| Lettuce | 2 |
+| Tomato | 3 |
+
+Teste: `docker compose exec worker python -m unittest test_pow`.
+Valores são ilustrativos e devem ser ajustados após medições.

@@ -19,7 +19,7 @@ def decr_resource_if_available(red, key, min_limit=0):
     end \
     if current_value_int and current_value_int > min_limit then \
     redis.call('decrby', KEYS[1], 1) \
-    if KEYS[2] == 'products:tomato' then redis.call('RPOP', KEYS[2]) end \
+    if redis.call('LLEN', KEYS[2]) > 0 then redis.call('RPOP', KEYS[2]) end \
     return 1 \
     else \
         return 0 \
@@ -27,5 +27,5 @@ def decr_resource_if_available(red, key, min_limit=0):
     "
     is_rate_okay = red.register_script(script)
 
-    return bool(is_rate_okay(keys=[key, 'products:tomato' if key == 'tomato' else 'products:unused'], args=[min_limit]))
+    return bool(is_rate_okay(keys=[key, 'products:' + key], args=[min_limit]))
 

@@ -1,19 +1,17 @@
 """ https://github.com/hiroakis/tornado-websocket-example 
 melhor exemplo """
 from tornado import websocket, web, ioloop
-from tasks import plant, eat, verify_tomato_proof
+from tasks import eat, verify_product_proof
 import json, redis, logging, secrets
+from products import PRODUCT_DIFFICULTIES
 
 
 r = redis.StrictRedis(host='redis', port=6379, db=0)
 #logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-storage = ['corn', 'wheat', 'celery', 'carrot', 'lettuce', 'tomato']
+storage = list(PRODUCT_DIFFICULTIES)
 cl_dashboard = []
 
-
-def farmer(what):
-    res = plant.apply_async([what], queue='planting', serializer='json')
 
 def citizen(what):
     res = eat.apply_async((what,), queue='eating', serializer='json')
@@ -97,17 +95,25 @@ class PublihserHandler(websocket.WebSocketHandler):
             self.write_message(json.dumps({"pow_error": "Invalid message"}))
             return
 
-        if message.get("pow_start") == "tomato":
+        if "pow_start" in message:
+            product = message["pow_start"]
+            if product not in PRODUCT_DIFFICULTIES:
+                self.write_message(json.dumps({"pow_error": "Unknown product"}))
+                return
             if self.pending_proof and r.exists("pow:challenge:" + self.pending_proof):
                 self.write_message(json.dumps({"pow_error": "A challenge is already running"}))
                 return
             challenge_id = secrets.token_hex(16)
             token = secrets.token_hex(16)
-            challenge = "cityfarm:v1:{}:tomato:{}".format(challenge_id, token)
-            r.setex("pow:challenge:" + challenge_id, 180, challenge)
+            challenge = "cityfarm:v1:{}:{}:{}".format(challenge_id, product, token)
+            r.setex("pow:challenge:" + challenge_id, 180, json.dumps({
+                "challenge": challenge, "product": product,
+                "difficulty": PRODUCT_DIFFICULTIES[product],
+            }))
             self.pending_proof = challenge_id
             self.write_message(json.dumps({"pow_challenge": {
-                "id": challenge_id, "challenge": challenge, "difficulty": 3
+                "id": challenge_id, "challenge": challenge,
+                "product": product, "difficulty": PRODUCT_DIFFICULTIES[product]
             }}))
             return
 
@@ -124,23 +130,16 @@ class PublihserHandler(websocket.WebSocketHandler):
                 self.write_message(json.dumps({"pow_error": "Invalid nonce"}))
                 return
             self.pending_proof = None
-            verify_tomato_proof.apply_async(
+            verify_product_proof.apply_async(
                 args=[challenge_id, nonce, self.request.remote_ip],
                 queue="planting", serializer="json",
             )
             self.write_message(json.dumps({"pow_status": "submitted"}))
             return
 
-        if message.get("produce") == "tomato":
-            self.write_message(json.dumps({"pow_error": "Tomatoes require proof of work"}))
+        if "produce" in message:
+            self.write_message(json.dumps({"pow_error": "Use proof of work for production"}))
             return
-
-        if message.get('produce'):
-            farmer(message.get('produce'))
-            produce_key = "produce:{}".format(self.request.remote_ip)
-            r.incr(produce_key)
-            work = r.get(produce_key).decode('utf8')
-            self.write_message(json.dumps({"work": work}))
 
         if message.get('consume'):
             citizen(message.get('consume'))
