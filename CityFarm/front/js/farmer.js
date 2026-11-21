@@ -9,6 +9,7 @@ var farmer = new Vue({
         plant: '',
         tries: null,
         groceries: [],
+        productCatalog: [],
         status: 'close',
         ws_publish: null,
         powWorker: null,
@@ -158,6 +159,9 @@ var farmer = new Vue({
                 this.tries = data.work
             }
 
+            if (data.product_catalog) {
+                this.productCatalog = data.product_catalog;
+            }
             if (data.groceries) {
                 this.groceries = data.groceries
             }
