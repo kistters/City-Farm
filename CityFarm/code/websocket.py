@@ -1,11 +1,12 @@
 """ https://github.com/hiroakis/tornado-websocket-example 
 melhor exemplo """
 from tornado import websocket, web, ioloop
-from tasks import eat, verify_product_proof
+from tasks import verify_product_proof
 import json, redis, logging, secrets
 from products import PRODUCT_DIFFICULTIES, public_catalog
 from dishes import DISHES, public_dishes
 from dish_orders import enqueue_dish, fulfill_pending_dishes
+from eat_orders import enqueue_eat, recover_pending_orders
 from players import normalize_player
 
 
@@ -17,23 +18,18 @@ cl_dashboard = []
 
 
 def citizen(what):
+    """Persist a single-ingredient demand; no Celery task or retry."""
     if what not in storage:
         raise ValueError("Unknown product")
-    request_id = secrets.token_hex(16)
-    marker = "eat:pending:" + request_id
-    counter = "eat:waiting:" + what
-    # Register the order before queuing so a fast worker can settle it.
-    r.set(marker, what)
-    r.incr(counter)
-    try:
-        eat.apply_async((what, request_id), queue='eating', serializer='json')
-    except Exception:
-        if r.delete(marker):
-            r.decr(counter)
-        raise
+    order = enqueue_eat(r, what, secrets.token_hex(16))
     dashboard_update()
+    return order
+
 
 def init():
+    # Convert old pending markers to FIFO once, and settle outstanding
+    # orders already covered by stock. Safe on repeated restarts.
+    recover_pending_orders(r)
     for what in storage:
         r.incr(what)
         r.decr(what)
@@ -217,7 +213,15 @@ class PublihserHandler(websocket.WebSocketHandler):
             if message['consume'] not in storage:
                 self.write_message(json.dumps({"eat_error": "Unknown product"}))
                 return
-            citizen(message.get('consume'))
+            try:
+                order = citizen(message.get('consume'))
+            except ValueError as error:
+                self.write_message(json.dumps({"eat_error": str(error)}))
+                return
+            self.write_message(json.dumps({
+                "eat_ordered": {"product": message["consume"],
+                                "status": "prepared" if order["fulfilled"] else "waiting"}
+            }))
             consume_key = "consume:{}".format(self.request.remote_ip)
             r.incr(consume_key)
             work = r.get(consume_key).decode('utf8')
