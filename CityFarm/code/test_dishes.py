@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from dishes import DISHES
+from dishes import DISHES, public_dishes
 from products import PRODUCT_DIFFICULTIES, PRODUCTS
 from dish_orders import ENQUEUE, FULFILL, enqueue_dish, fulfill_pending_dishes
 
@@ -15,6 +15,18 @@ class DishTests(unittest.TestCase):
                 for ingredient, count in recipe["ingredients"].items():
                     self.assertIn(ingredient, PRODUCT_DIFFICULTIES)
                     self.assertGreater(count, 0)
+
+    def test_public_recipes_have_renderable_ingredient_text(self):
+        recipes = public_dishes()
+        self.assertEqual(len(recipes), len(DISHES))
+        for dish in recipes:
+            with self.subTest(dish=dish["id"]):
+                self.assertTrue(dish["ingredients_text"])
+                for ingredient, quantity in dish["ingredients"].items():
+                    self.assertIn(
+                        "{}× {}".format(quantity, ingredient.replace("_", " ")),
+                        dish["ingredients_text"],
+                    )
 
     def test_enqueue_increments_demand_for_each_ingredient(self):
         red = MagicMock()
