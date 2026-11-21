@@ -150,8 +150,8 @@ os pedidos e **consome todos os ingredientes de uma vez** com Lua
 atômico. Se faltarem ingredientes, nenhum é consumido e a demanda
 continua visível na seção `Pending Eat requests`. Não há peso,
 qualidade, crescimento nem expiração nesta etapa. Pedidos de ingredientes
-individuais continuam usando a tarefa `eat()` anterior, incluindo os
-retries descritos na issue #12.
+individuais agora são atendidos diretamente via Redis, sem retries
+periódicos; veja a seção sobre a issue #12 abaixo.
 
 Os pratos possuem fila limitada a 200 pedidos aguardando preparo;
 não há cancelamento nem timeout automático ainda.
@@ -222,6 +222,7 @@ atual não promete durabilidade em caso de remoção do volume/dados do Redis.
 ```bash
 docker compose up --build -d
 docker compose exec worker python -m unittest test_pending_eat test_pow test_dishes
+docker compose exec worker python -m unittest test_eat_redis
 docker compose logs -f worker websocket
 ```
 
