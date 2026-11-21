@@ -26,8 +26,8 @@ def citizen(what):
     try:
         eat.apply_async((what, request_id), queue='eating', serializer='json')
     except Exception:
-        r.delete(marker)
-        r.decr(counter)
+        if r.delete(marker):
+            r.decr(counter)
         raise
     dashboard_update()
 
