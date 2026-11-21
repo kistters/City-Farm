@@ -60,7 +60,7 @@
         <div class="level-buttons">
           <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
             v-bind:class="{'chosen':level===option}" v-on:click="level=option">
-            {{ 'Level '+option }}
+            {{ levelNames[option] }}
           </button>
         </div>
         <p class="hint" v-if="level===1">Addition and subtraction · 5 coins</p>
@@ -70,7 +70,7 @@
           v-bind:disabled="!playerReady || busy || playerState.energy<10">Start working</button>
       </div>
       <div v-else class="math-challenge">
-        <p class="eyebrow">Level {{ challenge.level }}</p>
+        <p class="eyebrow">{{ levelNames[challenge.level] }}</p>
         <div class="math-expression">{{ challenge.expression }} = ?</div>
         <label for="math-answer">Your answer</label>
         <div class="name-entry">
@@ -101,6 +101,6 @@
     <p class="feedback" role="status" aria-live="polite" v-if="gameMessage">{{ gameMessage }}</p>
   </main>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/citizen.js?v=23"></script>
+  <script src="/js/citizen.js?v=27"></script>
 </body>
 </html>

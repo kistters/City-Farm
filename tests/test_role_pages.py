@@ -74,6 +74,15 @@ class RolePageTests(unittest.TestCase):
             self.assertTrue(page.viewport)
             self.assertEqual(len(page.ids), len(set(page.ids)))
 
+    def test_citizen_work_levels_have_career_names(self):
+        html = (FRONT / "citizen.html").read_text(encoding="utf-8")
+        script = (FRONT / "js/citizen.js").read_text(encoding="utf-8")
+        for name in ("Estagiário", "Efetivo", "Consultor"):
+            self.assertIn(name, script)
+        self.assertIn("levelNames[option]", html)
+        self.assertIn("levelNames[challenge.level]", html)
+        self.assertIn("level: this.level", script)
+
     def test_farmer_no_longer_requires_plots(self):
         html = (FRONT / "farmer.html").read_text(encoding="utf-8")
         script = (FRONT / "js/farmer.js").read_text(encoding="utf-8")
