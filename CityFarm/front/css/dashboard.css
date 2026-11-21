@@ -214,3 +214,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .product-tile:disabled { opacity: 1; cursor: default; }
 .challenge-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .challenge-actions .button { flex: 1 1 170px; }
+
+/* Um produto único na economia: ícone de Food em vez de imagens de ingredientes. */
+.food-emoji { display:inline-flex; align-items:center; justify-content:center; font-size:2rem; min-width:43px; }
+.food-market-emoji { font-size:3rem; line-height:1.2; }
+.food-cell { font-size:clamp(0.8rem, 4vw, 2.6rem); }

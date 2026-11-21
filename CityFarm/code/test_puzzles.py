@@ -1,51 +1,57 @@
-"""Testes puros: o puzzle não depende de Redis, Tornado ou navegador."""
+"""Testes puros: apenas Food é produzido, sem simplificar o desafio visual."""
 import unittest
 
-from products import PRODUCTS
-from puzzles import FARM_LEVELS, WORK_REWARDS, check_solution, create_farm, create_work
+from products import FOOD, LEGACY_PRODUCTS
+from puzzles import (
+    FARM_LEVELS, MEMORY_SYMBOLS, WORK_REWARDS,
+    check_solution, create_farm, create_work,
+)
 
 
 class PuzzleTests(unittest.TestCase):
-    def test_monoculture_requires_exact_positions_and_one_ingredient(self):
+    def test_monoculture_same_food_icon_and_exact_positions(self):
         for level, size, selected in ((1, 3, 3), (2, 6, 6)):
             for _ in range(12):
-                public, board = create_farm(level, "tomato")
+                public, board = create_farm(level)
                 self.assertEqual(public["size"], size)
                 self.assertEqual(len(board), size ** 2)
-                self.assertEqual(board.count("tomato"), selected)
+                self.assertEqual(board.count(FOOD), selected)
+                self.assertNotIn("product", public)
                 self.assertTrue(check_solution({"public": public, "expected": board},
                                                board[:]))
                 wrong = board[:]
                 index = next(i for i, x in enumerate(wrong) if x is None)
-                wrong[index] = "tomato"
+                wrong[index] = FOOD
                 self.assertFalse(check_solution({"public": public, "expected": board},
                                                 wrong))
 
-    def test_multiculture_requires_exact_position_and_ingredient(self):
+    def test_multiculture_remains_difficult_visual_only(self):
         for _ in range(20):
-            public, board = create_farm(3, "carrot")
+            public, board = create_farm(3)
+            markers = [crop for crop in board if crop is not None]
             self.assertEqual(len(board), 9)
-            ingredients = [crop for crop in board if crop is not None]
-            self.assertEqual(len(ingredients), 4)
-            self.assertEqual(len(set(ingredients)), 4)
-            self.assertTrue(set(ingredients).issubset(PRODUCTS))
+            self.assertEqual(len(markers), 4)
+            self.assertEqual(len(set(markers)), 4)
+            self.assertTrue(set(markers).issubset(MEMORY_SYMBOLS))
             self.assertEqual(FARM_LEVELS[3]["production"], 4)
             wrong = board[:]
-            index = next(i for i, x in enumerate(board) if x is not None)
-            wrong[index] = next(crop for crop in PRODUCTS if crop != wrong[index])
+            index = next(i for i, value in enumerate(board) if value is not None)
+            wrong[index] = next(x for x in MEMORY_SYMBOLS if x != wrong[index])
             self.assertFalse(check_solution({"public": public, "expected": board},
                                             wrong))
+        self.assertEqual(MEMORY_SYMBOLS, LEGACY_PRODUCTS)
 
-    def test_level_rules_and_invalid_ingredients(self):
-        self.assertEqual([FARM_LEVELS[n]["soil_cost"] for n in (1, 2, 3)],
+    def test_rules_and_invalid_answers(self):
+        self.assertEqual([FARM_LEVELS[x]["soil_cost"] for x in (1, 2, 3)],
                          [10, 35, 20])
-        self.assertEqual([FARM_LEVELS[n]["production"] for n in (1, 2, 3)],
+        self.assertEqual([FARM_LEVELS[x]["production"] for x in (1, 2, 3)],
                          [1, 3, 4])
         for level in (0, 4, True, "1"):
-            with self.subTest(level=level), self.assertRaises(ValueError):
-                create_farm(level, "corn")
-        with self.assertRaises(ValueError):
-            create_farm(1, "fish")
+            with self.assertRaises(ValueError):
+                create_farm(level)
+        public, expected = create_farm(1)
+        self.assertFalse(check_solution({"public": public, "expected": expected},
+                                        ["fish"] * len(expected)))
 
     def test_math_arithmetic_and_integer_answers(self):
         for level in WORK_REWARDS:

@@ -5,7 +5,7 @@ o servidor ainda valida cada resposta e só concede uma recompensa por desafio.
 """
 import secrets
 
-from products import PRODUCTS
+from products import FOOD, LEGACY_PRODUCTS
 
 RANDOM = secrets.SystemRandom()
 FARM_LEVELS = {
@@ -14,23 +14,21 @@ FARM_LEVELS = {
     3: {"size": 3, "cells": 4, "production": 4, "soil_cost": 20, "observe_seconds": 6},
 }
 WORK_REWARDS = {1: 5, 2: 10, 3: 15}
-PRODUCT_NAMES = tuple(PRODUCTS)
+MEMORY_SYMBOLS = LEGACY_PRODUCTS
 
 
-def create_farm(level, product):
+def create_farm(level):
     if type(level) is not int or level not in FARM_LEVELS:
         raise ValueError("Invalid level")
-    if product not in PRODUCTS:
-        raise ValueError("Unknown ingredient")
     rules = FARM_LEVELS[level]
     board = [None] * (rules["size"] ** 2)
     positions = RANDOM.sample(range(len(board)), rules["cells"])
-    # Multicultura: quatro ingredientes distintos, como no padrão visual.
-    ingredients = RANDOM.sample(PRODUCT_NAMES, rules["cells"]) if level == 3 else [product] * len(positions)
-    for position, ingredient in zip(positions, ingredients):
-        board[position] = ingredient
+    # Os ícones distintos da Multicultura são apenas um desafio de memória.
+    symbols = RANDOM.sample(MEMORY_SYMBOLS, rules["cells"]) if level == 3 else [FOOD] * len(positions)
+    for position, symbol in zip(positions, symbols):
+        board[position] = symbol
     public = {
-        "kind": "farmer", "level": level, "product": product,
+        "kind": "farmer", "level": level,
         "size": rules["size"], "pattern": board,
         "observe_seconds": rules["observe_seconds"],
     }
@@ -66,7 +64,8 @@ def check_solution(challenge, answer):
     if challenge["public"]["kind"] == "farmer":
         if not isinstance(answer, list) or len(answer) != len(expected):
             return False
-        if any(value is not None and (not isinstance(value, str) or value not in PRODUCTS)
+        if any(value is not None and
+               (not isinstance(value, str) or value not in (FOOD,) + MEMORY_SYMBOLS)
                for value in answer):
             return False
         return answer == expected

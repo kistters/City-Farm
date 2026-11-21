@@ -1,16 +1,8 @@
-"""Catálogo único: cinco ingredientes disponíveis na fazenda e no mercado."""
-PRODUCTS = {
-    "corn": {"source": "field", "emoji": "🌽", "image": True},
-    "wheat": {"source": "field", "emoji": "🌾", "image": True},
-    "carrot": {"source": "field", "emoji": "🥕", "image": True},
-    "lettuce": {"source": "field", "emoji": "🥬", "image": True},
-    "tomato": {"source": "field", "emoji": "🍅", "image": True},
-}
+"""Produto único da economia e nomes de estoques anteriores preservados.
 
+Os nomes antigos também identificam os ícones do desafio visual da Multicultura;
+eles não representam produtos negociáveis na versão atual.
+"""
 
-def public_catalog():
-    return [
-        {"name": name, "source": data["source"], "emoji": data["emoji"],
-         "image": data["image"]}
-        for name, data in PRODUCTS.items()
-    ]
+FOOD = "food"
+LEGACY_PRODUCTS = ("corn", "wheat", "carrot", "lettuce", "tomato")

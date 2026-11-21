@@ -19,68 +19,43 @@ docker compose up --build -d
 
 No celular conectado à mesma rede Wi-Fi, acesse `http://IP_LOCAL_DO_PC`. As portas 80 e 8888 precisam estar acessíveis na rede local. **Não publique o jogo na internet**: não há login real.
 
+## Economia: somente Food
+
+O jogo possui **um único produto: Food**. O Farmer resolve memória e produz Food, independentemente do nível. O Citizen resolve contas para ganhar moedas, compra Food por **5 moedas** e recupera **até 30 de Energia** (máximo 100). A compra credita as 5 moedas ao Farmer dono da unidade.
+
+Não existe escolha de ingrediente, preço por ingrediente, receita nem vários estoques na interface.
+
+**Compatibilidade:** o estoque de versões anteriores (corn, wheat, carrot, lettuce, tomato) continua disponível dentro do **total de Food**. Ao comprar Food, o backend prioriza unidades novas e depois consome as antigas, preservando o proprietário e a transferência de moedas. Não há exclusão de dados nem migração destrutiva.
+
 ## Farmer
 
-Escolha apelido, ingrediente e nível. O backend mostra o padrão por 5 segundos (6 no Extra), esconde completamente e exige reproduzir as células corretas. Após acerto, o alimento está à venda **imediatamente**. **Não existem terrenos nem limite de lotes simultâneos:** o Farmer pode continuar produzindo enquanto houver Saúde do Solo suficiente, mesmo com alimentos anteriores ainda não vendidos.
+Escolha o nível, memorize o padrão temporário e reproduza as posições. Todos os acertos criam somente Food:
 
-| Nível | Tabuleiro | Memorização | Alimentos | Saúde do Solo |
-|---|---|---|---:|---:|
-| 1 — Monocultura familiar | 3×3 | Posições com o mesmo ingrediente escolhido | 1 | −10 |
-| 2 — Monocultura latifúndio | 6×6 | Posições menores do mesmo ingrediente | 3 | −35 |
-| 3 — Multicultura | 3×3 | Posição e ingrediente de cada célula | 4 diferentes | −20 |
+| Nível | Puzzle | Produção | Saúde do Solo |
+|---|---|---:|---:|
+| Monocultura familiar | 3×3, posições com 🍲 | +1 Food | −10 |
+| Monocultura latifúndio | 6×6, posições com 🍲 | +3 Food | −35 |
+| Multicultura | 3×3, posições e quatro ícones diferentes | +4 Food | −20 |
 
-Em 1 e 2, clicar marca/desmarca a célula com o ingrediente escolhido. No Extra, clicar repetidamente alterna entre vazio e os cinco ingredientes. A ordem dos cliques nunca importa.
+Na Multicultura, os antigos ícones de plantas são **apenas símbolos do puzzle**, para preservar a dificuldade de memorizar posição e tipo. **Não existem produtos diferentes nem escolha de ingredientes.** O jogador pode rever o padrão sem apagar sua resposta, ou cancelar o desafio sem gastar Saúde do Solo.
 
-**Seleção visual da Multicultura:** a grade dos cinco ingredientes continua visível quando o nível 3 é selecionado; **todos aparecem marcados**, sem sumir da tela. Não é necessário escolher três ingredientes: o desafio sorteia quatro ingredientes diferentes dentre os cinco.
-
-**Durante o desafio:** o jogador pode usar **Ver padrão novamente** para rever a referência por mais 5 segundos (6 no Extra), sem perder as células já preenchidas, ou **Cancelar desafio** para abandonar a tentativa. Cancelar invalida o desafio no servidor sem gastar Saúde do Solo nem gerar alimentos. A revisão do padrão não concede nenhuma recompensa; somente a resposta correta é validada pelo servidor.
-
-Não há seleção, compra, desbloqueio ou ocupação de terrenos. Cada unidade
-produzida fica no **estoque do seu ingrediente**, com o identificador do
-Farmer que a produziu. Ao comprar, o Citizen transfere as moedas a esse
-Farmer e a unidade é retirada do estoque, sem bloquear novas colheitas.
-Estoque legado vinculado a terrenos continua vendável até acabar, sem
-necessidade de migrar ou apagar dados do Redis.
-
-**Saúde do Solo:** uma única barra de 0–100 por Farmer, inicializada em 100.
-Plantar consome 10/35/20 pontos por nível, **apenas quando o desafio é validado
-corretamente**. O nível 2 memoriza 6 posições mas produz 3 unidades, pois
-quantidade de posições e quantidade de alimentos não precisam coincidir.
-Multicultura é a mais exigente visualmente e gera **uma unidade de cada um dos
-quatro ingredientes distintos exibidos no padrão**, com menor desgaste por
-alimento.
-
-- **Cuidar da Terra:** gratuito, restaura o solo **até 10**, apenas quando
-  estiver abaixo de 10. Não adiciona 10 pontos quando já está acima disso.
-- **Preparar o Solo:** custa **5 moedas**, recupera **até +40** pontos e nunca
-  passa de 100. As moedas pagas desaparecem da economia (gasto recorrente).
-
-O Farmer pode sair de zero moedas e zero saúde com o cuidado básico, realizar
-uma produção de nível 1 e voltar ao mercado.
+O Farmer pode produzir quantas vezes desejar, inclusive com estoque não vendido, desde que tenha Saúde do Solo. A barra vai de 0 a 100; **Cuidar da Terra** (grátis) recupera até 10 quando abaixo de 10, e **Preparar o Solo** custa 5 moedas para recuperar até 40 (máximo 100).
 
 ## Citizen
 
-| Cargo (nível) | Operação | Moedas |
+| Cargo | Trabalho | Recompensa |
 |---|---|---:|
-| Estagiário (1) | Soma/subtração | 5 |
-| Efetivo (2) | Multiplicação/divisão inteira | 10 |
-| Consultor (3) | Expressões com precedência e parênteses | 15 |
+| Estagiário | Soma/subtração | 5 moedas |
+| Efetivo | Multiplicação/divisão exata | 10 moedas |
+| Consultor | Expressões com precedência | 15 moedas |
 
-Os cargos são **nomes de apresentação dos três níveis**: o jogador ainda pode escolher qualquer dificuldade, sem promoção automática. A API continua recebendo os números 1, 2 e 3.
-
-Cada trabalho correto gasta 10 de energia. O Citizen começa com 60/100 de
-energia e zero moedas. **Descansar** é gratuito e recupera a Energia **até 10**
-quando abaixo desse valor; não é +10 irrestrito. Uma compra desconta 5 moedas,
-credita ao Farmer dono do alimento, remove um item do estoque e restaura até
-30 de Energia (máximo 100). Erros nas contas não consomem energia.
-
-São apenas cinco alimentos: milho, trigo, cenoura, alface e tomate. Não existem receitas, Dishes, preço dinâmico nem espera artificial.
+Cada trabalho correto gasta 10 de Energia. O Citizen começa com 60/100 e 0 moedas; **Descansar** recupera gratuitamente até 10 (somente quando abaixo de 10). Comprar **1 Food** por 5 moedas recupera até +30, com atualização atômica de estoque e saldos.
 
 ## Arquitetura
 
 - Nginx: páginas Vue 2 responsivas.
 - Tornado: WebSockets `/publihser` e `/dashboard`.
-- Redis: desafios com TTL de 180 segundos, estoque por ingrediente e vendedor, moedas, Energia e Saúde do Solo.
+- Redis: desafios com TTL de 180 segundos, estoque de Food e identificadores dos Farmers, moedas, Energia e Saúde do Solo; leitura compatível de estoques legados.
 - `puzzles.py`: geração/validação das regras dos desafios.
 - `economy.py`: regras econômicas centralizadas; Lua só para operações atômicas envolvendo múltiplas chaves (produção, compra, preparo pago).
 - `websocket.py`: transporte e notificações.
@@ -92,7 +67,7 @@ Cada desafio válido pode conceder recompensa **uma única vez**, mesmo sob cham
 SOLID pragmático e Zen of Python: funções pequenas e explícitas, código legível,
 responsabilidades claras, sem hierarquias ou frameworks adicionais desnecessários.
 
-O mercado novo usa chaves Redis `game:*`. Estoques antigos de PoW, filas `eat` e pedidos Dish não aparecem no novo mercado e não são consumidos. Não execute `FLUSHDB` no Redis do jogo sem backup.
+O mercado usa chaves Redis `game:*`. Filas antigas de PoW e pedidos Dish não entram na economia atual. Os cinco estoques de ingredientes da implementação anterior entram no total Food e podem ser vendidos até acabar. Não execute `FLUSHDB` no Redis do jogo sem backup.
 
 ## Testar
 
@@ -105,17 +80,13 @@ Os testes de integração limpam somente o banco Redis **DB 15**; o jogo usa o *
 
 ### Cenário manual
 
-1. Abra Farmer e Citizen em duas abas; cada papel tem ID casual próprio mesmo no mesmo navegador.
-2. Farmer produz um tomate no nível 1 e o vê no mercado.
-3. Citizen conclui uma soma, recebe 5 moedas e compra o tomate.
-4. Citizen recupera energia e o Farmer recebe moedas, sem depender de terrenos.
-5. Confira a barra de Saúde do Solo e os gastos de 10/35/20, conforme o nível.
-6. No Extra, confirme que o mercado recebe **quatro tipos de ingredientes**.
-   Repita o plantio sem vender a produção anterior: o estoque deve acumular
-   normalmente, desde que haja Saúde do Solo suficiente.
-7. Reduza o solo a menos de 10 e use Cuidar da Terra; com moedas, use Preparar o Solo.
-8. Reduza a energia a menos de 10 e use Descansar; teste os limites de 100.
-9. Tente enviar um mesmo desafio duas vezes e confirme que compras simultâneas não duplicam pagamentos.
-10. Observe o estoque e os eventos em `/dashboard`.
+1. Abra Farmer e Citizen em duas abas, com IDs diferentes.
+2. Farmer conclui Monocultura familiar: o mercado ganha 1 Food.
+3. Repita antes de vender: o estoque Food acumula enquanto houver Saúde do Solo.
+4. Citizen conclui uma conta, ganha moedas, compra 1 Food e recupera energia. O Farmer recebe 5 moedas.
+5. Farmer conclui Multicultura: o puzzle usa quatro ícones diferentes, mas produz somente 4 Food.
+6. Teste **Ver padrão novamente**, **Cancelar desafio**, cuidados do solo e descanso básico.
+7. Confirme que itens dos estoques antigos aparecem no total Food e ainda pagam o Farmer original.
+8. Tente completar o mesmo desafio e comprar a mesma unidade simultaneamente: sem recursos duplicados.
 
 Logs: `docker compose logs -f websocket`.

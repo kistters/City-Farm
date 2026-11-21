@@ -5,7 +5,6 @@ var dashboard = new Vue({
         web_status: 'connecting',
         market: {},
         history: [],
-        productCatalog: [],
         ws_dashboard: null
     },
     created: function () {
@@ -24,7 +23,6 @@ var dashboard = new Vue({
                 catch (e) { return; }
                 if (data.market) self.market = data.market;
                 if (data.history) self.history = data.history;
-                if (data.product_catalog) self.productCatalog = data.product_catalog;
             };
             socket.onerror = function () { self.web_status = 'error'; };
             socket.onclose = function () {

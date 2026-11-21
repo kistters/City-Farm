@@ -29,9 +29,9 @@
     <section class="panel">
       <h2>Available food</h2>
       <div class="demand-grid">
-        <div class="demand-item" v-for="(qty,name) in market" v-bind:key="name">
-          <img v-bind:src="'/css/images/'+name+'.svg'" v-bind:alt="name">
-          <div><strong>{{ qty }}</strong><span>{{ name }}</span></div>
+        <div class="demand-item">
+          <span class="food-emoji" aria-hidden="true">🍲</span>
+          <div><strong>{{ market.food || 0 }}</strong><span>Food</span></div>
         </div>
       </div>
     </section>

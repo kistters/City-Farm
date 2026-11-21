@@ -9,7 +9,6 @@ from tornado import ioloop, web, websocket
 from economy import (buy, cancel_challenge, care_for_soil, market,
                      prepare_soil, rest, start, state, submit)
 from players import normalize_player
-from products import public_catalog
 
 red = redis.StrictRedis(host="redis", port=6379, db=0)
 dashboard_clients = set()
@@ -22,8 +21,7 @@ def send(handler, data):
 
 def dashboard_snapshot():
     history = [json.loads(item) for item in red.lrange("game:history", 0, 49)]
-    return {"market": market(red), "history": history,
-            "product_catalog": public_catalog()}
+    return {"market": market(red), "history": history}
 
 
 def dashboard_update():
@@ -78,7 +76,7 @@ class PublihserHandler(websocket.WebSocketHandler):
     def open(self):
         self.player = None
         players.add(self)
-        send(self, {"product_catalog": public_catalog(), "market": market(red)})
+        send(self, {"market": market(red)})
 
     def on_close(self):
         players.discard(self)
@@ -103,8 +101,7 @@ class PublihserHandler(websocket.WebSocketHandler):
                 request = message["farm_start"]
                 if not isinstance(request, dict):
                     raise ValueError("Invalid farm request")
-                challenge = start(red, owner, "farmer", request.get("level"),
-                                  product=request.get("product"))
+                challenge = start(red, owner, "farmer", request.get("level"))
                 send(self, {"challenge": challenge})
             elif "farm_cancel" in message:
                 request = message["farm_cancel"]
@@ -139,8 +136,8 @@ class PublihserHandler(websocket.WebSocketHandler):
                 result = rest(red, owner)
                 send(self, {"rest_result": result})
                 broadcast()
-            elif "buy_food" in message:
-                result = buy(red, owner, message["buy_food"])
+            elif message.get("buy_food") is True:
+                result = buy(red, owner)
                 send(self, {"purchase_result": result})
                 record_event("purchase", self.player,
                              {"product": result["product"], "price": result["price"]})
