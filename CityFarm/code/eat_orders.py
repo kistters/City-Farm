@@ -19,6 +19,7 @@ local function drain_orders(stock, items, queue, waiting, fulfilled, product)
         local marker = 'eat:pending:' .. order_id
         if redis.call('GET', marker) == product then
             redis.call('DEL', marker)
+            redis.call('DEL', 'eat:queued:' .. order_id)
             redis.call('DECR', stock)
             if redis.call('LLEN', items) > 0 then
                 redis.call('RPOP', items)
@@ -39,6 +40,7 @@ local completed = drain_orders(KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5], ARGV
 if redis.call('EXISTS', KEYS[6]) == 1 then return {-2, completed} end
 if redis.call('LLEN', KEYS[3]) >= tonumber(ARGV[3]) then return {-1, completed} end
 redis.call('SET', KEYS[6], ARGV[2])
+redis.call('SET', KEYS[7], '1')
 redis.call('RPUSH', KEYS[3], ARGV[1])
 redis.call('INCR', KEYS[4])
 completed = completed + drain_orders(KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5], ARGV[2])
@@ -68,7 +70,7 @@ def order_keys(product, order_id=None):
         "eat:fulfilled:" + product,
     ]
     if order_id is not None:
-        keys.append("eat:pending:" + order_id)
+        keys.extend(["eat:pending:" + order_id, "eat:queued:" + order_id])
     return keys
 
 
@@ -97,7 +99,7 @@ def migrate_legacy_order(red, product, order_id):
     if product not in PRODUCT_DIFFICULTIES:
         return False
     result = red.register_script(MIGRATE)(
-        keys=order_keys(product, order_id) + ["eat:queued:" + order_id],
+        keys=order_keys(product, order_id),
         args=[order_id, product],
     )
     return bool(result)
