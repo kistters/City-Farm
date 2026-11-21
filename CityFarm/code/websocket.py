@@ -200,12 +200,12 @@ class PublihserHandler(websocket.WebSocketHandler):
                 return
             order_id = secrets.token_hex(16)
             enqueue_dish(r, order_id, dish_id)
-            fulfilled = fulfill_pending_dishes(r)
+            fulfill_pending_dishes(r)
+            status = "waiting" if r.exists("dish:pending:" + order_id) else "prepared"
             dashboard_update()
             self.write_message(json.dumps({
                 "dish_ordered": {"dish": dish_id, "id": order_id,
-                                 "status": "submitted",
-                                 "fulfilled_in_batch": fulfilled}
+                                 "status": status}
             }))
             return
 
