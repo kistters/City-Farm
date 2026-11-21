@@ -61,8 +61,6 @@
                   </tr>
                 </tbody>
               </table>
-              <p v-if="!pendingOrders.some(function(order) { return order.qty > 0 || order.fulfilled > 0; })"
-                 class="text-muted">No individual eat requests recorded yet.</p>
             </div>
             <small class="text-muted">Waiting includes ingredients needed by pending dishes. Fulfilled counts individual eat requests only.</small>
           </div>
