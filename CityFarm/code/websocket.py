@@ -61,6 +61,7 @@ def dashboard_update():
     data = {
         'groceries': groceries, 'pow_history': history,
         'pending_orders': pending_orders,
+        'product_catalog': public_catalog(),
         'pending_dishes': [
             {"id": dish_id, "qty": int(r.get("dish:waiting:" + dish_id) or 0)}
             for dish_id in DISHES
