@@ -97,13 +97,26 @@ class RolePageTests(unittest.TestCase):
     def test_farmer_multiculture_selection_and_challenge_actions(self):
         html = (FRONT / "farmer.html").read_text(encoding="utf-8")
         script = (FRONT / "js/farmer.js").read_text(encoding="utf-8")
-        self.assertIn("level===3 || selectedProduct===plant.name", html)
-        self.assertIn("v-bind:disabled=\"level===3\"", html)
+        self.assertNotIn("selectedProduct", html)
+        self.assertNotIn("selectedProduct", script)
+        self.assertIn("Every successful planting", html)
+        self.assertIn("cell==='food'", html)
         self.assertIn("v-on:click=\"reviewPattern\"", html)
         self.assertIn("v-on:click=\"cancelChallenge\"", html)
         self.assertIn("beginObservation: function", script)
         self.assertIn("farm_cancel:", script)
         self.assertIn("self.answer = Array(", script)
+
+    def test_single_food_item_in_market(self):
+        farmer = (FRONT / "farmer.html").read_text(encoding="utf-8")
+        citizen = (FRONT / "citizen.html").read_text(encoding="utf-8")
+        dashboard = (FRONT / "dashboard.html").read_text(encoding="utf-8")
+        citizen_js = (FRONT / "js/citizen.js").read_text(encoding="utf-8")
+        for html in (farmer, citizen, dashboard):
+            self.assertIn("market.food", html)
+            self.assertNotIn("productCatalog", html)
+        self.assertIn("buy_food: true", citizen_js)
+        self.assertNotIn("buy_food: product", citizen_js)
 
     def test_nginx_routes_and_responsive_css(self):
         nginx = (ROOT / "nginx/conf.d/city-farm.conf").read_text()
