@@ -1,114 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <link href="/css/images/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-    <title>CityFarm - Work</title>
-      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-      <link rel="stylesheet" type="text/css" href="/css/dashboard.css">
-      <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#245c43">
+  <title>City-Farm — Choose your role</title>
+  <link rel="icon" href="/css/images/favicon.ico">
+  <link rel="stylesheet" href="/css/dashboard.css?v=3">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
-<body> 
-
-    
-    <div  class="row col-md-12 col-sm-12 col-xs-12 nogutter" >
-
-      <!--  -->
-      <div id="dashboard"  class="container col-md-6 col-sm-12 col-xs-12">
-        <div class="panel-group">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              Pending Eat requests <span v-bind:class="statusClass">{{ status }}</span> 
-            </div>
-            <div class="panel-body">
-              <div v-for="plant in pendingOrders" class="col-md-2 col-sm-3 col-xs-3 nogutter">
-                  <img v-bind:src="'/css/images/' + plant.what + '.svg'" class="plant" v-bind:alt="plant.what" />
-                  <strong>{{ plant.qty }}</strong>
-              </div>
-            </div>
-            <p class="text-muted" style="clear:both; padding-top:8px">
-              Citizen orders not yet consumed (new requests only).
-            </p>
-          </div>
-        </div>
-      </div>
-      <!--  -->
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/" aria-label="City-Farm home"><span aria-hidden="true">🌱</span> City-Farm</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="/farmer" >Farmer</a>
+        <a href="/citizen" >Citizen</a>
+        <a href="/dashboard" >Dashboard</a>
+      </nav>
     </div>
-
-    <div  class="row col-md-6 col-sm-12 col-xs-12 nogutter" >
-
-      <!--  -->
-      <div id="farmer"  class="container col-md-6 col-sm-6 col-xs-6">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <span>Farmer: <span v-bind:class="statusClass" >{{ status }}</span></span>
-            <span class="pull-right" v-if="tries">
-              Produced: <span class="badge">{{ tries }}</span>
-            </span>
-          </div>
-
-          <div class="panel-body">
-            <div class="form-group">
-              <label for="farmer-name">Farmer name</label>
-              <div class="input-group">
-                <input id="farmer-name" class="form-control" maxlength="24"
-                  v-model="playerName" v-on:keyup.enter="registerPlayer"
-                  placeholder="Choose your nickname" />
-                <span class="input-group-btn">
-                  <button class="btn btn-default" v-on:click="registerPlayer">Join</button>
-                </span>
-              </div>
-              <small aria-live="polite">{{ playerMessage }}</small>
-            </div>
-            <div v-for="plant in productCatalog" class="col-md-4 col-sm-5 col-xs-5 nogutter control-panel">
-              <button v-on:click="produce(plant.name)" v-bind:disabled="powBusy || !playerReady" class="btn-link">
-                <img v-bind:src="'/css/images/' + plant.name + '.svg'" class="plant" v-bind:alt="plant.name" />
-                <p>{{ plant.name }}</p>
-                <small class="text-muted">{{ plant.source }}</small>
-              </button>
-            </div>
-            <p v-if="powMessage" aria-live="polite">{{ powMessage }}</p>
-          </div>
-        </div>
-      </div>
-      <!--  -->
-
-      <!--  --> 
-      <div id="citizen" class="container col-md-6 col-sm-6 col-xs-6 ">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            Citizen: <span v-bind:class="statusClass" >{{ status }}</span>
-            <div class="pull-right" v-if="tries">
-              Eaten: <span class="badge">{{ tries }}</span>
-            </div>
-          </div>
-
-          <div class="panel-body">
-            <h4>Dishes</h4>
-            <div v-for="dish in dishes" class="dish-choice">
-              <button v-on:click="orderDish(dish.id)" class="btn btn-default btn-block">
-                <img v-bind:src="'/css/images/dish-' + dish.id + '.svg'" class="plant" v-bind:alt="dish.name" />
-                <strong>{{ dish.name }}</strong>
-                <small class="dish-ingredients">{{ dish.ingredients_text }}</small>
-              </button>
-            </div>
-            <p v-if="dishMessage" class="text-info" aria-live="polite">{{ dishMessage }}</p>
-            <hr />
-            <h4>Single ingredients</h4>
-            <div v-for="plant in productCatalog" class="col-md-4 col-sm-5 col-xs-5 nogutter control-panel">
-              <button v-on:click="consume(plant.name)" class="btn-link">
-                <img v-bind:src="'/css/images/' + plant.name + '.svg'" class="plant" v-bind:alt="plant.name" />
-                <p>{{ plant.name }}</p>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!--  -->
+  </header><main class="page-container landing">
+    <div class="landing-hero">
+      <p class="eyebrow">A multiplayer farming experiment</p>
+      <h1>Grow it. Cook it. Share it.</h1>
+      <p>Farmers solve Proof of Work puzzles to produce ingredients. Citizens choose what to eat and create demand for the farm.</p>
     </div>
-</body>
-    <script src="/js/dashboard.js"></script>
-    <script src="/js/farmer.js"></script>
-    <script src="/js/citizen.js?v=2"></script>
-</html>
+    <div class="role-cards">
+      <a class="role-card" href="/farmer">
+        <div class="role-icon" aria-hidden="true">🌱</div>
+        <span class="eyebrow">Produce</span>
+        <h2>Farmer</h2>
+        <p>Choose crops, fruit or animal products. Mine a proof in your browser and supply the market.</p>
+        <span class="role-link">Enter the farm <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="role-card" href="/citizen">
+        <div class="role-icon" aria-hidden="true">🍲</div>
+        <span class="eyebrow">Consume</span>
+        <h2>Citizen</h2>
+        <p>Pick a recipe or ingredient. Your orders help Farmers decide what to produce next.</p>
+        <span class="role-link">Explore the menu <span aria-hidden="true">→</span></span>
+      </a>
+    </div>
+    <p class="landing-footer">Want to inspect the system? <a href="/dashboard">Open the technical dashboard</a>.</p>
+  </main>
+</body></html>
