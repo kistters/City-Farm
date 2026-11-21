@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 import redis
 from tornado import ioloop, web, websocket
 
-from economy import buy, market, start, state, submit, upgrade_plot
+from economy import (buy, care_for_soil, market, prepare_soil, rest, start,
+                     state, submit)
 from players import normalize_player
 from products import public_catalog
 
@@ -119,10 +120,18 @@ class PublihserHandler(websocket.WebSocketHandler):
                 send(self, {"challenge_result": outcome})
                 record_event(outcome["kind"], self.player, outcome["reward"])
                 broadcast()
-            elif "upgrade_plot" in message:
-                result = upgrade_plot(red, owner)
-                send(self, {"upgrade_result": result})
-                record_event("upgrade", self.player, result)
+            elif message.get("care_for_soil") is True:
+                result = care_for_soil(red, owner)
+                send(self, {"care_result": result})
+                broadcast()
+            elif message.get("prepare_soil") is True:
+                result = prepare_soil(red, owner)
+                send(self, {"care_result": result})
+                record_event("soil_prepared", self.player, result)
+                broadcast()
+            elif message.get("rest") is True:
+                result = rest(red, owner)
+                send(self, {"rest_result": result})
                 broadcast()
             elif "buy_food" in message:
                 result = buy(red, owner, message["buy_food"])
