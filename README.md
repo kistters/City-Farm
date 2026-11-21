@@ -24,7 +24,7 @@ No celular conectado à mesma rede Wi-Fi, acesse `http://IP_LOCAL_DO_PC`. As por
 Escolha apelido, terreno, ingrediente e nível. O backend mostra o padrão por 5 segundos (6 no Extra), esconde completamente e exige reproduzir as células corretas. Após acerto, o alimento está à venda **imediatamente**. O terreno fica livre novamente quando seu lote é vendido.
 
 | Nível | Tabuleiro | Memorização | Alimentos | Saúde do Solo |
-|---|---|---:|---:|
+|---|---|---|---:|---:|
 | 1 — Monocultura familiar | 3×3 | Posições com o mesmo ingrediente escolhido | 1 | −10 |
 | 2 — Monocultura latifúndio | 6×6 | Posições menores do mesmo ingrediente | 3 | −35 |
 | 3 — Multicultura | 3×3 | Posição e ingrediente de cada célula | 4 diferentes | −20 |
