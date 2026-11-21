@@ -9,7 +9,7 @@ var farmer = new Vue({
         playerMessage: '',
         productCatalog: [],
         market: {},
-        playerState: {coins: 0, energy: 60, plots: [], plot_upgrade_cost: 20},
+        playerState: {coins: 0, energy: 60, plots: [], soil_health: 100},
         selectedProduct: 'tomato',
         selectedPlot: 0,
         level: 1,
@@ -70,10 +70,17 @@ var farmer = new Vue({
                     self.challenge = null;
                     self.busy = false;
                     self.showPattern = false;
-                    self.gameMessage = 'Harvest complete! +' + reward.qty + ' ' + reward.product;
+                    self.gameMessage = 'Harvest complete! +' + reward.qty + ' food (' +
+                        Object.keys(reward.products).map(function (name) {
+                            return reward.products[name] + ' ' + name;
+                        }).join(', ') + ').';
                 }
-                if (data.upgrade_result) {
-                    self.gameMessage = 'New plot unlocked!';
+                if (data.recovery_result) {
+                    self.gameMessage = 'Basic soil care complete: ' + data.recovery_result.value + '/100.';
+                    self.busy = false;
+                }
+                if (data.soil_result) {
+                    self.gameMessage = 'Soil prepared: ' + data.soil_result.soil_health + '/100.';
                     self.busy = false;
                 }
                 if (data.game_error) {
@@ -151,10 +158,15 @@ var farmer = new Vue({
                 id: this.challenge.id, answer: this.answer
             }})) this.busy = false;
         },
-        upgrade: function () {
-            if (this.busy) return;
+        careForLand: function () {
+            if (!this.playerReady || this.busy) return;
             this.busy = true;
-            if (!this.send({upgrade_plot: true})) this.busy = false;
+            if (!this.send({basic_recovery: 'farmer'})) this.busy = false;
+        },
+        prepareSoil: function () {
+            if (!this.playerReady || this.busy) return;
+            this.busy = true;
+            if (!this.send({prepare_soil: true})) this.busy = false;
         }
     }
 });

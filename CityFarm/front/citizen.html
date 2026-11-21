@@ -44,6 +44,10 @@
       </div>
       <div class="energy-track"><div class="energy-fill"
         v-bind:style="{width:playerState.energy + '%'}"></div></div>
+      <button type="button" class="button button-ghost" v-on:click="rest"
+        v-bind:disabled="!playerReady || busy || playerState.energy >= 10">
+        Rest · Free · recover up to 10 energy
+      </button>
     </section>
     <section class="panel">
       <div class="section-head">
