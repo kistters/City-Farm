@@ -3,7 +3,9 @@ melhor exemplo """
 from tornado import websocket, web, ioloop
 from tasks import eat, verify_product_proof
 import json, redis, logging, secrets
-from products import PRODUCT_DIFFICULTIES
+from products import PRODUCT_DIFFICULTIES, public_catalog
+from dishes import DISHES, public_dishes
+from dish_orders import enqueue_dish, fulfill_pending_dishes
 from players import normalize_player
 
 
@@ -59,6 +61,11 @@ def dashboard_update():
     data = {
         'groceries': groceries, 'pow_history': history,
         'pending_orders': pending_orders,
+        'product_catalog': public_catalog(),
+        'pending_dishes': [
+            {"id": dish_id, "qty": int(r.get("dish:waiting:" + dish_id) or 0)}
+            for dish_id in DISHES
+        ],
     }
     cl_write(data, cl_dashboard)
 
@@ -107,7 +114,11 @@ class PublihserHandler(websocket.WebSocketHandler):
     def open(self):
         self.pending_proof = None
         self.player = None
-        self.write_message(json.dumps({"groceries": storage}))
+        self.write_message(json.dumps({
+            "groceries": storage,
+            "product_catalog": public_catalog(),
+            "dishes": public_dishes(),
+        }))
 
     def on_message(self, message):
         try:
@@ -177,6 +188,25 @@ class PublihserHandler(websocket.WebSocketHandler):
                 queue="planting", serializer="json",
             )
             self.write_message(json.dumps({"pow_status": "submitted"}))
+            return
+
+        if "order_dish" in message:
+            dish_id = message["order_dish"]
+            if not isinstance(dish_id, str) or dish_id not in DISHES:
+                self.write_message(json.dumps({"dish_error": "Unknown dish"}))
+                return
+            if r.llen("dish:pending:ids") >= 200:
+                self.write_message(json.dumps({"dish_error": "Dish queue is full"}))
+                return
+            order_id = secrets.token_hex(16)
+            enqueue_dish(r, order_id, dish_id)
+            fulfill_pending_dishes(r)
+            status = "waiting" if r.exists("dish:pending:" + order_id) else "prepared"
+            dashboard_update()
+            self.write_message(json.dumps({
+                "dish_ordered": {"dish": dish_id, "id": order_id,
+                                 "status": status}
+            }))
             return
 
         if "produce" in message:

@@ -19,7 +19,9 @@ class ProofOfWorkTests(unittest.TestCase):
     def test_catalog_covers_existing_products(self):
         self.assertEqual(
             set(PRODUCT_DIFFICULTIES),
-            {"corn", "wheat", "celery", "carrot", "lettuce", "tomato"},
+            {"corn", "wheat", "celery", "carrot", "lettuce", "tomato",
+             "rice", "beans", "potato", "orange", "banana", "apple",
+             "milk", "beef", "pork", "eggs", "chicken_meat", "fish"},
         )
 
     def test_valid_proof(self):

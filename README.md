@@ -124,3 +124,56 @@ mas não aparecem nos contadores. Os retries infinitos continuam **sem
 alteração** nesta etapa; a issue #12 acompanha sua revisão.
 
 Teste: `docker compose exec worker python -m unittest test_pending_eat`.
+
+## Variedade, fontes de produção e pratos
+
+A feira ganhou **18 ingredientes**: vegetais e grãos, arroz, feijão,
+batata, frutas, leite, ovos, carnes e peixe. Os novos tipos são configurados
+em `CityFarm/code/products.py`. Nesta fase a origem (`field`, `tree`,
+`cow`, `pig`, `chicken` ou `pond`) é informativa: cada item ainda
+é produzido por um PoW no navegador. Criar e alimentar animais, colher
+árvores repetidamente e outras mecânicas de ciclo produtivo ficam para PRs
+futuras.
+
+Um Citizen pode pedir um prato de `dishes.py`, composto por quantidades
+fixas de ingredientes:
+
+- Rice, Beans & Beef: 1 rice + 1 beans + 1 beef
+- Tomato Omelette: 2 eggs + 1 tomato
+- Chicken & Potatoes: 1 chicken_meat + 2 potato
+- Fruit Salad: 1 orange + 1 banana + 1 apple
+- Fish & Rice: 1 fish + 1 rice
+
+O pedido de um prato fica armazenado no Redis enquanto faltam
+ingredientes. Quando a produção PoW termina, o backend reavalia
+os pedidos e **consome todos os ingredientes de uma vez** com Lua
+atômico. Se faltarem ingredientes, nenhum é consumido e a demanda
+continua visível na seção `Pending Eat requests`. Não há peso,
+qualidade, crescimento nem expiração nesta etapa. Pedidos de ingredientes
+individuais continuam usando a tarefa `eat()` anterior, incluindo os
+retries descritos na issue #12.
+
+Os pratos possuem fila limitada a 200 pedidos aguardando preparo;
+não há cancelamento nem timeout automático ainda.
+
+### Assets de imagens
+
+Os 18 ingredientes e cinco pratos possuem ícones **SVG individuais
+de 96 × 96**, com fundo transparente, traços e paleta consistentes,
+no diretório `CityFarm/front/css/images/`. A interface usa esses
+assets inclusive para os seis vegetais antigos, substituindo os PNGs
+heterogêneos sem apagar os arquivos originais.
+
+### Testes
+
+```bash
+docker compose exec worker python -m unittest test_pow test_players test_pending_eat test_dishes
+```
+
+Abra o jogo, peça uma omelete sem estoque de ovos, confira a demanda,
+produza ovos e tomate por PoW e verifique o consumo do prato completo
+e a baixa da demanda. O dashboard separado continua exibindo estoque,
+conexões e histórico de validações.
+
+**Limites:** o catálogo e as receitas ainda são demonstrativos;
+não representam criação real de animais, árvores recorrentes ou nutrição.

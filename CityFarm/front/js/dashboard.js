@@ -11,6 +11,8 @@ var dashboard = new Vue({
         ws_dashboard: null,
         groceries: [],
         pendingOrders: [],
+        pendingDishes: [],
+        productCatalog: [],
         powHistory: [],
         userIpList: [],
         ipClick: '',
@@ -30,6 +32,9 @@ var dashboard = new Vue({
 
     // Métodos do aplicatvo
     methods: {
+        productInfo: function(name) {
+            return this.productCatalog.find(function(p) { return p.name === name; }) || {name: name, emoji: '📦', image: false};
+        },
 
         connect: function(onOpen) {
 
@@ -109,6 +114,12 @@ var dashboard = new Vue({
                 this.powHistory = data.pow_history;
             }
 
+            if (data.product_catalog) {
+                this.productCatalog = data.product_catalog;
+            }
+            if (data.pending_dishes) {
+                this.pendingDishes = data.pending_dishes;
+            }
             if (data.pending_orders) {
                 this.pendingOrders = data.pending_orders;
             }
