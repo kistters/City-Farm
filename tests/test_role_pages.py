@@ -74,6 +74,17 @@ class RolePageTests(unittest.TestCase):
             self.assertTrue(page.viewport)
             self.assertEqual(len(page.ids), len(set(page.ids)))
 
+    def test_farmer_no_longer_requires_plots(self):
+        html = (FRONT / "farmer.html").read_text(encoding="utf-8")
+        script = (FRONT / "js/farmer.js").read_text(encoding="utf-8")
+        websocket = (ROOT / "CityFarm/code/websocket.py").read_text(
+            encoding="utf-8")
+        for source in (html, script):
+            self.assertNotIn("plot", source.lower())
+        self.assertIn("soil_health", html)
+        self.assertIn("soilCosts", script)
+        self.assertNotIn('plot=request.get("plot")', websocket)
+
     def test_nginx_routes_and_responsive_css(self):
         nginx = (ROOT / "nginx/conf.d/city-farm.conf").read_text()
         css = (FRONT / "css/dashboard.css").read_text()
