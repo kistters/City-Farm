@@ -11,6 +11,9 @@ var farmer = new Vue({
         groceries: [],
         status: 'close',
         ws_publish: null,
+        powWorker: null,
+        powBusy: false,
+        powMessage: '',
         statusClass: {
             'label label-success': false,
             'label label-info': false,
@@ -36,6 +39,7 @@ var farmer = new Vue({
 
             self.ws_publish.onopen = function() {
 
+                self.powBusy = false;
                 self.status = 'open'
                 self.statusClass = {
                     'label label-success': true
@@ -70,6 +74,8 @@ var farmer = new Vue({
             };
 
             self.ws_publish.onclose = function(){
+                if (self.powWorker) { self.powWorker.terminate(); self.powWorker = null; }
+                self.powBusy = false;
                 self.status = 'closed'
                 self.statusClass = {
                     'label label-danger': true
@@ -97,6 +103,40 @@ var farmer = new Vue({
         },
 
         handleUpdate: function(data) {
+            if (data.pow_challenge) {
+                var worker = new Worker('/js/pow-worker.js');
+                this.powWorker = worker;
+                var self = this;
+                this.powMessage = 'Mining tomato in browser...';
+                worker.onmessage = function(event) {
+                    if (event.data.error) {
+                        self.powMessage = event.data.error;
+                        self.powBusy = false;
+                    } else {
+                        self.powMessage = 'Found proof after ' + event.data.attempts + ' hashes; submitting...';
+                        self.publish(JSON.stringify({pow_submit: {
+                            id: event.data.id, nonce: event.data.nonce
+                        }}));
+                    }
+                    worker.terminate();
+                    self.powWorker = null;
+                };
+                worker.onerror = function() {
+                    self.powMessage = 'Mining failed';
+                    self.powBusy = false;
+                    worker.terminate();
+                    self.powWorker = null;
+                };
+                worker.postMessage(data.pow_challenge);
+            }
+            if (data.pow_status === 'submitted') {
+                this.powMessage = 'Proof sent for verification; watch the dashboard.';
+                this.powBusy = false;
+            }
+            if (data.pow_error) {
+                this.powMessage = data.pow_error;
+                this.powBusy = false;
+            }
             if (data.work) {
                 this.tries = data.work
             }
@@ -107,6 +147,17 @@ var farmer = new Vue({
         },
 
         produce: function (plant) {
+            if (plant === 'tomato') {
+                if (this.powBusy) return;
+                if (!this.ws_publish || this.ws_publish.readyState !== WebSocket.OPEN) {
+                    this.powMessage = 'Wait for WebSocket connection';
+                    return;
+                }
+                this.powBusy = true;
+                this.powMessage = 'Requesting a tomato challenge...';
+                this.publish(JSON.stringify({pow_start: 'tomato'}));
+                return;
+            }
             this.publish(JSON.stringify({produce: plant}));
         },
     }
