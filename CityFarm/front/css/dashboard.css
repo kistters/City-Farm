@@ -173,11 +173,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .wallet-summary {display:flex; gap:12px; flex-wrap:wrap; margin:15px 0;}
 .wallet-summary span {background:var(--mint);padding:10px 12px;border-radius:12px;}
 .wallet-summary strong {margin-left:8px;}
-.plot-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;}
-.plot-tile {border:1px solid var(--line);background:#f7fbf5;border-radius:12px;min-height:72px;padding:8px;color:var(--ink);}
-.plot-tile strong,.plot-tile span {display:block;font-size:.82rem;}
-.plot-tile span {margin-top:6px;color:var(--muted);}
-.plot-tile.chosen,.product-tile.chosen,.level-buttons .chosen {border:2px solid #3d8258;background:#e6f4e8;}
+.product-tile.chosen,.level-buttons .chosen {border:2px solid #3d8258;background:#e6f4e8;}
 .button-ghost {background:#e5f1e6;color:#23513b;border:1px solid #bfd9c4;}
 .level-buttons {display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
 .level-buttons button {border:1px solid var(--line);background:#f7faf6;border-radius:10px;padding:12px;min-height:44px;flex:1;}
@@ -189,9 +185,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .memory-game .button-primary {display:block;margin:14px auto 0;}
 @media(max-width:600px) {
  .memory-grid {gap:3px;width:min(100%,312px);}
- .plot-grid {gap:5px;}
- .plot-tile {padding:6px;min-height:68px;}
-}
+  }
 
 /* Citizen activities and market. */
 .energy-track {width:100%;max-width:400px;height:11px;border-radius:99px;background:#dbe9dc;overflow:hidden;margin:10px 0;}

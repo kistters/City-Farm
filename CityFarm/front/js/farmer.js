@@ -9,11 +9,10 @@ var farmer = new Vue({
         playerMessage: '',
         productCatalog: [],
         market: {},
-        playerState: {coins: 0, energy: 60, soil_health: 100, plots: []},
+        playerState: {coins: 0, energy: 60, soil_health: 100},
         soilCosts: {1: 10, 2: 35, 3: 20},
         levelNames: {1: 'Monocultura familiar', 2: 'Monocultura latifúndio', 3: 'Multicultura'},
         selectedProduct: 'tomato',
-        selectedPlot: 0,
         level: 1,
         challenge: null,
         showPattern: false,
@@ -35,9 +34,8 @@ var farmer = new Vue({
             return this.challenge ? this.challenge.size : 3;
         },
         canPlant: function () {
-            var plot = this.playerState.plots[this.selectedPlot];
             return this.playerReady && !this.busy && !this.challenge &&
-                plot && !plot.product && this.playerState.soil_health >= this.soilCosts[this.level];
+                this.playerState.soil_health >= this.soilCosts[this.level];
         }
     },
     methods: {
@@ -129,9 +127,6 @@ var farmer = new Vue({
                 this.playerMessage = error.message;
             }
         },
-        choosePlot: function (plot) {
-            if (!plot.product && !this.challenge) this.selectedPlot = plot.index;
-        },
         iconFor: function (name) {
             return name ? '/css/images/' + name + '.svg' : '';
         },
@@ -151,8 +146,7 @@ var farmer = new Vue({
             this.busy = true;
             this.gameMessage = 'Generating memory pattern...';
             if (!this.send({farm_start: {
-                level: this.level, product: this.selectedProduct,
-                plot: this.selectedPlot
+                level: this.level, product: this.selectedProduct
             }})) this.busy = false;
         },
         submitAnswer: function () {
