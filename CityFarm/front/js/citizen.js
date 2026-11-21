@@ -107,7 +107,7 @@ var citizen = new Vue({
         },
         submitAnswer: function () {
             if (!this.challenge || this.busy) return;
-            var input = this.answer.trim();
+            var input = String(this.answer).trim();
             if (!/^-?\d+$/.test(input)) {
                 this.gameMessage = 'Enter a whole number.';
                 return;
