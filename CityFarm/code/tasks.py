@@ -50,7 +50,8 @@ def record_proof(challenge_id, nonce, farmer, digest, valid, reason, product):
     event = json.dumps({
         "id": challenge_id,
         "product": product,
-        "farmer": farmer,
+        "farmer": farmer["name"] if isinstance(farmer, dict) else str(farmer),
+        "farmer_id": farmer.get("id") if isinstance(farmer, dict) else None,
         "nonce": nonce,
         "hash": digest,
         "valid": valid,
@@ -86,7 +87,7 @@ def verify_product_proof(challenge_id, nonce, farmer):
             else:
                 if (not isinstance(registered_farmer, dict) or
                     not isinstance(registered_farmer.get("name"), str) or
-                    registered_farmer.get("name") != farmer or
+                    registered_farmer != farmer or
                     product not in PRODUCT_DIFFICULTIES or
                     type(difficulty) is not int or
                     difficulty != PRODUCT_DIFFICULTIES[product] or
@@ -98,7 +99,8 @@ def verify_product_proof(challenge_id, nonce, farmer):
                         reason = "invalid_hash"
                     else:
                         item = json.dumps({
-                            "id": str(uuid.uuid4()), "name": product, "farmer": farmer,
+                            "id": str(uuid.uuid4()), "name": product,
+                            "farmer": farmer["id"], "farmer_name": farmer["name"],
                         })
                         accepted = bool(ACCEPT_PROOF(
                             keys=[key, "products:" + product, product],
