@@ -1,8 +1,8 @@
 """ https://github.com/hiroakis/tornado-websocket-example 
 melhor exemplo """
 from tornado import websocket, web, ioloop
-from tasks import plant, eat
-import json, redis, logging
+from tasks import plant, eat, verify_tomato_proof
+import json, redis, logging, secrets
 
 
 r = redis.StrictRedis(host='redis', port=6379, db=0)
@@ -84,11 +84,55 @@ class PublihserHandler(websocket.WebSocketHandler):
         return True
 
     def open(self):
+        self.pending_proof = None
         self.write_message(json.dumps({"groceries": storage}))
 
     def on_message(self, message):
+        try:
+            message = json.loads(message)
+            if not isinstance(message, dict):
+                raise ValueError("invalid payload")
+        except (TypeError, ValueError):
+            self.write_message(json.dumps({"pow_error": "Invalid message"}))
+            return
 
-        message = json.loads(message)
+        if message.get("pow_start") == "tomato":
+            if self.pending_proof:
+                self.write_message(json.dumps({"pow_error": "A challenge is already running"}))
+                return
+            challenge_id = secrets.token_hex(16)
+            token = secrets.token_hex(16)
+            challenge = "cityfarm:v1:{}:tomato:{}".format(challenge_id, token)
+            r.setex("pow:challenge:" + challenge_id, 180, challenge)
+            self.pending_proof = challenge_id
+            self.write_message(json.dumps({"pow_challenge": {
+                "id": challenge_id, "challenge": challenge, "difficulty": 3
+            }}))
+            return
+
+        if "pow_submit" in message:
+            data = message["pow_submit"]
+            if not isinstance(data, dict):
+                self.write_message(json.dumps({"pow_error": "Invalid submission"}))
+                return
+            challenge_id, nonce = data.get("id"), data.get("nonce")
+            if challenge_id != self.pending_proof or not self.pending_proof:
+                self.write_message(json.dumps({"pow_error": "Challenge not owned by this connection"}))
+                return
+            if type(nonce) is not int or not 0 <= nonce <= 10000000:
+                self.write_message(json.dumps({"pow_error": "Invalid nonce"}))
+                return
+            self.pending_proof = None
+            verify_tomato_proof.apply_async(
+                args=[challenge_id, nonce, self.request.remote_ip],
+                queue="planting", serializer="json",
+            )
+            self.write_message(json.dumps({"pow_status": "submitted"}))
+            return
+
+        if message.get("produce") == "tomato":
+            self.write_message(json.dumps({"pow_error": "Tomatoes require proof of work"}))
+            return
 
         if message.get('produce'):
             farmer(message.get('produce'))
