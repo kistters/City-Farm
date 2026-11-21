@@ -31,9 +31,9 @@
           <span class="connection-pill" v-bind:class="web_status === 'open' ? 'is-connected' : ''">{{ web_status }}</span></div>
         <p class="hint">Food supplied by all Farmers, ready for Citizens to buy.</p>
         <div class="demand-grid">
-          <div class="demand-item" v-for="(qty, name) in market" v-bind:key="name">
-            <img v-bind:src="'/css/images/' + name + '.svg'" v-bind:alt="name">
-            <div><strong>{{ qty }}</strong><span>{{ name }}</span></div>
+          <div class="demand-item">
+            <span class="food-emoji" aria-hidden="true">🍲</span>
+            <div><strong>{{ market.food || 0 }}</strong><span>Food</span></div>
           </div>
         </div>
       </section>
@@ -74,19 +74,7 @@
         <p class="hint">Harvest as often as your soil health allows. Food stays in the market until Citizens buy it.</p>
         <div class="section-divider"></div>
         <div v-if="!challenge">
-          <h3>Ingredients</h3>
-          <p class="hint" v-if="level===3">Multicultura: all five ingredients are selected. The puzzle uses four of them.</p>
-          <p class="hint" v-else>Select one ingredient for monoculture.</p>
-          <div class="product-grid">
-            <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
-              v-bind:class="{'chosen':level===3 || selectedProduct===plant.name}"
-              v-bind:aria-pressed="level===3 || selectedProduct===plant.name"
-              v-bind:disabled="level===3"
-              v-on:click="selectedProduct=plant.name">
-              <img v-bind:src="'/css/images/' + plant.name + '.svg'" v-bind:alt="plant.name">
-              <strong>{{ plant.name }}</strong>
-            </button>
-          </div>
+          <p class="hint">Every successful planting produces <strong>Food</strong>. In Multicultura, different icons only make the memory puzzle harder.</p>
           <h3>Choose a difficulty</h3>
           <div class="level-buttons">
             <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
@@ -96,7 +84,7 @@
           </div>
           <p class="hint" v-if="level===1">3×3 · 1 food · −10 Saúde do Solo.</p>
           <p class="hint" v-if="level===2">6×6 · 3 foods · −35 Saúde do Solo.</p>
-          <p class="hint" v-if="level===3">3×3 · 4 different foods · −20 Saúde do Solo.</p>
+          <p class="hint" v-if="level===3">3×3 · 4 Food · −20 Saúde do Solo.</p>
           <p class="hint" v-if="playerState.soil_health < soilCosts[level]">Care for the soil before planting at this level.</p>
           <button class="button button-primary" type="button" v-on:click="startFarm"
             v-bind:disabled="!canPlant">Start planting</button>
@@ -112,7 +100,8 @@
             <button type="button" class="memory-cell" v-for="(cell,index) in visibleCells"
               v-bind:key="index" v-bind:disabled="showPattern || busy"
               v-on:click="cycleCell(index)" v-bind:aria-label="cell ? cell : 'empty cell'">
-              <img v-if="cell" v-bind:src="iconFor(cell)" v-bind:alt="cell">
+              <span v-if="cell==='food'" class="food-cell" aria-label="Food">🍲</span>
+              <img v-else-if="cell" v-bind:src="iconFor(cell)" v-bind:alt="cell">
               <span v-else aria-hidden="true">·</span>
             </button>
           </div>
@@ -131,5 +120,5 @@
   </main>
   <script src="/js/dashboard.js?v=19"></script>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/farmer.js?v=26"></script>
+  <script src="/js/farmer.js?v=28"></script>
 </body></html>

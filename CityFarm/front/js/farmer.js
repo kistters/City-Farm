@@ -7,12 +7,10 @@ var farmer = new Vue({
         playerReady: false,
         playerName: '',
         playerMessage: '',
-        productCatalog: [],
         market: {},
         playerState: {coins: 0, energy: 60, soil_health: 100},
         soilCosts: {1: 10, 2: 35, 3: 20},
         levelNames: {1: 'Monocultura familiar', 2: 'Monocultura latifúndio', 3: 'Multicultura'},
-        selectedProduct: 'tomato',
         level: 1,
         challenge: null,
         showPattern: false,
@@ -52,7 +50,6 @@ var farmer = new Vue({
                 var data;
                 try { data = JSON.parse(event.data); }
                 catch (e) { self.gameMessage = 'Invalid server response'; return; }
-                if (data.product_catalog) self.productCatalog = data.product_catalog;
                 if (data.market) self.market = data.market;
                 if (data.player_state) self.playerState = data.player_state;
                 if (data.player_registered) {
@@ -83,10 +80,8 @@ var farmer = new Vue({
                     self.showPattern = false;
                     if (self.observationTimer) clearTimeout(self.observationTimer);
                     self.observationTimer = null;
-                    self.gameMessage = 'Harvest complete! +' + reward.qty + ' foods: ' +
-                        reward.items.map(function (item) {
-                            return item.qty + ' ' + item.name;
-                        }).join(', ') + ' · Soil −' + reward.soil_cost;
+                    self.gameMessage = 'Harvest complete! +' + reward.qty +
+                        ' Food · Soil −' + reward.soil_cost;
                 }
                 if (data.care_result) {
                     self.gameMessage = data.care_result.cost ?
@@ -145,7 +140,7 @@ var farmer = new Vue({
                 var all = [null, 'corn', 'wheat', 'carrot', 'lettuce', 'tomato'];
                 next[index] = all[(all.indexOf(next[index]) + 1) % all.length];
             } else {
-                next[index] = next[index] ? null : this.challenge.product;
+                next[index] = next[index] ? null : (this.challenge.product || 'food');
             }
             this.answer = next;
         },
@@ -174,9 +169,7 @@ var farmer = new Vue({
             if (!this.canPlant) return;
             this.busy = true;
             this.gameMessage = 'Generating memory pattern...';
-            if (!this.send({farm_start: {
-                level: this.level, product: this.selectedProduct
-            }})) this.busy = false;
+            if (!this.send({farm_start: {level: this.level}})) this.busy = false;
         },
         submitAnswer: function () {
             if (!this.challenge || this.showPattern || this.busy) return;

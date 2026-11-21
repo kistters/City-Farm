@@ -7,9 +7,8 @@ var citizen = new Vue({
         playerReady: false,
         playerName: '',
         playerMessage: '',
-        productCatalog: [],
         market: {},
-        playerState: {coins: 0, energy: 60, plots: []},
+        playerState: {coins: 0, energy: 60},
         level: 1,
         levelNames: {1: 'Estagiário', 2: 'Efetivo', 3: 'Consultor'},
         challenge: null,
@@ -35,7 +34,6 @@ var citizen = new Vue({
                 var data;
                 try { data = JSON.parse(event.data); }
                 catch (e) { self.gameMessage = 'Invalid server response'; return; }
-                if (data.product_catalog) self.productCatalog = data.product_catalog;
                 if (data.market) self.market = data.market;
                 if (data.player_state) self.playerState = data.player_state;
                 if (data.player_registered) {
@@ -60,7 +58,7 @@ var citizen = new Vue({
                 }
                 if (data.purchase_result) {
                     self.busy = false;
-                    self.gameMessage = 'You ate ' + data.purchase_result.product + '! +30 energy, -' +
+                    self.gameMessage = 'You ate Food! +30 energy, -' +
                         data.purchase_result.price + ' coins.';
                 }
                 if (data.game_error) {
@@ -124,10 +122,10 @@ var citizen = new Vue({
             this.busy = true;
             this.send({rest: true});
         },
-        buyFood: function (product) {
+        buyFood: function () {
             if (!this.playerReady || this.busy) return;
             this.busy = true;
-            if (!this.send({buy_food: product})) this.busy = false;
+            if (!this.send({buy_food: true})) this.busy = false;
         }
     }
 });
