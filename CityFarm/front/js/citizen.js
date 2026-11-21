@@ -53,6 +53,10 @@ var citizen = new Vue({
                     self.answer = '';
                     self.gameMessage = 'Work complete! +' + data.challenge_result.reward.coins + ' coins.';
                 }
+                if (data.rest_result) {
+                    self.busy = false;
+                    self.gameMessage = 'Rest complete. Energy recovered up to 10.';
+                }
                 if (data.purchase_result) {
                     self.busy = false;
                     self.gameMessage = 'You ate ' + data.purchase_result.product + '! +30 energy, -' +
@@ -113,6 +117,11 @@ var citizen = new Vue({
             if (!this.send({challenge_submit: {
                 id: this.challenge.id, answer: Number(input)
             }})) this.busy = false;
+        },
+        rest: function () {
+            if (!this.playerReady || this.busy || this.playerState.energy >= 10) return;
+            this.busy = true;
+            this.send({rest: true});
         },
         buyFood: function (product) {
             if (!this.playerReady || this.busy) return;
