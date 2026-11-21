@@ -11,6 +11,7 @@ var citizen = new Vue({
         market: {},
         playerState: {coins: 0, energy: 60, plots: []},
         level: 1,
+        levelNames: {1: 'Estagiário', 2: 'Efetivo', 3: 'Consultor'},
         challenge: null,
         answer: '',
         busy: false,

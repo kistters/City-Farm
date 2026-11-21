@@ -60,11 +60,13 @@ uma produção de nível 1 e voltar ao mercado.
 
 ## Citizen
 
-| Nível | Operação | Moedas |
+| Cargo (nível) | Operação | Moedas |
 |---|---|---:|
-| 1 | Soma/subtração | 5 |
-| 2 | Multiplicação/divisão inteira | 10 |
-| 3 | Expressões com precedência e parênteses | 15 |
+| Estagiário (1) | Soma/subtração | 5 |
+| Efetivo (2) | Multiplicação/divisão inteira | 10 |
+| Consultor (3) | Expressões com precedência e parênteses | 15 |
+
+Os cargos são **nomes de apresentação dos três níveis**: o jogador ainda pode escolher qualquer dificuldade, sem promoção automática. A API continua recebendo os números 1, 2 e 3.
 
 Cada trabalho correto gasta 10 de energia. O Citizen começa com 60/100 de
 energia e zero moedas. **Descansar** é gratuito e recupera a Energia **até 10**
