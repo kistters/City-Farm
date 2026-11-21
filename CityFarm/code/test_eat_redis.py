@@ -68,16 +68,16 @@ class EventDrivenEatIntegrationTests(unittest.TestCase):
 
     def test_startup_recovery_migrates_old_orders_once(self):
         self.red.set("eat:pending:old", "carrot")
-        self.red.incr("eat:waiting:milk")
+        self.red.incr("eat:waiting:carrot")
         self.assertEqual(recover_pending_orders(self.red), 1)
         self.assertEqual(recover_pending_orders(self.red), 0)
-        self.assertEqual(self.red.lrange("eat:queue:milk", 0, -1), [b"old"])
-        self.assertEqual(self.red.get("eat:waiting:milk"), b"1")
+        self.assertEqual(self.red.lrange("eat:queue:carrot", 0, -1), [b"old"])
+        self.assertEqual(self.red.get("eat:waiting:carrot"), b"1")
         self.red.incr("carrot")
         self.assertEqual(settle_eat(self.red, "carrot"), 1)
         self.assertEqual(settle_eat(self.red, "carrot"), 0)
         self.assertFalse(migrate_legacy_order(self.red, "carrot", "old"))
-        self.assertEqual(self.red.get("eat:waiting:milk"), b"0")
+        self.assertEqual(self.red.get("eat:waiting:carrot"), b"0")
 
     def test_retiring_old_dishes_restores_only_legacy_demand(self):
         self.red.set("dish:pending:old-omelette", "omelette")
@@ -99,15 +99,15 @@ class EventDrivenEatIntegrationTests(unittest.TestCase):
         response = enqueue_eat(self.red, "lettuce", "immediate")
         self.assertTrue(response["fulfilled"])
         self.assertEqual(self.red.get("lettuce"), b"0")
-        self.assertEqual(self.red.get("eat:fulfilled:potato"), b"1")
+        self.assertEqual(self.red.get("eat:fulfilled:lettuce"), b"1")
 
     def test_old_retry_cannot_reenqueue_fulfilled_id(self):
         self.red.incr("wheat")
         self.assertTrue(enqueue_eat(self.red, "wheat", "legacy-123")["fulfilled"])
         duplicate = enqueue_eat(self.red, "wheat", "legacy-123")
         self.assertFalse(duplicate["created"])
-        self.assertEqual(self.red.get("eat:fulfilled:rice"), b"1")
-        self.assertEqual(self.red.llen("eat:queue:rice"), 0)
+        self.assertEqual(self.red.get("eat:fulfilled:wheat"), b"1")
+        self.assertEqual(self.red.llen("eat:queue:wheat"), 0)
 
 
 if __name__ == "__main__":
