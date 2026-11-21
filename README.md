@@ -234,7 +234,7 @@ As interfaces agora são independentes:
 
 - `/`: escolha entre Farmer e Citizen.
 - `/farmer`: nome do Farmer, demanda atual dos Citizens e produção PoW.
-- `/citizen`: pratos, receitas e pedidos individuais de ingredientes.
+- `/citizen`: pedidos individuais de cinco ingredientes.
 - `/dashboard`: monitoramento técnico, estoque, filas e histórico do PoW.
 
 O Nginx mapeia `/farmer` para `farmer.html` e `/citizen` para
