@@ -19,7 +19,7 @@
         <div class="panel-group">
           <div class="panel panel-default">
             <div class="panel-heading">
-              Eat requests waiting for harvest <span v-bind:class="statusClass">{{ status }}</span> 
+              Pending Eat requests <span v-bind:class="statusClass">{{ status }}</span> 
             </div>
             <div class="panel-body">
               <div v-for="plant in pendingOrders" class="col-md-2 col-sm-3 col-xs-3 nogutter">
@@ -28,7 +28,7 @@
               </div>
             </div>
             <p class="text-muted" style="clear:both; padding-top:8px">
-              Pending Citizen orders (new requests only). Zero means no waiting orders.
+              Citizen orders not yet consumed (new requests only).
             </p>
           </div>
         </div>
