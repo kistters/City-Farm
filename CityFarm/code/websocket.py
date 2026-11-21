@@ -97,7 +97,7 @@ class PublihserHandler(websocket.WebSocketHandler):
             return
 
         if message.get("pow_start") == "tomato":
-            if self.pending_proof:
+            if self.pending_proof and r.exists("pow:challenge:" + self.pending_proof):
                 self.write_message(json.dumps({"pow_error": "A challenge is already running"}))
                 return
             challenge_id = secrets.token_hex(16)
