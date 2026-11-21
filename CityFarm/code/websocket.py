@@ -51,7 +51,8 @@ def dashboard_update():
 
     history = [json.loads(item) for item in r.lrange("pow:history", 0, 49)]
     pending_orders = [
-        {"what": what, "qty": max(0, int(r.get("eat:waiting:" + what) or 0))}
+        {"what": what, "qty": max(0, int(r.get("eat:waiting:" + what) or 0)),
+         "fulfilled": int(r.get("eat:fulfilled:" + what) or 0)}
         for what in storage
     ]
     data = {
