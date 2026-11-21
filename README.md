@@ -95,3 +95,16 @@ valores de dificuldade enviados pelo cliente.
 
 Teste: `docker compose exec worker python -m unittest test_pow`.
 Valores são ilustrativos e devem ser ajustados após medições.
+
+## Identidade casual dos Farmers
+
+No painel Farmer, escolha um apelido e clique em **Join** antes de produzir.
+O perfil (ID aleatório de 128 bits e apelido) fica guardado no
+`localStorage` do navegador; o WebSocket registra o perfil e associa
+as provas e produtos a esse Farmer. O servidor valida formato e tamanho.
+O Farmer pode mudar o apelido sem perder o ID no navegador.
+
+**Não é autenticação:** o cliente controla o identificador e o apelido;
+não use como prova de identidade, proteção contra trapaça ou base de
+recompensas reais. A geração funciona também no HTTP da rede local,
+mas usa `Math.random()`, impróprio para identificadores de segurança.

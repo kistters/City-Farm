@@ -80,10 +80,14 @@ def verify_product_proof(challenge_id, nonce, farmer):
                 challenge = challenge_data["challenge"]
                 product = challenge_data["product"]
                 difficulty = challenge_data["difficulty"]
+                registered_farmer = challenge_data.get("farmer")
             except (ValueError, KeyError, TypeError):
                 reason = "invalid_challenge"
             else:
-                if (product not in PRODUCT_DIFFICULTIES or
+                if (not isinstance(registered_farmer, dict) or
+                    not isinstance(registered_farmer.get("name"), str) or
+                    registered_farmer.get("name") != farmer or
+                    product not in PRODUCT_DIFFICULTIES or
                     type(difficulty) is not int or
                     difficulty != PRODUCT_DIFFICULTIES[product] or
                     not challenge.startswith("cityfarm:v1:{}:{}:".format(challenge_id, product))):
