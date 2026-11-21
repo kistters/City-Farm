@@ -4,9 +4,7 @@ from tornado import websocket, web, ioloop
 from tasks import verify_product_proof
 import json, redis, logging, secrets
 from products import PRODUCT_DIFFICULTIES, public_catalog
-from dishes import DISHES, public_dishes
-from dish_orders import enqueue_dish, fulfill_pending_dishes
-from eat_orders import enqueue_eat, recover_pending_orders
+from eat_orders import enqueue_eat, recover_pending_orders, retire_legacy_dishes
 from players import normalize_player
 
 
@@ -29,6 +27,7 @@ def citizen(what):
 def init():
     # Convert old pending markers to FIFO once, and settle outstanding
     # orders already covered by stock. Safe on repeated restarts.
+    retire_legacy_dishes(r)
     recover_pending_orders(r)
     for what in storage:
         r.incr(what)
@@ -59,10 +58,6 @@ def dashboard_update():
         'groceries': groceries, 'pow_history': history,
         'pending_orders': pending_orders,
         'product_catalog': public_catalog(),
-        'pending_dishes': [
-            {"id": dish_id, "qty": int(r.get("dish:waiting:" + dish_id) or 0)}
-            for dish_id in DISHES
-        ],
     }
     cl_write(data, cl_dashboard)
 
@@ -114,7 +109,6 @@ class PublihserHandler(websocket.WebSocketHandler):
         self.write_message(json.dumps({
             "groceries": storage,
             "product_catalog": public_catalog(),
-            "dishes": public_dishes(),
         }))
 
     def on_message(self, message):
@@ -185,25 +179,6 @@ class PublihserHandler(websocket.WebSocketHandler):
                 queue="planting", serializer="json",
             )
             self.write_message(json.dumps({"pow_status": "submitted"}))
-            return
-
-        if "order_dish" in message:
-            dish_id = message["order_dish"]
-            if not isinstance(dish_id, str) or dish_id not in DISHES:
-                self.write_message(json.dumps({"dish_error": "Unknown dish"}))
-                return
-            if r.llen("dish:pending:ids") >= 200:
-                self.write_message(json.dumps({"dish_error": "Dish queue is full"}))
-                return
-            order_id = secrets.token_hex(16)
-            enqueue_dish(r, order_id, dish_id)
-            fulfill_pending_dishes(r)
-            status = "waiting" if r.exists("dish:pending:" + order_id) else "prepared"
-            dashboard_update()
-            self.write_message(json.dumps({
-                "dish_ordered": {"dish": dish_id, "id": order_id,
-                                 "status": status}
-            }))
             return
 
         if "produce" in message:

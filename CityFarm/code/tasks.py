@@ -6,7 +6,6 @@ import json
 import uuid
 import redis, requests
 from products import PRODUCT_DIFFICULTIES
-from dish_orders import fulfill_pending_dishes
 
 app = Celery('tasks', broker=os.environ.get('CELERY_BROKER_URL', 'amqp://cityfarm:cityfarm_dev@rabbitmq:5672//'))
 
@@ -126,7 +125,5 @@ def verify_product_proof(challenge_id, nonce, farmer):
         else:
             reason = "expired_or_used"
 
-    if accepted:
-        fulfill_pending_dishes(r)
     record_proof(challenge_id, nonce, farmer, digest, accepted, reason, product)
     return accepted

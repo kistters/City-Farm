@@ -121,58 +121,20 @@ Os ingredientes necessários a pratos também aparecem nos contadores.
 O dashboard separado mantém estoque, histórico PoW, conexões e agora
 métricas de pedidos pendentes e atendidos.
 
-## Variedade, fontes de produção e pratos
+## Catálogo reduzido
 
-A feira ganhou **18 ingredientes**: vegetais e grãos, arroz, feijão,
-batata, frutas, leite, ovos, carnes e peixe. Os novos tipos são configurados
-em `CityFarm/code/products.py`. Nesta fase a origem (`field`, `tree`,
-`cow`, `pig`, `chicken` ou `pond`) é informativa: cada item ainda
-é produzido por um PoW no navegador. Criar e alimentar animais, colher
-árvores repetidamente e outras mecânicas de ciclo produtivo ficam para PRs
-futuras.
+O City-Farm mantém apenas cinco ingredientes: **corn, wheat, carrot,
+lettuce e tomato**. Cada produto continua sendo produzido via Proof of Work
+no navegador e validado pelo backend. O Citizen pede um único ingrediente
+por vez; os pedidos usam uma fila FIFO por produto no Redis, sem
+`retry(countdown=3)` periódico (issue #12).
 
-Um Citizen pode pedir um prato de `dishes.py`, composto por quantidades
-fixas de ingredientes:
+O mecanismo de Dish e as receitas foram removidos do jogo para concentrar
+o estudo em produção, demanda, consumo e concorrência. Pedidos antigos de
+Dish são cancelados na inicialização; seus contadores de demanda são
+compensados sem alterar os pedidos individuais. Os outros ingredientes
+e ícones históricos permanecem nos assets mas não aparecem no catálogo.
 
-- Rice, Beans & Beef: 1 rice + 1 beans + 1 beef
-- Tomato Omelette: 2 eggs + 1 tomato
-- Chicken & Potatoes: 1 chicken_meat + 2 potato
-- Fruit Salad: 1 orange + 1 banana + 1 apple
-- Fish & Rice: 1 fish + 1 rice
-
-O pedido de um prato fica armazenado no Redis enquanto faltam
-ingredientes. Quando a produção PoW termina, o backend reavalia
-os pedidos e **consome todos os ingredientes de uma vez** com Lua
-atômico. Se faltarem ingredientes, nenhum é consumido e a demanda
-continua visível na seção `Pending Eat requests`. Não há peso,
-qualidade, crescimento nem expiração nesta etapa. Pedidos de ingredientes
-individuais agora são atendidos diretamente via Redis, sem retries
-periódicos; veja a seção sobre a issue #12 abaixo.
-
-Os pratos possuem fila limitada a 200 pedidos aguardando preparo;
-não há cancelamento nem timeout automático ainda.
-
-### Assets de imagens
-
-Os 18 ingredientes e cinco pratos possuem ícones **SVG individuais
-de 96 × 96**, com fundo transparente, traços e paleta consistentes,
-no diretório `CityFarm/front/css/images/`. A interface usa esses
-assets inclusive para os seis vegetais antigos, substituindo os PNGs
-heterogêneos sem apagar os arquivos originais.
-
-### Testes
-
-```bash
-docker compose exec worker python -m unittest test_pow test_players test_pending_eat test_dishes
-```
-
-Abra o jogo, peça uma omelete sem estoque de ovos, confira a demanda,
-produza ovos e tomate por PoW e verifique o consumo do prato completo
-e a baixa da demanda. O dashboard separado continua exibindo estoque,
-conexões e histórico de validações.
-
-**Limites:** o catálogo e as receitas ainda são demonstrativos;
-não representam criação real de animais, árvores recorrentes ou nutrição.
 
 ## Pedidos eat sem retries infinitos (issue #12)
 
@@ -190,10 +152,6 @@ consumir duas unidades; o backend usa um ID aleatório e marcador de
 deduplicação. São permitidos até **200 pedidos individuais pendentes por
 ingrediente** para evitar acúmulo ilimitado.
 
-Os pratos continuam aguardando **a receita inteira**, pelo fluxo de
-`dish_orders.py`. Na disputa por um ingrediente, pedidos individuais
-pendentes têm prioridade no momento da colheita; a receita só usa o
-estoque restante.
 
 ### Atualização a partir de versões anteriores
 
@@ -217,7 +175,7 @@ atual não promete durabilidade em caso de remoção do volume/dados do Redis.
 
 ```bash
 docker compose up --build -d
-docker compose exec worker python -m unittest test_pending_eat test_pow test_dishes
+docker compose exec worker python -m unittest test_pending_eat test_pow
 docker compose exec worker python -m unittest test_eat_redis
 docker compose logs -f worker websocket
 ```

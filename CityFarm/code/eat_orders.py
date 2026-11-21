@@ -130,3 +130,55 @@ def recover_pending_orders(red):
     for product in PRODUCT_DIFFICULTIES:
         settle_eat(red, product)
     return migrated
+
+# One-time compatibility for orders created before Dish support was removed.
+# This catalog exists ONLY to compensate outstanding Redis demand counters.
+RETIRED_RECIPES = {
+    "rice_beans_beef": {"rice": 1, "beans": 1, "beef": 1},
+    "omelette": {"eggs": 2, "tomato": 1},
+    "chicken_potatoes": {"chicken_meat": 1, "potato": 2},
+    "fruit_salad": {"orange": 1, "banana": 1, "apple": 1},
+    "fish_rice": {"fish": 1, "rice": 1},
+}
+
+RETIRE_DISH = """
+local dish = redis.call('GET', KEYS[1])
+if not dish then
+    redis.call('LREM', KEYS[2], 1, ARGV[1])
+    return 0
+end
+if dish ~= ARGV[2] then return 0 end
+for i=4,#KEYS do
+    local current = tonumber(redis.call('GET', KEYS[i]) or '0')
+    redis.call('SET', KEYS[i], math.max(0, current - tonumber(ARGV[i-1])))
+end
+local waiting = tonumber(redis.call('GET', KEYS[3]) or '0')
+redis.call('SET', KEYS[3], math.max(0, waiting - 1))
+redis.call('DEL', KEYS[1])
+redis.call('LREM', KEYS[2], 1, ARGV[1])
+return 1
+"""
+
+
+def retire_legacy_dishes(red):
+    """Cancel old dish orders and adjust demand, preserving individual eat orders."""
+    removed = 0
+    for raw_id in red.lrange("dish:pending:ids", 0, -1):
+        order_id = raw_id.decode() if isinstance(raw_id, bytes) else raw_id
+        raw_dish = red.get("dish:pending:" + order_id)
+        if raw_dish is None:
+            red.lrem("dish:pending:ids", 1, order_id)
+            continue
+        dish_id = raw_dish.decode() if isinstance(raw_dish, bytes) else raw_dish
+        recipe = RETIRED_RECIPES.get(dish_id)
+        if recipe is None:
+            # Leave unknown orders untouched; don't guess how to compensate.
+            continue
+        keys = [
+            "dish:pending:" + order_id,
+            "dish:pending:ids",
+            "dish:waiting:" + dish_id,
+        ] + ["eat:waiting:" + ingredient for ingredient in recipe]
+        args = [order_id, dish_id] + list(recipe.values())
+        removed += int(red.register_script(RETIRE_DISH)(keys=keys, args=args))
+    return removed

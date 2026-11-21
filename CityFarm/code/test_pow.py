@@ -19,9 +19,7 @@ class ProofOfWorkTests(unittest.TestCase):
     def test_catalog_covers_existing_products(self):
         self.assertEqual(
             set(PRODUCT_DIFFICULTIES),
-            {"corn", "wheat", "celery", "carrot", "lettuce", "tomato",
-             "rice", "beans", "potato", "orange", "banana", "apple",
-             "milk", "beef", "pork", "eggs", "chicken_meat", "fish"},
+            {"corn", "wheat", "carrot", "lettuce", "tomato"},
         )
 
     def test_valid_proof(self):
@@ -54,7 +52,7 @@ class ProofOfWorkTests(unittest.TestCase):
         with patch("tasks.r") as redis_mock, patch("tasks.ACCEPT_PROOF") as accept, patch("tasks.notify"):
             redis_mock.get.return_value = payload.encode()
             accept.side_effect = [1, 0]
-            self.assertTrue(verify_product_proof.run(identifier, nonce, "farmer"))
+            self.assertTrue(verify_product_proof.run(identifier, nonce, self.farmer))
             self.assertFalse(verify_product_proof.run(identifier, nonce, "farmer"))
 
     def test_server_difficulty_cannot_be_downgraded(self):

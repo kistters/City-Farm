@@ -85,17 +85,7 @@
           </div>
 
           <div class="panel-body">
-            <h4>Dishes</h4>
-            <div v-for="dish in dishes" class="dish-choice">
-              <button v-on:click="orderDish(dish.id)" class="btn btn-default btn-block">
-                <img v-bind:src="'/css/images/dish-' + dish.id + '.svg'" class="plant" v-bind:alt="dish.name" />
-                <strong>{{ dish.name }}</strong>
-                <small class="dish-ingredients">{{ dish.ingredients_text }}</small>
-              </button>
-            </div>
-            <p v-if="dishMessage" class="text-info" aria-live="polite">{{ dishMessage }}</p>
-            <hr />
-            <h4>Single ingredients</h4>
+            <h4>Choose an ingredient</h4>
             <div v-for="plant in productCatalog" class="col-md-4 col-sm-5 col-xs-5 nogutter control-panel">
               <button v-on:click="consume(plant.name)" class="btn-link">
                 <img v-bind:src="'/css/images/' + plant.name + '.svg'" class="plant" v-bind:alt="plant.name" />
