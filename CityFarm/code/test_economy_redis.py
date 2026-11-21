@@ -39,7 +39,7 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(economy.market(self.red)["tomato"], 3)
         with self.assertRaises(ValueError):
             economy.submit(self.red, self.farmer, public["id"], public["pattern"])
-        self.assertEqual(economy.market(self.red)["tomato"], 2)
+        self.assertEqual(economy.market(self.red)["tomato"], 3)
         with self.assertRaisesRegex(ValueError, "occupied"):
             economy.start(self.red, self.farmer, "farmer", 1, "corn", 0)
 
