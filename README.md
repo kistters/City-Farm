@@ -112,18 +112,14 @@ mas usa `Math.random()`, impróprio para identificadores de segurança.
 ## Pedidos de consumo pendentes
 
 A página principal mostra **Pending Eat requests** no lugar do painel de
-estoque. Cada clique do Citizen registra um pedido com ID no Redis, incrementa
-o contador por produto e agenda a tarefa Celery de consumo. Quando a tarefa
-consegue consumir o alimento, o mesmo script Redis que baixa o estoque
-remove o pedido e decrementa seu contador atomicamente.
+estoque. Cada clique do Citizen registra um pedido individual no Redis.
+Se houver estoque, o consumo ocorre imediatamente; caso contrário, o
+pedido fica aguardando na fila por ingrediente, sem tarefas Celery
+repetitivas. O contador é atualizado atomicamente após o atendimento.
 
-O `dashboard.html` continua exibindo o estoque completo, conexões e
-histórico PoW. O painel de pedidos inclui somente solicitações criadas depois
-desta alteração; tarefas antigas sem identificador continuam funcionando,
-mas não aparecem nos contadores. Os retries infinitos continuam **sem
-alteração** nesta etapa; a issue #12 acompanha sua revisão.
-
-Teste: `docker compose exec worker python -m unittest test_pending_eat`.
+Os ingredientes necessários a pratos também aparecem nos contadores.
+O dashboard separado mantém estoque, histórico PoW, conexões e agora
+métricas de pedidos pendentes e atendidos.
 
 ## Variedade, fontes de produção e pratos
 
@@ -150,8 +146,8 @@ os pedidos e **consome todos os ingredientes de uma vez** com Lua
 atômico. Se faltarem ingredientes, nenhum é consumido e a demanda
 continua visível na seção `Pending Eat requests`. Não há peso,
 qualidade, crescimento nem expiração nesta etapa. Pedidos de ingredientes
-individuais continuam usando a tarefa `eat()` anterior, incluindo os
-retries descritos na issue #12.
+individuais agora são atendidos diretamente via Redis, sem retries
+periódicos; veja a seção sobre a issue #12 abaixo.
 
 Os pratos possuem fila limitada a 200 pedidos aguardando preparo;
 não há cancelamento nem timeout automático ainda.
@@ -177,3 +173,57 @@ conexões e histórico de validações.
 
 **Limites:** o catálogo e as receitas ainda são demonstrativos;
 não representam criação real de animais, árvores recorrentes ou nutrição.
+
+## Pedidos eat sem retries infinitos (issue #12)
+
+Pedidos individuais são registrados diretamente pelo Tornado no Redis e
+armazenados em uma fila **FIFO por ingrediente** (`eat:queue:<produto>`).
+Não são mais disparadas tarefas Celery para cada novo consumo. O pedido
+fica visível na feira enquanto aguarda estoque, sem nenhum `sleep`,
+`retry(countdown=3)` ou polling contínuo.
+
+Tanto a criação de um pedido quanto a colheita por PoW usam scripts Lua
+para consumir uma unidade disponível e atender atomicamente o primeiro
+Citizen aguardando aquele ingrediente. Quando o estoque está zerado,
+o pedido permanece na fila persistida no Redis. Um mesmo pedido não pode
+consumir duas unidades; o backend usa um ID aleatório e marcador de
+deduplicação. São permitidos até **200 pedidos individuais pendentes por
+ingrediente** para evitar acúmulo ilimitado.
+
+Os pratos continuam aguardando **a receita inteira**, pelo fluxo de
+`dish_orders.py`. Na disputa por um ingrediente, pedidos individuais
+pendentes têm prioridade no momento da colheita; a receita só usa o
+estoque restante.
+
+### Atualização a partir de versões anteriores
+
+Na inicialização, o Tornado recupera marcadores `eat:pending:*` de versões
+anteriores, insere os pedidos ainda pendentes na fila uma única vez e
+tenta consumir estoque já disponível. Tarefas `eat` antigas que ainda
+estejam no RabbitMQ são convertidas em pedidos persistentes quando
+executadas pela primeira vez, **sem reenfileirar retries**. Pedidos já
+concluídos são ignorados.
+
+Os contadores de pedidos atendidos são expostos no payload do dashboard
+(`pending_orders[].fulfilled`), junto com as pendências.
+
+A fila não expira automaticamente nesta versão: isso evita perder demanda
+enquanto não existe estoque, mas significa que o pedido continuará pendente
+até ser atendido. Cancelamento e TTL podem ser evoluções futuras.
+Os pedidos dependem da persistência configurada para Redis; o Compose
+atual não promete durabilidade em caso de remoção do volume/dados do Redis.
+
+### Teste da issue #12
+
+```bash
+docker compose up --build -d
+docker compose exec worker python -m unittest test_pending_eat test_pow test_dishes
+docker compose exec worker python -m unittest test_eat_redis
+docker compose logs -f worker websocket
+```
+
+Em `/`, peça alguns alimentos com estoque zero e observe o painel de
+pedidos pendentes: nenhum `tasks.eat ... Retry in 3s` novo deverá surgir.
+Produza os alimentos via PoW e verifique que os contadores diminuem
+sem estoque negativo, inclusive com dois Citizens conectados.
+Repita após reiniciar os containers (sem `docker compose down -v`).

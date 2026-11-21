@@ -42,6 +42,32 @@
       </div>
     </div>
 
+    <!-- Métricas das filas: a feira na tela inicial continua intacta. -->
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">Eat orders — waiting and fulfilled</div>
+          <div class="panel-body">
+            <div class="table-responsive">
+              <table class="table table-condensed">
+                <thead>
+                  <tr><th>Ingredient</th><th>Waiting</th><th>Fulfilled (single)</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="order in pendingOrders" v-if="order.qty > 0 || order.fulfilled > 0">
+                    <td>{{ order.what }}</td>
+                    <td>{{ order.qty }}</td>
+                    <td>{{ order.fulfilled }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <small class="text-muted">Waiting includes ingredients needed by pending dishes. Fulfilled counts individual eat requests only.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Histórico novo: abaixo dos painéis existentes -->
     <div class="row">
       <div class="col-xs-12">

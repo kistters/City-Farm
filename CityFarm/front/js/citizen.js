@@ -78,6 +78,11 @@ var citizen = new Vue({
             if (data.dish_error) {
                 this.dishMessage = data.dish_error;
             }
+            if (data.eat_ordered) {
+                this.dishMessage = data.eat_ordered.status === 'prepared'
+                    ? 'Ingredient consumed: ' + data.eat_ordered.product
+                    : 'Waiting for harvest: ' + data.eat_ordered.product;
+            }
             if (data.eat_error) {
                 this.dishMessage = data.eat_error;
             }
