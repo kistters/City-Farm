@@ -23,3 +23,20 @@
 @media screen and (max-width: 767px) {
 
 }
+
+.pow-panel .panel-body {
+    max-height: 340px;
+    overflow-y: auto;
+}
+.pow-event {
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e5e5;
+}
+.pow-event:last-child { border-bottom: 0; }
+.pow-hash code {
+    display: block;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    margin: 4px 0;
+    font-size: 11px;
+}
