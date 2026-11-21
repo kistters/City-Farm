@@ -22,22 +22,19 @@ FOOD_ENERGY = 30
 FOOD_PRICE = 5
 SOIL_PREPARE_COST = 5
 SOIL_PREPARE_RECOVERY = 40
-BASE_PLOTS = 3
 
-# Desafio e saldo do solo são verificados ANTES da criação dos lotes.
-# Cada campo "crop:<produto>" contém as unidades ainda não vendidas.
+# A lista Redis do produto é o estoque. Cada unidade guarda apenas o ID do Farmer.
+# Não há terreno, slot nem capacidade máxima; Saúde do Solo limita a colheita.
 FINISH_FARM = """
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
 if redis.call('GET', KEYS[2]) ~= ARGV[2] then return 0 end
-if redis.call('EXISTS', KEYS[3]) == 1 then return -1 end
-if tonumber(redis.call('GET', KEYS[4]) or '0') < tonumber(ARGV[3]) then return -2 end
-local crops = cjson.decode(ARGV[5])
+if tonumber(redis.call('GET', KEYS[3]) or '0') < tonumber(ARGV[3]) then return -2 end
+local crops = cjson.decode(ARGV[4])
 redis.call('DEL', KEYS[1], KEYS[2])
-redis.call('DECRBY', KEYS[4], ARGV[3])
+redis.call('DECRBY', KEYS[3], ARGV[3])
 for product, count in pairs(crops) do
-    redis.call('HSET', KEYS[3], 'crop:' .. product, count)
     for i = 1, count do
-        redis.call('RPUSH', 'game:stock:' .. product, ARGV[4])
+        redis.call('RPUSH', 'game:stock:' .. product, ARGV[5])
     end
 end
 return 1
@@ -53,7 +50,8 @@ redis.call('INCRBY', KEYS[4], ARGV[4])
 return 1
 """
 
-# Estoque antigo com campos "product" e "qty" segue vendável, sem migração.
+# As novas unidades carregam apenas o ID do vendedor. Itens antigos com
+# ID:slot continuam vendáveis, mas não restringem novas plantações.
 BUY_FOOD = """
 local coins = tonumber(redis.call('GET', KEYS[1]) or '0')
 local energy = tonumber(redis.call('GET', KEYS[2]) or '0')
@@ -61,39 +59,58 @@ if coins < tonumber(ARGV[1]) then return {-1, ''} end
 if energy >= tonumber(ARGV[2]) then return {-2, ''} end
 local item = redis.call('LINDEX', KEYS[3], 0)
 if not item then return {-3, ''} end
+
 local seller, slot = string.match(item, '^([0-9a-f]+):([0-9]+)$')
-if not seller or string.len(seller) ~= 32 then return {-4, ''} end
-local plot = 'game:plot:' .. seller .. ':' .. slot
-local field = 'crop:' .. ARGV[3]
-local count = tonumber(redis.call('HGET', plot, field) or '0')
-local legacy, previous = false, false
-if count == 0 then
-    field = 'stock:' .. ARGV[3]
-    count = tonumber(redis.call('HGET', plot, field) or '0')
-    previous = count > 0
+if not seller then
+    seller = item
 end
-if count == 0 and redis.call('HGET', plot, 'product') == ARGV[3] then
-    count = tonumber(redis.call('HGET', plot, 'qty') or '0')
-    legacy = true
+if not string.match(seller, '^[0-9a-f]+$') or string.len(seller) ~= 32 then
+    return {-4, ''}
 end
-if count < 1 then return {-4, ''} end
+
+local legacy, previous, field, legacy_key
+if slot then
+    legacy_key = 'game:plot:' .. seller .. ':' .. slot
+    field = 'crop:' .. ARGV[3]
+    local count = tonumber(redis.call('HGET', legacy_key, field) or '0')
+    legacy, previous = false, false
+    if count == 0 then
+        field = 'stock:' .. ARGV[3]
+        count = tonumber(redis.call('HGET', legacy_key, field) or '0')
+        previous = count > 0
+    end
+    if count == 0 and redis.call('HGET', legacy_key, 'product') == ARGV[3] then
+        count = tonumber(redis.call('HGET', legacy_key, 'qty') or '0')
+        legacy = true
+    end
+    if count < 1 then return {-4, ''} end
+end
+
 redis.call('LPOP', KEYS[3])
 redis.call('DECRBY', KEYS[1], ARGV[1])
 redis.call('INCRBY', 'game:coins:' .. seller, ARGV[1])
 redis.call('SET', KEYS[2], math.min(tonumber(ARGV[2]), energy + tonumber(ARGV[4])))
-if legacy then
-    if redis.call('HINCRBY', plot, 'qty', -1) == 0 then redis.call('DEL', plot) end
-elseif previous then
-    redis.call('HINCRBY', plot, field, -1)
-    if redis.call('HINCRBY', plot, 'remaining', -1) == 0 then
-        redis.call('DEL', plot)
-    end
-else
-    if redis.call('HINCRBY', plot, field, -1) == 0 then
-        redis.call('HDEL', plot, field)
-        if redis.call('HLEN', plot) == 0 then redis.call('DEL', plot) end
+
+if slot then
+    if legacy then
+        if redis.call('HINCRBY', legacy_key, 'qty', -1) == 0 then
+            redis.call('DEL', legacy_key)
+        end
+    elseif previous then
+        redis.call('HINCRBY', legacy_key, field, -1)
+        if redis.call('HINCRBY', legacy_key, 'remaining', -1) == 0 then
+            redis.call('DEL', legacy_key)
+        end
+    else
+        if redis.call('HINCRBY', legacy_key, field, -1) == 0 then
+            redis.call('HDEL', legacy_key, field)
+            if redis.call('HLEN', legacy_key) == 0 then
+                redis.call('DEL', legacy_key)
+            end
+        end
     end
 end
+
 return {1, seller}
 """
 
@@ -129,23 +146,12 @@ def _challenge(challenge_id):
     return "game:challenge:" + challenge_id
 
 
-def _plot(owner, index):
-    return "game:plot:{}:{}".format(owner, index)
-
-
 def initialize_player(red, owner):
     red.setnx("game:energy:" + owner, INITIAL_ENERGY)
     # Migra o saldo de solo da versão #22 sem sobrescrever jogadores já migrados.
     previous_soil = red.get("game:soil:" + owner)
     red.setnx("game:soil_health:" + owner,
               int(previous_soil) if previous_soil is not None else INITIAL_SOIL_HEALTH)
-    # Preservar terrenos já adquiridos em versões de teste, sem vender novos.
-    red.setnx("game:plot_limit:" + owner, BASE_PLOTS)
-
-
-def plot_limit(red, owner):
-    initialize_player(red, owner)
-    return int(red.get("game:plot_limit:" + owner))
 
 
 def market(red):
@@ -154,51 +160,23 @@ def market(red):
 
 def state(red, owner):
     initialize_player(red, owner)
-    plots = []
-    for index in range(plot_limit(red, owner)):
-        values = red.hgetall(_plot(owner, index))
-        decoded = {_text(k): _text(v) for k, v in values.items()}
-        products = {
-            key.removeprefix("crop:"): int(value)
-            for key, value in decoded.items() if key.startswith("crop:")
-        }
-        # Lotes mistos criados na #22 usavam "stock:<produto>" e "remaining".
-        for key, value in decoded.items():
-            if key.startswith("stock:") and int(value) > 0:
-                name = key.removeprefix("stock:")
-                products[name] = products.get(name, 0) + int(value)
-        if "product" in decoded:  # legado de lotes da PR #22
-            products[decoded["product"]] = int(decoded["qty"])
-        plots.append({
-            "index": index,
-            "product": next(iter(products)) if len(products) == 1 else
-                       ("mixed" if products else None),
-            "qty": sum(products.values()),
-            "products": products,
-        })
     return {
         "coins": int(red.get("game:coins:" + owner) or 0),
         "energy": int(red.get("game:energy:" + owner) or 0),
         "soil_health": int(red.get("game:soil_health:" + owner) or 0),
-        "plots": plots,
     }
 
 
-def start(red, owner, kind, level, product=None, plot=None):
+def start(red, owner, kind, level, product=None):
     if kind not in ("farmer", "citizen"):
         raise ValueError("Unknown activity")
     if type(level) is not int or level not in WORK_REWARDS:
         raise ValueError("Invalid level")
     initialize_player(red, owner)
     if kind == "farmer":
-        if type(plot) is not int or plot not in range(plot_limit(red, owner)):
-            raise ValueError("Choose an available plot")
-        if red.exists(_plot(owner, plot)):
-            raise ValueError("This plot is occupied until its food is sold")
         if int(red.get("game:soil_health:" + owner)) < FARM_LEVELS[level]["soil_cost"]:
             raise ValueError("Soil health too low. Care for the soil first.")
         public, expected = create_farm(level, product)
-        public["plot"] = plot
     else:
         if int(red.get("game:energy:" + owner)) < ENERGY_COST:
             raise ValueError("Not enough energy. Rest or buy food.")
@@ -245,7 +223,6 @@ def submit(red, owner, challenge_id, answer):
     kind = public["kind"]
     active = _active(owner, kind)
     if kind == "farmer":
-        plot = public["plot"]
         cost = FARM_LEVELS[public["level"]]["soil_cost"]
         # Dificuldade visual (células) e produção são regras distintas.
         # Só na multicultura a colheita corresponde a cada ícone mostrado.
@@ -254,13 +231,10 @@ def submit(red, owner, challenge_id, answer):
         else:
             counts = Counter({public["product"]: FARM_LEVELS[public["level"]]["production"]})
         outcome = int(red.register_script(FINISH_FARM)(
-            keys=[_challenge(challenge_id), active, _plot(owner, plot),
+            keys=[_challenge(challenge_id), active,
                   "game:soil_health:" + owner],
-            args=[raw, challenge_id, cost, "{}:{}".format(owner, plot),
-                  json.dumps(counts)],
+            args=[raw, challenge_id, cost, json.dumps(counts), owner],
         ))
-        if outcome == -1:
-            raise ValueError("Plot occupied; choose a free plot")
         if outcome == -2:
             raise ValueError("Not enough soil health")
         reward = {
