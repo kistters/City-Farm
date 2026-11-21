@@ -10,6 +10,7 @@ var dashboard = new Vue({
         web_status: 'close',
         ws_dashboard: null,
         groceries: [],
+        powHistory: [],
         userIpList: [],
         ipClick: '',
         statusClass: {'label label-danger': true },
@@ -101,6 +102,10 @@ var dashboard = new Vue({
         handleUpdate: function(data) {
             if (data.userIpList) {
                 this.userIpList = data.userIpList
+            }
+
+            if (data.pow_history) {
+                this.powHistory = data.pow_history;
             }
 
             if (data.groceries) {
