@@ -219,3 +219,58 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .food-emoji { display:inline-flex; align-items:center; justify-content:center; font-size:2rem; min-width:43px; }
 .food-market-emoji { font-size:3rem; line-height:1.2; }
 .food-cell { font-size:clamp(0.8rem, 4vw, 2.6rem); }
+
+/* City-Farm Pixel Art — direção 4: escala e ferramenta.
+   Sprites 5x3 no mesmo PNG (40x40 por sprite), compartilhados entre os papéis. */
+.pixel-sprite {
+  display:inline-block;
+  width:64px; height:64px; flex:0 0 64px;
+  background-image:url('/css/images/pixel-cityfarm.png');
+  background-size:500% 300%; background-repeat:no-repeat;
+  image-rendering:pixelated; vertical-align:middle;
+}
+.sprite-soil-hoe {background-position:0% 0%;}
+.sprite-soil-tractor {background-position:25% 0%;}
+.sprite-farm-1 {background-position:50% 0%;}
+.sprite-farm-2 {background-position:75% 0%;}
+.sprite-farm-3 {background-position:100% 0%;}
+.sprite-citizen-rest {background-position:0% 50%;}
+.sprite-food {background-position:25% 50%;}
+.sprite-career-1 {background-position:50% 50%;}
+.sprite-career-2 {background-position:75% 50%;}
+.sprite-career-3 {background-position:100% 50%;}
+.sprite-corn {background-position:0% 100%;}
+.sprite-wheat {background-position:25% 100%;}
+.sprite-carrot {background-position:50% 100%;}
+.sprite-lettuce {background-position:75% 100%;}
+.sprite-tomato {background-position:100% 100%;}
+
+.resource-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0;}
+.action-tile {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;min-width:0;min-height:148px;padding:12px 8px;
+  border:2px solid #b8cfb8;border-radius:13px;background:#f5faee;
+  color:var(--ink);cursor:pointer;text-align:center;
+}
+.action-tile strong {font-size:.95rem;}
+.action-tile small {color:var(--muted);font-size:.8rem;}
+.action-tile:hover:not(:disabled) {background:#e7f4df;border-color:#498756;}
+.action-tile:disabled {cursor:not-allowed;opacity:.58;}
+.action-tile:focus-visible,.pixel-levels button:focus-visible {outline:3px solid #e4a93c;outline-offset:3px;}
+.pixel-levels button {
+  display:flex;flex:1 1 160px;align-items:center;flex-direction:column;
+  justify-content:center;gap:6px;padding:12px 8px;min-width:0;min-height:128px;
+}
+.pixel-levels button strong {font-size:.86rem;line-height:1.25;}
+.pixel-levels button.chosen {border-color:#328255;background:#e3f3df;}
+.memory-cell .pixel-sprite {width:90%;height:90%;max-width:66px;max-height:66px;flex:0 1 auto;}
+.role-icon {width:76px;height:76px;}
+@media(max-width:600px){
+  .resource-actions{gap:8px;}
+  .action-tile{min-height:135px;padding:10px 5px;}
+  .action-tile .pixel-sprite{width:56px;height:56px;flex-basis:56px;}
+  .pixel-levels{gap:6px;}
+  .pixel-levels button{flex:1 1 30%;padding:10px 4px;}
+  .pixel-levels button .pixel-sprite{width:52px;height:52px;flex-basis:52px;}
+  .pixel-levels button strong{font-size:.75rem;}
+}

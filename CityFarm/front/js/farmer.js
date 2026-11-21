@@ -130,9 +130,6 @@ var farmer = new Vue({
                 this.playerMessage = error.message;
             }
         },
-        iconFor: function (name) {
-            return name ? '/css/images/' + name + '.svg' : '';
-        },
         cycleCell: function (index) {
             if (!this.challenge || this.showPattern || this.busy) return;
             var next = this.answer.slice();
