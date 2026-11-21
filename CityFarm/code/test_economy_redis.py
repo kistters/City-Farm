@@ -103,6 +103,8 @@ class EconomyRedisTests(unittest.TestCase):
         economy.buy(self.red, self.citizen, "corn")
         self.assertEqual(economy.state(self.red, self.farmer)["coins"], 10)
         self.assertEqual(economy.market(self.red)["corn"], 0)
+        self.red.set("game:coins:" + self.citizen, 5)
+        self.red.set("game:energy:" + self.citizen, 0)
         with self.assertRaisesRegex(ValueError, "out of stock"):
             economy.buy(self.red, self.citizen, "corn")
 
