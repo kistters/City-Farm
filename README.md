@@ -13,7 +13,7 @@ docker compose up --build -d
 ~~~
 
 - `http://localhost/`: escolha do papel.
-- `http://localhost/farmer`: memória, terrenos e plantio.
+- `http://localhost/farmer`: memória, Saúde do Solo e plantio.
 - `http://localhost/citizen`: aritmética, moedas, energia e mercado.
 - `http://localhost/dashboard`: estoque e atividades em tempo real.
 
@@ -21,7 +21,7 @@ No celular conectado à mesma rede Wi-Fi, acesse `http://IP_LOCAL_DO_PC`. As por
 
 ## Farmer
 
-Escolha apelido, terreno, ingrediente e nível. O backend mostra o padrão por 5 segundos (6 no Extra), esconde completamente e exige reproduzir as células corretas. Após acerto, o alimento está à venda **imediatamente**. O terreno fica livre novamente quando seu lote é vendido.
+Escolha apelido, ingrediente e nível. O backend mostra o padrão por 5 segundos (6 no Extra), esconde completamente e exige reproduzir as células corretas. Após acerto, o alimento está à venda **imediatamente**. **Não existem terrenos nem limite de lotes simultâneos:** o Farmer pode continuar produzindo enquanto houver Saúde do Solo suficiente, mesmo com alimentos anteriores ainda não vendidos.
 
 | Nível | Tabuleiro | Memorização | Alimentos | Saúde do Solo |
 |---|---|---|---:|---:|
@@ -31,10 +31,12 @@ Escolha apelido, terreno, ingrediente e nível. O backend mostra o padrão por 5
 
 Em 1 e 2, clicar marca/desmarca a célula com o ingrediente escolhido. No Extra, clicar repetidamente alterna entre vazio e os cinco ingredientes. A ordem dos cliques nunca importa.
 
-O Farmer começa com três terrenos para manter lotes à venda; não há compra de
-novos terrenos. O espaço volta a ficar livre quando **todos** os ingredientes
-do lote são vendidos. Dados de parcelas adquiridas numa versão de teste anterior
-são preservados.
+Não há seleção, compra, desbloqueio ou ocupação de terrenos. Cada unidade
+produzida fica no **estoque do seu ingrediente**, com o identificador do
+Farmer que a produziu. Ao comprar, o Citizen transfere as moedas a esse
+Farmer e a unidade é retirada do estoque, sem bloquear novas colheitas.
+Estoque legado vinculado a terrenos continua vendável até acabar, sem
+necessidade de migrar ou apagar dados do Redis.
 
 **Saúde do Solo:** uma única barra de 0–100 por Farmer, inicializada em 100.
 Plantar consome 10/35/20 pontos por nível, **apenas quando o desafio é validado
@@ -72,7 +74,7 @@ São apenas cinco alimentos: milho, trigo, cenoura, alface e tomate. Não existe
 
 - Nginx: páginas Vue 2 responsivas.
 - Tornado: WebSockets `/publihser` e `/dashboard`.
-- Redis: desafios com TTL de 180 segundos, estoques, lotes, terrenos, moedas e energia.
+- Redis: desafios com TTL de 180 segundos, estoque por ingrediente e vendedor, moedas, Energia e Saúde do Solo.
 - `puzzles.py`: geração/validação das regras dos desafios.
 - `economy.py`: regras econômicas centralizadas; Lua só para operações atômicas envolvendo múltiplas chaves (produção, compra, preparo pago).
 - `websocket.py`: transporte e notificações.
@@ -100,13 +102,14 @@ Os testes de integração limpam somente o banco Redis **DB 15**; o jogo usa o *
 1. Abra Farmer e Citizen em duas abas; cada papel tem ID casual próprio mesmo no mesmo navegador.
 2. Farmer produz um tomate no nível 1 e o vê no mercado.
 3. Citizen conclui uma soma, recebe 5 moedas e compra o tomate.
-4. Citizen recupera energia, o Farmer recebe moedas e o terreno é liberado.
+4. Citizen recupera energia e o Farmer recebe moedas, sem depender de terrenos.
 5. Confira a barra de Saúde do Solo e os gastos de 10/35/20, conforme o nível.
-6. No Extra, confirme que o mercado recebe **quatro tipos de ingredientes** e
-   só libera o terreno após a venda de todos os itens.
+6. No Extra, confirme que o mercado recebe **quatro tipos de ingredientes**.
+   Repita o plantio sem vender a produção anterior: o estoque deve acumular
+   normalmente, desde que haja Saúde do Solo suficiente.
 7. Reduza o solo a menos de 10 e use Cuidar da Terra; com moedas, use Preparar o Solo.
 8. Reduza a energia a menos de 10 e use Descansar; teste os limites de 100.
-9. Tente enviar um mesmo desafio duas vezes e confirmar compras simultâneas.
+9. Tente enviar um mesmo desafio duas vezes e confirme que compras simultâneas não duplicam pagamentos.
 10. Observe o estoque e os eventos em `/dashboard`.
 
 Logs: `docker compose logs -f websocket`.
