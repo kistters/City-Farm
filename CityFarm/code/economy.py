@@ -19,6 +19,7 @@ FOOD_PRICE = 5
 PLOTS = 3
 INITIAL_SOIL_HEALTH = 100
 SOIL_COST = {1: 10, 2: 35, 3: 20}
+FARM_OUTPUT = {1: 1, 2: 3, 3: 4}
 SOIL_CARE_COST = 5
 SOIL_CARE_GAIN = 40
 BASIC_RECOVERY = 10
@@ -141,7 +142,7 @@ def prepare_soil(red, owner):
 
 def harvest_products(level, pattern, product):
     if level != 3:
-        return {product: LEVEL_REWARD[level]}
+        return {product: FARM_OUTPUT[level]}
     return {name: pattern.count(name) for name in PRODUCTS if name in pattern}
 
 
