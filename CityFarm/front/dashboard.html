@@ -53,7 +53,7 @@
               <strong v-bind:class="proof.valid ? 'text-success' : 'text-danger'">
                 {{ proof.valid ? '✓ VALID' : '✗ INVALID' }}
               </strong>
-              <span class="text-muted">🍅 tomato · {{ proof.reason }}</span>
+              <span class="text-muted">{{ proof.product || 'unknown' }} · {{ proof.reason }}</span>
               <div><small>Farmer: {{ proof.farmer }} · Nonce: {{ proof.nonce }}</small></div>
               <div class="pow-hash"><code>{{ proof.hash || 'Hash unavailable (expired / invalid request)' }}</code></div>
               <small class="text-muted">{{ proof.timestamp }}</small>

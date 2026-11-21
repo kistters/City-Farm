@@ -47,7 +47,7 @@
 
           <div class="panel-body">
             <div v-for="plant in groceries" class="col-md-4 col-sm-5 col-xs-5 nogutter control-panel">
-              <button v-on:click="produce(plant)" v-bind:disabled="plant === 'tomato' && powBusy" class="btn-link">
+              <button v-on:click="produce(plant)" v-bind:disabled="powBusy" class="btn-link">
                 <img v-bind:src="'/css/images/'+ plant + '.png'"  class="plant" />
                 <p>{{plant}}</p>
               </button>
