@@ -15,7 +15,7 @@ docker compose up --build -d
 - `http://localhost/`: escolha do papel.
 - `http://localhost/farmer`: memória, Saúde do Solo e plantio.
 - `http://localhost/citizen`: aritmética, moedas, energia e mercado.
-- `http://localhost/dashboard`: estoque e atividades em tempo real.
+- `http://localhost/dashboard`: mercado, atividades e contadores persistentes por personagem.
 
 No celular conectado à mesma rede Wi-Fi, acesse `http://IP_LOCAL_DO_PC`. As portas 80 e 8888 precisam estar acessíveis na rede local. **Não publique o jogo na internet**: não há login real.
 
@@ -57,6 +57,25 @@ Cada trabalho correto gasta 10 de Energia. O Citizen começa com 60/100 e 0 moed
 Direção 4, **Escala e Ferramenta**. Sprites PNG 16-bit (com CSS `image-rendering: pixelated`) em `CityFarm/front/css/images/pixel-cityfarm.png`, reutilizados por todas as páginas: enxada, trator, hortinha familiar, plantação extensiva, horta diversificada, dormir, prato de Food e os cargos Estagiário/Efetivo/Consultor. Os cinco vegetais também são sprites do puzzle.
 
 Farmer e Citizen usam os mesmos componentes CSS para ações e níveis. No Citizen, **Descansar** e **Comer Food** aparecem juntos ao lado da barra de Energia; a compra continua custando 5 moedas e recuperando até 30 de Energia. O estoque continua sendo um único Food.
+
+## Dashboard de personagens
+
+O painel `/dashboard` concentra **Market · Food available** (com status da conexão e estoque total), o histórico recente e os acumulados **por personagem** (identificado pelo ID salvo no navegador):
+
+| Indicador | Quando aumenta |
+|---|---|
+| Food produzido | Farmer conclui um puzzle com sucesso: +1, +3 ou +4 |
+| Food comido | Citizen compra e consome uma unidade de Food para recuperar Energia |
+| Moedas ganhas no trabalho | Citizen conclui conta corretamente: +5, +10 ou +15 |
+| Moedas gastas no solo | Farmer usa **Preparar o Solo**: +5 ao total gasto |
+
+Os contadores ficam no Redis (`game:stats:<id>`) e são incrementados **na mesma transação atômica** que altera o estoque, as moedas ou os recursos. Cancelar ou errar desafios, descansar e cuidar gratuitamente da terra não aumentam os contadores. A venda de Food paga o Farmer, mas **não** conta como dinheiro produzido no trabalho do Citizen.
+
+Cada personagem é registrado com seu apelido e papel ao entrar no jogo, e o Dashboard recebe atualizações em tempo real. Os contadores **começam nesta versão**; não é possível recuperar um histórico completo a partir dos últimos 50 eventos já existentes. Eles persistem entre reconexões e não são zerados ao atualizar o Docker, desde que o Redis seja preservado.
+
+### Layout Farmer / Citizen
+
+As páginas `/farmer` e `/citizen` usam a mesma estrutura: identidade e moedas, barra de **Saúde do Solo** ou **Energia** com título e valor `/100`, dois cartões de ação e painel separado para os desafios. O bloco de mercado saiu do Farmer para ficar exclusivamente no Dashboard.
 
 ## Arquitetura
 
