@@ -104,7 +104,7 @@ class PublihserHandler(websocket.WebSocketHandler):
                 if not isinstance(request, dict):
                     raise ValueError("Invalid farm request")
                 challenge = start(red, owner, "farmer", request.get("level"),
-                                  product=request.get("product"), plot=request.get("plot"))
+                                  product=request.get("product"))
                 send(self, {"challenge": challenge})
             elif "work_start" in message:
                 request = message["work_start"]

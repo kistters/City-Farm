@@ -51,7 +51,6 @@
         <p class="hint" role="status">{{ playerMessage }}</p>
         <div class="wallet-summary">
           <span>Coins <strong>{{ playerState.coins }}</strong></span>
-          <span>Plots <strong>{{ playerState.plots.length }}</strong></span>
         </div>
         <div class="soil-health">
           <div class="section-head compact">
@@ -72,18 +71,7 @@
             </button>
           </div>
         </div>
-        <h3>Choose a plot</h3>
-        <div class="plot-grid">
-          <button type="button" v-for="plot in playerState.plots" v-bind:key="plot.index"
-            class="plot-tile" v-bind:class="{'chosen':selectedPlot===plot.index}"
-            v-bind:disabled="!!plot.product || !!challenge"
-            v-on:click="choosePlot(plot)">
-            <strong>Plot {{ plot.index+1 }}</strong>
-            <span v-if="plot.product"><span v-for="(qty,name) in plot.products" v-bind:key="name">{{ qty }} × {{ name }} </span></span>
-            <span v-else>Available</span>
-          </button>
-        </div>
-        <p class="hint">Plots hold food until it is sold. Soil care is the recurring expense.</p>
+        <p class="hint">Harvest as often as your soil health allows. Food stays in the market until Citizens buy it.</p>
         <div class="section-divider"></div>
         <div v-if="!challenge">
           <h3 v-if="level!==3">Choose an ingredient</h3><p v-else class="hint">Multicultura produces four different ingredients chosen by the puzzle.</p>
@@ -133,5 +121,5 @@
   </main>
   <script src="/js/dashboard.js?v=19"></script>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/farmer.js?v=23"></script>
+  <script src="/js/farmer.js?v=25"></script>
 </body></html>
