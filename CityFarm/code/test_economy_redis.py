@@ -272,6 +272,61 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(
             sum(economy.state(self.red, x)["coins"] for x in customers), 15)
 
+
+    def test_cancel_farm_challenge_releases_next_without_resources(self):
+        challenge = economy.start(self.red, self.farmer, "farmer", 1, "tomato")
+        self.assertEqual(
+            economy.cancel_challenge(self.red, self.farmer, challenge["id"]),
+            {"id": challenge["id"]},
+        )
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 100)
+        self.assertEqual(economy.market(self.red)["tomato"], 0)
+        self.assertIsNone(self.red.get("game:active:" + self.farmer + ":farmer"))
+        with self.assertRaisesRegex(ValueError, "expired or already"):
+            economy.submit(self.red, self.farmer, challenge["id"], challenge["pattern"])
+        with self.assertRaisesRegex(ValueError, "expired or already"):
+            economy.cancel_challenge(self.red, self.farmer, challenge["id"])
+        fresh = economy.start(self.red, self.farmer, "farmer", 1, "tomato")
+        self.assertNotEqual(fresh["id"], challenge["id"])
+        self.ready(fresh)
+        economy.submit(self.red, self.farmer, fresh["id"], fresh["pattern"])
+        self.assertEqual(economy.market(self.red)["tomato"], 1)
+
+    def test_cancel_rejects_other_player_and_citizen_challenge(self):
+        farm = economy.start(self.red, self.farmer, "farmer", 2, "corn")
+        with self.assertRaisesRegex(ValueError, "another player"):
+            economy.cancel_challenge(self.red, self.citizen, farm["id"])
+        self.ready(farm)
+        economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
+        self.assertEqual(economy.market(self.red)["corn"], 3)
+
+        citizen = economy.start(self.red, self.citizen, "citizen", 1)
+        with self.assertRaisesRegex(ValueError, "Only Farmer"):
+            economy.cancel_challenge(self.red, self.citizen, citizen["id"])
+        self.assertIsNotNone(self.red.get("game:challenge:" + citizen["id"]))
+
+    def test_cancel_and_submit_race_allows_only_one_outcome(self):
+        challenge = economy.start(self.red, self.farmer, "farmer", 1, "wheat")
+        self.ready(challenge)
+
+        def action(mode):
+            try:
+                if mode == "cancel":
+                    economy.cancel_challenge(self.red, self.farmer, challenge["id"])
+                else:
+                    economy.submit(
+                        self.red, self.farmer, challenge["id"], challenge["pattern"])
+                return True
+            except ValueError:
+                return False
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(action, ("cancel", "submit")))
+        self.assertEqual(results.count(True), 1)
+        food = economy.market(self.red)["wheat"]
+        soil = economy.state(self.red, self.farmer)["soil_health"]
+        self.assertIn((food, soil), [(0, 100), (1, 90)])
+
     def test_observe_then_answer_and_cannot_use_twice(self):
         challenge = economy.start(self.red, self.farmer, "farmer", 1, "tomato")
         self.assertEqual(

@@ -85,6 +85,17 @@ class RolePageTests(unittest.TestCase):
         self.assertIn("soilCosts", script)
         self.assertNotIn('plot=request.get("plot")', websocket)
 
+    def test_farmer_multiculture_selection_and_challenge_actions(self):
+        html = (FRONT / "farmer.html").read_text(encoding="utf-8")
+        script = (FRONT / "js/farmer.js").read_text(encoding="utf-8")
+        self.assertIn("level===3 || selectedProduct===plant.name", html)
+        self.assertIn("v-bind:disabled=\"level===3\"", html)
+        self.assertIn("v-on:click=\"reviewPattern\"", html)
+        self.assertIn("v-on:click=\"cancelChallenge\"", html)
+        self.assertIn("beginObservation: function", script)
+        self.assertIn("farm_cancel:", script)
+        self.assertIn("self.answer = Array(", script)
+
     def test_nginx_routes_and_responsive_css(self):
         nginx = (ROOT / "nginx/conf.d/city-farm.conf").read_text()
         css = (FRONT / "css/dashboard.css").read_text()

@@ -277,6 +277,8 @@ def cancel_challenge(red, owner, challenge_id):
     challenge = json.loads(raw)
     if challenge["owner"] != owner:
         raise ValueError("Challenge belongs to another player")
+    if challenge["public"]["kind"] != "farmer":
+        raise ValueError("Only Farmer challenges can be cancelled here")
     result = int(red.register_script(CANCEL_CHALLENGE)(
         keys=[key, _active(owner, challenge["public"]["kind"])],
         args=[raw, challenge_id],

@@ -74,10 +74,14 @@
         <p class="hint">Harvest as often as your soil health allows. Food stays in the market until Citizens buy it.</p>
         <div class="section-divider"></div>
         <div v-if="!challenge">
-          <h3 v-if="level!==3">Choose an ingredient</h3><p v-else class="hint">Multicultura produces four different ingredients chosen by the puzzle.</p>
-          <div class="product-grid" v-if="level!==3">
+          <h3>Ingredients</h3>
+          <p class="hint" v-if="level===3">Multicultura: all five ingredients are selected. The puzzle uses four of them.</p>
+          <p class="hint" v-else>Select one ingredient for monoculture.</p>
+          <div class="product-grid">
             <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
-              v-bind:class="{'chosen':selectedProduct===plant.name}"
+              v-bind:class="{'chosen':level===3 || selectedProduct===plant.name}"
+              v-bind:aria-pressed="level===3 || selectedProduct===plant.name"
+              v-bind:disabled="level===3"
               v-on:click="selectedProduct=plant.name">
               <img v-bind:src="'/css/images/' + plant.name + '.svg'" v-bind:alt="plant.name">
               <strong>{{ plant.name }}</strong>
@@ -112,8 +116,14 @@
               <span v-else aria-hidden="true">·</span>
             </button>
           </div>
-          <button v-if="!showPattern" class="button button-primary" type="button"
-            v-bind:disabled="busy" v-on:click="submitAnswer">Validate pattern</button>
+          <div class="challenge-actions">
+            <button v-if="!showPattern" class="button button-primary" type="button"
+              v-bind:disabled="busy" v-on:click="submitAnswer">Validate pattern</button>
+            <button v-if="!showPattern" class="button button-ghost" type="button"
+              v-bind:disabled="busy" v-on:click="reviewPattern">Ver padrão novamente</button>
+            <button class="button button-ghost" type="button"
+              v-bind:disabled="busy" v-on:click="cancelChallenge">Cancelar desafio</button>
+          </div>
         </div>
         <p v-if="gameMessage" class="feedback" aria-live="polite" role="status">{{ gameMessage }}</p>
       </section>
@@ -121,5 +131,5 @@
   </main>
   <script src="/js/dashboard.js?v=19"></script>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/farmer.js?v=25"></script>
+  <script src="/js/farmer.js?v=26"></script>
 </body></html>

@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 import redis
 from tornado import ioloop, web, websocket
 
-from economy import (buy, care_for_soil, market, prepare_soil, rest, start,
-                     state, submit)
+from economy import (buy, cancel_challenge, care_for_soil, market,
+                     prepare_soil, rest, start, state, submit)
 from players import normalize_player
 from products import public_catalog
 
@@ -106,6 +106,12 @@ class PublihserHandler(websocket.WebSocketHandler):
                 challenge = start(red, owner, "farmer", request.get("level"),
                                   product=request.get("product"))
                 send(self, {"challenge": challenge})
+            elif "farm_cancel" in message:
+                request = message["farm_cancel"]
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid cancellation")
+                result = cancel_challenge(red, owner, request.get("id"))
+                send(self, {"challenge_cancelled": result})
             elif "work_start" in message:
                 request = message["work_start"]
                 if not isinstance(request, dict):

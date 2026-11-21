@@ -209,3 +209,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 @media (max-width: 600px) {
     .soil-actions button { flex: 1 1 100%; }
 }
+
+/* Referência e cancelamento acessíveis durante o desafio de memória. */
+.product-tile:disabled { opacity: 1; cursor: default; }
+.challenge-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.challenge-actions .button { flex: 1 1 170px; }
