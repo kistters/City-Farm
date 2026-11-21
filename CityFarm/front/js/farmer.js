@@ -79,6 +79,12 @@ var farmer = new Vue({
                 if (data.game_error) {
                     self.gameMessage = data.game_error;
                     self.busy = false;
+                    if (data.game_error.indexOf('expired') !== -1 ||
+                        data.game_error.indexOf('already completed') !== -1) {
+                        self.challenge = null;
+                        if (self.observationTimer) clearTimeout(self.observationTimer);
+                        self.showPattern = false;
+                    }
                 }
             };
             socket.onerror = function () { self.status = 'error'; };
