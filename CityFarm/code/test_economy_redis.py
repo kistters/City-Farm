@@ -40,6 +40,118 @@ class EconomyRedisTests(unittest.TestCase):
             self.red, self.farmer, challenge["id"], challenge["pattern"])
         return challenge, result
 
+    def test_character_registration_keeps_role_name_and_accumulators(self):
+        economy.register_character(self.red, self.farmer, "Rafael", "farmer")
+        economy.register_character(self.red, self.citizen, "Nick", "citizen")
+        board = economy.characters(self.red)
+        self.assertEqual(len(board), 2)
+        self.assertEqual(
+            [(row["name"], row["role"]) for row in board],
+            [("Nick", "citizen"), ("Rafael", "farmer")],
+        )
+        for row in board:
+            for field in ("food_produced", "food_eaten", "coins_earned_work",
+                          "coins_spent_soil"):
+                self.assertEqual(row[field], 0)
+
+        # Mudança de apelido não cria outro personagem nem apaga o acumulado.
+        self.red.hset("game:stats:" + self.farmer, "food_produced", 8)
+        economy.register_character(self.red, self.farmer, "Novo nome", "farmer")
+        board = economy.characters(self.red)
+        self.assertEqual(len(board), 2)
+        self.assertEqual(board[1]["name"], "Novo nome")
+        self.assertEqual(board[1]["food_produced"], 8)
+        with self.assertRaisesRegex(ValueError, "Invalid character role"):
+            economy.register_character(self.red, "c" * 32, "Pessoa", "admin")
+        self.assertEqual(len(economy.characters(self.red)), 2)
+
+    def test_production_counter_only_on_successful_harvest(self):
+        economy.register_character(self.red, self.farmer, "Farmer", "farmer")
+        self.assertEqual(self.farm(1)[1]["reward"]["qty"], 1)
+        self.assertEqual(self.farm(2)[1]["reward"]["qty"], 3)
+        self.assertEqual(self.farm(3)[1]["reward"]["qty"], 4)
+        farmer = economy.characters(self.red)[0]
+        self.assertEqual(farmer["food_produced"], 8)
+        self.assertEqual(farmer["food_eaten"], 0)
+        self.assertEqual(farmer["coins_earned_work"], 0)
+        self.assertEqual(farmer["coins_spent_soil"], 0)
+
+        challenge = economy.start(self.red, self.farmer, "farmer", 1)
+        self.ready(challenge)
+        with self.assertRaisesRegex(ValueError, "Incorrect"):
+            economy.submit(self.red, self.farmer, challenge["id"],
+                           [None] * len(challenge["pattern"]))
+        economy.cancel_challenge(self.red, self.farmer, challenge["id"])
+        self.assertEqual(economy.characters(self.red)[0]["food_produced"], 8)
+
+    def test_work_and_food_counters_are_distinct_from_sale_income(self):
+        economy.register_character(self.red, self.farmer, "Farm", "farmer")
+        economy.register_character(self.red, self.citizen, "Cit", "citizen")
+        self.farm(2)
+        work = economy.start(self.red, self.citizen, "citizen", 3)
+        raw = json.loads(self.red.get("game:challenge:" + work["id"]))
+        economy.submit(self.red, self.citizen, work["id"], raw["expected"])
+        for _ in range(2):
+            self.red.set("game:energy:" + self.citizen, 0)
+            economy.buy(self.red, self.citizen)
+        by_role = {row["role"]: row for row in economy.characters(self.red)}
+        self.assertEqual(by_role["citizen"]["coins_earned_work"], 15)
+        self.assertEqual(by_role["citizen"]["food_eaten"], 2)
+        self.assertEqual(by_role["farmer"]["food_produced"], 3)
+        self.assertEqual(by_role["farmer"]["coins_earned_work"], 0)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 10)
+
+    def test_soil_spending_counter_records_only_successful_payment(self):
+        economy.register_character(self.red, self.farmer, "Farm", "farmer")
+        self.red.set("game:soil_health:" + self.farmer, 0)
+        economy.care_for_soil(self.red, self.farmer)
+        self.assertEqual(economy.characters(self.red)[0]["coins_spent_soil"], 0)
+        with self.assertRaisesRegex(ValueError, "Not enough coins"):
+            economy.prepare_soil(self.red, self.farmer)
+        self.assertEqual(economy.characters(self.red)[0]["coins_spent_soil"], 0)
+        self.red.set("game:coins:" + self.farmer, 5)
+        economy.prepare_soil(self.red, self.farmer)
+        self.assertEqual(economy.characters(self.red)[0]["coins_spent_soil"], 5)
+        with self.assertRaisesRegex(ValueError, "Not enough coins"):
+            economy.prepare_soil(self.red, self.farmer)
+        self.assertEqual(economy.characters(self.red)[0]["coins_spent_soil"], 5)
+
+    def test_concurrent_transactions_do_not_duplicate_statistics(self):
+        economy.register_character(self.red, self.farmer, "Farm", "farmer")
+        economy.register_character(self.red, self.citizen, "Cit", "citizen")
+        challenge = economy.start(self.red, self.farmer, "farmer", 1)
+        self.ready(challenge)
+
+        def harvest(_):
+            try:
+                economy.submit(self.red, self.farmer, challenge["id"],
+                               challenge["pattern"])
+                return True
+            except ValueError:
+                return False
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            results = list(executor.map(harvest, range(8)))
+        self.assertEqual(results.count(True), 1)
+        self.red.set("game:coins:" + self.citizen, 10)
+        owners = (self.citizen, "c" * 32)
+        self.red.set("game:coins:" + owners[1], 10)
+
+        def purchase(owner):
+            try:
+                economy.buy(self.red, owner)
+                return True
+            except ValueError:
+                return False
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            buyers = list(executor.map(purchase, owners))
+        self.assertEqual(buyers.count(True), 1)
+        self.assertEqual(economy.characters(self.red)[1]["food_produced"], 1)
+        self.assertEqual(sum(int(self.red.hget("game:stats:" + owner,
+                                           "food_eaten") or 0) for owner in owners), 1)
+        self.assertEqual(economy.market(self.red)["food"], 0)
+
     def test_any_level_produces_only_food_and_uses_soil(self):
         for level, amount, soil in ((1, 1, 90), (2, 3, 55), (3, 4, 35)):
             with self.subTest(level=level):
