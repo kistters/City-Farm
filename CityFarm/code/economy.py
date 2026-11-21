@@ -4,12 +4,11 @@ Funções Python expressam as regras; Lua é usado apenas onde múltiplas
 chaves precisam mudar de forma indivisível (produção, pagamento e compra).
 O identificador casual de jogador NÃO autentica o usuário.
 """
-from collections import Counter
 import json
 import secrets
 import time
 
-from products import PRODUCTS
+from products import FOOD, LEGACY_PRODUCTS
 from puzzles import FARM_LEVELS, WORK_REWARDS, check_solution, create_farm, create_work
 
 CHALLENGE_TTL = 180
@@ -23,19 +22,16 @@ FOOD_PRICE = 5
 SOIL_PREPARE_COST = 5
 SOIL_PREPARE_RECOVERY = 40
 
-# A lista Redis do produto é o estoque. Cada unidade guarda apenas o ID do Farmer.
-# Não há terreno, slot nem capacidade máxima; Saúde do Solo limita a colheita.
+# Um único estoque "food": cada unidade guarda somente o ID do Farmer.
+# Não há limite por terreno ou por lote; Saúde do Solo limita a colheita.
 FINISH_FARM = """
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
 if redis.call('GET', KEYS[2]) ~= ARGV[2] then return 0 end
 if tonumber(redis.call('GET', KEYS[3]) or '0') < tonumber(ARGV[3]) then return -2 end
-local crops = cjson.decode(ARGV[4])
 redis.call('DEL', KEYS[1], KEYS[2])
 redis.call('DECRBY', KEYS[3], ARGV[3])
-for product, count in pairs(crops) do
-    for i = 1, count do
-        redis.call('RPUSH', 'game:stock:' .. product, ARGV[5])
-    end
+for i = 1, tonumber(ARGV[4]) do
+    redis.call('RPUSH', KEYS[4], ARGV[5])
 end
 return 1
 """
@@ -58,46 +54,53 @@ redis.call('INCRBY', KEYS[4], ARGV[4])
 return 1
 """
 
-# As novas unidades carregam apenas o ID do vendedor. Itens antigos com
-# ID:slot continuam vendáveis, mas não restringem novas plantações.
+# Um só item econômico: Food. Consumir primeiro o estoque novo e depois os
+# estoques antigos preservados no Redis, mantendo o dono original das unidades.
 BUY_FOOD = """
 local coins = tonumber(redis.call('GET', KEYS[1]) or '0')
 local energy = tonumber(redis.call('GET', KEYS[2]) or '0')
 if coins < tonumber(ARGV[1]) then return {-1, ''} end
 if energy >= tonumber(ARGV[2]) then return {-2, ''} end
-local item = redis.call('LINDEX', KEYS[3], 0)
+
+local stock_key, item, product
+for i = 3, #KEYS do
+    local candidate = redis.call('LINDEX', KEYS[i], 0)
+    if candidate then
+        stock_key, item, product = KEYS[i], candidate, ARGV[i+1]
+        break
+    end
+end
 if not item then return {-3, ''} end
 
 local seller, slot = string.match(item, '^([0-9a-f]+):([0-9]+)$')
-if not seller then
-    seller = item
-end
+if not seller then seller = item end
 if not string.match(seller, '^[0-9a-f]+$') or string.len(seller) ~= 32 then
     return {-4, ''}
 end
 
+-- Somente para unidades antigas vinculadas a um terreno histórico.
 local legacy, previous, field, legacy_key
 if slot then
     legacy_key = 'game:plot:' .. seller .. ':' .. slot
-    field = 'crop:' .. ARGV[3]
+    field = 'crop:' .. product
     local count = tonumber(redis.call('HGET', legacy_key, field) or '0')
     legacy, previous = false, false
     if count == 0 then
-        field = 'stock:' .. ARGV[3]
+        field = 'stock:' .. product
         count = tonumber(redis.call('HGET', legacy_key, field) or '0')
         previous = count > 0
     end
-    if count == 0 and redis.call('HGET', legacy_key, 'product') == ARGV[3] then
+    if count == 0 and redis.call('HGET', legacy_key, 'product') == product then
         count = tonumber(redis.call('HGET', legacy_key, 'qty') or '0')
         legacy = true
     end
     if count < 1 then return {-4, ''} end
 end
 
-redis.call('LPOP', KEYS[3])
+redis.call('LPOP', stock_key)
 redis.call('DECRBY', KEYS[1], ARGV[1])
 redis.call('INCRBY', 'game:coins:' .. seller, ARGV[1])
-redis.call('SET', KEYS[2], math.min(tonumber(ARGV[2]), energy + tonumber(ARGV[4])))
+redis.call('SET', KEYS[2], math.min(tonumber(ARGV[2]), energy + tonumber(ARGV[3])))
 
 if slot then
     if legacy then
@@ -118,7 +121,6 @@ if slot then
         end
     end
 end
-
 return {1, seller}
 """
 
@@ -163,7 +165,12 @@ def initialize_player(red, owner):
 
 
 def market(red):
-    return {product: red.llen("game:stock:" + product) for product in PRODUCTS}
+    """Um único número de Food, incluindo alimentos das versões anteriores."""
+    stock = (FOOD,) + LEGACY_PRODUCTS
+    pipe = red.pipeline()
+    for product in stock:
+        pipe.llen("game:stock:" + product)
+    return {FOOD: sum(pipe.execute())}
 
 
 def state(red, owner):
@@ -175,7 +182,7 @@ def state(red, owner):
     }
 
 
-def start(red, owner, kind, level, product=None):
+def start(red, owner, kind, level):
     if kind not in ("farmer", "citizen"):
         raise ValueError("Unknown activity")
     if type(level) is not int or level not in WORK_REWARDS:
@@ -184,7 +191,7 @@ def start(red, owner, kind, level, product=None):
     if kind == "farmer":
         if int(red.get("game:soil_health:" + owner)) < FARM_LEVELS[level]["soil_cost"]:
             raise ValueError("Soil health too low. Care for the soil first.")
-        public, expected = create_farm(level, product)
+        public, expected = create_farm(level)
     else:
         if int(red.get("game:energy:" + owner)) < ENERGY_COST:
             raise ValueError("Not enough energy. Rest or buy food.")
@@ -232,25 +239,16 @@ def submit(red, owner, challenge_id, answer):
     active = _active(owner, kind)
     if kind == "farmer":
         cost = FARM_LEVELS[public["level"]]["soil_cost"]
-        # Dificuldade visual (células) e produção são regras distintas.
-        # Só na multicultura a colheita corresponde a cada ícone mostrado.
-        if public["level"] == 3:
-            counts = Counter(crop for crop in data["expected"] if crop)
-        else:
-            counts = Counter({public["product"]: FARM_LEVELS[public["level"]]["production"]})
+        # Os desenhos diferenciam os puzzles, não os itens produzidos.
+        quantity = FARM_LEVELS[public["level"]]["production"]
         outcome = int(red.register_script(FINISH_FARM)(
-            keys=[_challenge(challenge_id), active,
-                  "game:soil_health:" + owner],
-            args=[raw, challenge_id, cost, json.dumps(counts), owner],
+            keys=[_challenge(challenge_id), active, "game:soil_health:" + owner,
+                  "game:stock:" + FOOD],
+            args=[raw, challenge_id, cost, quantity, owner],
         ))
         if outcome == -2:
             raise ValueError("Not enough soil health")
-        reward = {
-            "items": [{"name": product, "qty": counts[product]}
-                      for product in PRODUCTS if counts[product]],
-            "qty": sum(counts.values()),
-            "soil_cost": cost,
-        }
+        reward = {"qty": quantity, "soil_cost": cost}
     else:
         coins = WORK_REWARDS[public["level"]]
         outcome = int(red.register_script(FINISH_WORK)(
@@ -320,21 +318,22 @@ def prepare_soil(red, owner):
     return {"soil_health": result, "cost": SOIL_PREPARE_COST}
 
 
-def buy(red, owner, product):
-    if product not in PRODUCTS:
-        raise ValueError("Unknown ingredient")
+def buy(red, owner):
+    """Compra uma unidade genérica de Food de qualquer Farmer com estoque."""
     initialize_player(red, owner)
+    products = (FOOD,) + LEGACY_PRODUCTS
+    keys = ["game:coins:" + owner, "game:energy:" + owner]
+    keys += ["game:stock:" + product for product in products]
     code, seller = red.register_script(BUY_FOOD)(
-        keys=["game:coins:" + owner, "game:energy:" + owner,
-              "game:stock:" + product],
-        args=[FOOD_PRICE, MAX_RESOURCE, product, FOOD_ENERGY],
+        keys=keys,
+        args=[FOOD_PRICE, MAX_RESOURCE, FOOD_ENERGY, *products],
     )
     code = int(code)
     if code != 1:
         raise ValueError({
             -1: "Not enough coins",
             -2: "Energy is already full",
-            -3: "Ingredient out of stock",
+            -3: "Food out of stock",
             -4: "Stock needs reconciliation",
         }.get(code, "Purchase failed"))
-    return {"product": product, "price": FOOD_PRICE, "seller": _text(seller)}
+    return {"product": FOOD, "price": FOOD_PRICE, "seller": _text(seller)}
