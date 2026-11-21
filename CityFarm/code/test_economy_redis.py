@@ -1,4 +1,4 @@
-"""Integração com Redis DB 15 (limpo pelos testes; DB 0 nunca é tocado)."""
+"""Testes econômicos com Redis DB 15; nunca apagam dados do DB 0."""
 import json
 import os
 import unittest
@@ -26,97 +26,131 @@ class EconomyRedisTests(unittest.TestCase):
     def tearDown(self):
         self.red.flushdb()
 
-    def ready(self, public):
-        key = "game:challenge:" + public["id"]
+    def ready(self, challenge):
+        key = "game:challenge:" + challenge["id"]
         data = json.loads(self.red.get(key))
         data["ready_at"] = 0
         self.red.setex(key, 180, json.dumps(data))
 
-    def farm(self, level=1, product="tomato", plot=0):
-        challenge = economy.start(self.red, self.farmer, "farmer", level, product, plot)
+    def farm(self, level=1, product="tomato"):
+        challenge = economy.start(self.red, self.farmer, "farmer", level, product)
         self.ready(challenge)
-        result = economy.submit(self.red, self.farmer, challenge["id"], challenge["pattern"])
-        return challenge, result
+        reward = economy.submit(
+            self.red, self.farmer, challenge["id"], challenge["pattern"])
+        return challenge, reward
 
-    def test_monoculture_uses_soil_and_cannot_reward_twice(self):
-        challenge, result = self.farm(2, "tomato", 0)
+    def test_many_harvests_are_not_blocked_by_unsold_stock(self):
+        # Produzir sem compradores não ocupa terreno nem bloqueia novo desafio.
+        for _ in range(10):
+            self.farm(1, "tomato")
+        self.assertEqual(economy.market(self.red)["tomato"], 10)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 0)
+        self.assertNotIn("plots", economy.state(self.red, self.farmer))
+        self.assertEqual(
+            self.red.lrange("game:stock:tomato", 0, -1),
+            [self.farmer.encode()] * 10,
+        )
+        with self.assertRaisesRegex(ValueError, "Soil health too low"):
+            economy.start(self.red, self.farmer, "farmer", 1, "tomato")
+        economy.care_for_soil(self.red, self.farmer)
+        self.farm(1, "tomato")
+        self.assertEqual(economy.market(self.red)["tomato"], 11)
+
+    def test_monoculture_consumes_soil_and_cannot_reward_twice(self):
+        challenge, result = self.farm(2, "tomato")
         self.assertEqual(result["reward"]["qty"], 3)
-        self.assertEqual(result["reward"]["items"], [{"name": "tomato", "qty": 3}])
+        self.assertEqual(
+            result["reward"]["items"], [{"name": "tomato", "qty": 3}])
         self.assertEqual(economy.market(self.red)["tomato"], 3)
         self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 65)
         with self.assertRaisesRegex(ValueError, "completed"):
-            economy.submit(self.red, self.farmer, challenge["id"], challenge["pattern"])
+            economy.submit(
+                self.red, self.farmer, challenge["id"], challenge["pattern"])
         self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 65)
-        with self.assertRaisesRegex(ValueError, "occupied"):
-            economy.start(self.red, self.farmer, "farmer", 1, "corn", 0)
+        self.farm(1, "corn")
+        self.assertEqual(economy.market(self.red)["corn"], 1)
 
-    def test_multiculture_produces_four_actual_different_ingredients(self):
-        _, result = self.farm(3, "carrot", 0)
+    def test_multiculture_produces_exact_ingredients_from_pattern(self):
+        challenge, result = self.farm(3, "carrot")
         items = result["reward"]["items"]
         self.assertEqual(len(items), 4)
         self.assertEqual({x["qty"] for x in items}, {1})
-        self.assertEqual(sum(item["qty"] for item in items), 4)
+        self.assertEqual(
+            {x["name"] for x in items},
+            {crop for crop in challenge["pattern"] if crop},
+        )
+        self.assertEqual(sum(economy.market(self.red).values()), 4)
         self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 80)
-        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["qty"], 4)
-        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["product"], "mixed")
-        for item in items:
-            self.assertEqual(economy.market(self.red)[item["name"]], 1)
+        self.farm(3, "carrot")
+        self.assertEqual(sum(economy.market(self.red).values()), 8)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 60)
 
-        # O lote misto permanece no terreno até a última unidade ser vendida.
-        self.red.set("game:coins:" + self.citizen, 25)
-        for n, item in enumerate(items):
-            self.red.set("game:energy:" + self.citizen, 0)
-            bought = economy.buy(self.red, self.citizen, item["name"])
-            self.assertEqual(bought["seller"], self.farmer)
-            plot = economy.state(self.red, self.farmer)["plots"][0]
-            self.assertEqual(plot["qty"], 3 - n)
-        self.assertIsNone(economy.state(self.red, self.farmer)["plots"][0]["product"])
-        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 20)
-
-    def test_work_and_purchase_pay_seller_and_restore_energy(self):
-        self.farm(1, "corn", 1)
+    def test_buy_pays_producer_and_restores_energy(self):
+        self.farm(1, "corn")
+        self.farm(1, "corn")
         work = economy.start(self.red, self.citizen, "citizen", 2)
-        raw = json.loads(self.red.get("game:challenge:" + work["id"]))
-        economy.submit(self.red, self.citizen, work["id"], raw["expected"])
+        expected = json.loads(self.red.get(
+            "game:challenge:" + work["id"]))["expected"]
+        economy.submit(self.red, self.citizen, work["id"], expected)
         self.assertEqual(economy.state(self.red, self.citizen)["coins"], 10)
-        self.assertEqual(economy.state(self.red, self.citizen)["energy"], 50)
         result = economy.buy(self.red, self.citizen, "corn")
         self.assertEqual(result["seller"], self.farmer)
         self.assertEqual(economy.state(self.red, self.citizen)["coins"], 5)
         self.assertEqual(economy.state(self.red, self.citizen)["energy"], 80)
         self.assertEqual(economy.state(self.red, self.farmer)["coins"], 5)
-        self.assertEqual(economy.state(self.red, self.farmer)["plots"][1]["qty"], 0)
+        self.assertEqual(economy.market(self.red)["corn"], 1)
+        self.red.set("game:energy:" + self.citizen, 0)
+        economy.buy(self.red, self.citizen, "corn")
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 10)
+        self.assertEqual(economy.market(self.red)["corn"], 0)
         with self.assertRaisesRegex(ValueError, "out of stock"):
             economy.buy(self.red, self.citizen, "corn")
 
-    def test_legacy_single_product_plot_can_still_be_sold(self):
-        self.red.hset("game:plot:" + self.farmer + ":0",
-                      mapping={"product": "lettuce", "qty": 1})
+    def test_legacy_single_product_stock_still_sells(self):
+        old_key = "game:plot:" + self.farmer + ":0"
+        self.red.hset(old_key, mapping={"product": "lettuce", "qty": 1})
         self.red.rpush("game:stock:lettuce", self.farmer + ":0")
         self.red.set("game:coins:" + self.citizen, 5)
-        economy.buy(self.red, self.citizen, "lettuce")
+        result = economy.buy(self.red, self.citizen, "lettuce")
+        self.assertEqual(result["seller"], self.farmer)
+        self.assertFalse(self.red.exists(old_key))
         self.assertEqual(economy.market(self.red)["lettuce"], 0)
-        self.assertIsNone(economy.state(self.red, self.farmer)["plots"][0]["product"])
 
-    def test_previous_mixed_plot_and_soil_survive_upgrade(self):
-        self.red.set("game:soil:" + self.farmer, 47)
-        plot_key = "game:plot:" + self.farmer + ":0"
-        self.red.hset(plot_key, mapping={
-            "stock:corn": 1, "stock:tomato": 1, "remaining": 2,
-        })
-        self.red.rpush("game:stock:corn", self.farmer + ":0")
-        self.red.rpush("game:stock:tomato", self.farmer + ":0")
-        self.red.set("game:coins:" + self.citizen, 10)
-
-        farmer = economy.state(self.red, self.farmer)
-        self.assertEqual(farmer["soil_health"], 47)
-        self.assertEqual(farmer["plots"][0]["products"], {"corn": 1, "tomato": 1})
-
+    def test_legacy_mixed_lots_sell_and_do_not_block_farming(self):
+        # Formato crop:<produto> (PR #23).
+        old_key = "game:plot:" + self.farmer + ":0"
+        self.red.hset(old_key, mapping={"crop:corn": 1, "crop:tomato": 1})
+        for name in ("corn", "tomato"):
+            self.red.rpush("game:stock:" + name, self.farmer + ":0")
+        self.red.set("game:coins:" + self.citizen, 20)
+        self.farm(1, "corn")  # Antes, o terreno ocupado impediria plantar.
+        self.assertEqual(economy.market(self.red)["corn"], 2)
         economy.buy(self.red, self.citizen, "corn")
-        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["qty"], 1)
+        self.assertTrue(self.red.exists(old_key))
         self.red.set("game:energy:" + self.citizen, 0)
         economy.buy(self.red, self.citizen, "tomato")
-        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["qty"], 0)
+        self.assertFalse(self.red.exists(old_key))
+        self.assertEqual(economy.market(self.red)["corn"], 1)
+        self.red.set("game:energy:" + self.citizen, 0)
+        economy.buy(self.red, self.citizen, "corn")
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 15)
+
+    def test_previous_mixed_lot_format_survives(self):
+        # Formato stock:<produto> e remaining (rascunho PR #22).
+        self.red.set("game:soil:" + self.farmer, 47)
+        old_key = "game:plot:" + self.farmer + ":1"
+        self.red.hset(old_key, mapping={
+            "stock:corn": 1, "stock:tomato": 1, "remaining": 2,
+        })
+        self.red.rpush("game:stock:corn", self.farmer + ":1")
+        self.red.rpush("game:stock:tomato", self.farmer + ":1")
+        self.red.set("game:coins:" + self.citizen, 10)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 47)
+        economy.buy(self.red, self.citizen, "corn")
+        self.assertTrue(self.red.exists(old_key))
+        self.red.set("game:energy:" + self.citizen, 0)
+        economy.buy(self.red, self.citizen, "tomato")
+        self.assertFalse(self.red.exists(old_key))
         self.assertEqual(economy.state(self.red, self.farmer)["coins"], 10)
         self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 47)
 
@@ -135,8 +169,8 @@ class EconomyRedisTests(unittest.TestCase):
             economy.prepare_soil(self.red, self.farmer)
         self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 70)
         self.red.set("game:coins:" + self.farmer, 10)
-        result = economy.prepare_soil(self.red, self.farmer)
-        self.assertEqual(result, {"soil_health": 100, "cost": 5})
+        self.assertEqual(
+            economy.prepare_soil(self.red, self.farmer), {"soil_health": 100, "cost": 5})
         self.assertEqual(economy.state(self.red, self.farmer)["coins"], 5)
         with self.assertRaisesRegex(ValueError, "already full"):
             economy.prepare_soil(self.red, self.farmer)
@@ -170,12 +204,12 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(economy.state(self.red, self.citizen)["energy"], 0)
         self.assertEqual(economy.state(self.red, self.citizen)["coins"], 5)
 
-    def test_soil_health_required_before_and_during_a_farm_challenge(self):
+    def test_soil_health_required_before_and_during_farm_challenge(self):
         self.red.set("game:soil_health:" + self.farmer, 9)
         with self.assertRaisesRegex(ValueError, "Soil health too low"):
-            economy.start(self.red, self.farmer, "farmer", 1, "tomato", 0)
+            economy.start(self.red, self.farmer, "farmer", 1, "tomato")
         economy.care_for_soil(self.red, self.farmer)
-        challenge = economy.start(self.red, self.farmer, "farmer", 1, "tomato", 0)
+        challenge = economy.start(self.red, self.farmer, "farmer", 1, "tomato")
         self.ready(challenge)
         self.red.set("game:soil_health:" + self.farmer, 0)
         with self.assertRaisesRegex(ValueError, "Not enough soil"):
@@ -186,36 +220,37 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 0)
 
     def test_invalid_expired_wrong_owner_and_incorrect_answer(self):
-        farm = economy.start(self.red, self.farmer, "farmer", 1, "wheat", 0)
-        self.ready(farm)
+        challenge = economy.start(self.red, self.farmer, "farmer", 1, "wheat")
+        self.ready(challenge)
         with self.assertRaisesRegex(ValueError, "Incorrect"):
-            economy.submit(self.red, self.farmer, farm["id"], [None] * 9)
+            economy.submit(self.red, self.farmer, challenge["id"], [None] * 9)
         with self.assertRaisesRegex(ValueError, "another player"):
-            economy.submit(self.red, self.citizen, farm["id"], farm["pattern"])
-        self.red.delete("game:challenge:" + farm["id"])
+            economy.submit(self.red, self.citizen, challenge["id"], challenge["pattern"])
+        self.red.delete("game:challenge:" + challenge["id"])
         with self.assertRaisesRegex(ValueError, "expired"):
-            economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
+            economy.submit(self.red, self.farmer, challenge["id"], challenge["pattern"])
         self.assertEqual(economy.market(self.red)["wheat"], 0)
 
     def test_concurrent_farm_submissions_reward_once(self):
-        farm = economy.start(self.red, self.farmer, "farmer", 3, "lettuce", 0)
-        self.ready(farm)
+        challenge = economy.start(self.red, self.farmer, "farmer", 3, "lettuce")
+        self.ready(challenge)
 
-        def submit(_):
+        def complete(_):
             try:
-                economy.submit(self.red, self.farmer, farm["id"], farm["pattern"])
+                economy.submit(
+                    self.red, self.farmer, challenge["id"], challenge["pattern"])
                 return True
             except ValueError:
                 return False
 
         with ThreadPoolExecutor(max_workers=4) as executor:
-            results = list(executor.map(submit, range(8)))
+            results = list(executor.map(complete, range(8)))
         self.assertEqual(results.count(True), 1)
         self.assertEqual(sum(economy.market(self.red).values()), 4)
         self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 80)
 
     def test_concurrent_buyers_get_one_unit_only(self):
-        self.farm(1, "carrot", 0)
+        self.farm(1, "carrot")
         customers = ("b" * 32, "c" * 32)
         for customer in customers:
             self.red.set("game:coins:" + customer, 10)
@@ -232,14 +267,13 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(results.count(True), 1)
         self.assertEqual(economy.market(self.red)["carrot"], 0)
         self.assertEqual(economy.state(self.red, self.farmer)["coins"], 5)
-        self.assertEqual(sum(economy.state(self.red, x)["coins"] for x in customers), 15)
+        self.assertEqual(
+            sum(economy.state(self.red, x)["coins"] for x in customers), 15)
 
     def test_observe_then_answer_and_cannot_use_twice(self):
-        challenge = economy.start(self.red, self.farmer, "farmer", 1, "tomato", 0)
+        challenge = economy.start(self.red, self.farmer, "farmer", 1, "tomato")
         self.assertEqual(
-            economy.start(self.red, self.farmer, "farmer", 1, "tomato", 0),
-            challenge,
-        )
+            economy.start(self.red, self.farmer, "farmer", 1, "tomato"), challenge)
         with self.assertRaisesRegex(ValueError, "Wait"):
             economy.submit(self.red, self.farmer, challenge["id"], challenge["pattern"])
         self.ready(challenge)
