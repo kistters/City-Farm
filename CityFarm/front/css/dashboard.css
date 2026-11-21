@@ -40,3 +40,31 @@
     margin: 4px 0;
     font-size: 11px;
 }
+
+.product-emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    font-size: 34px;
+    line-height: 1;
+    vertical-align: middle;
+}
+.dish-choice {
+    margin-bottom: 8px;
+}
+.dish-choice .btn {
+    text-align: left;
+    white-space: normal;
+}
+.dish-choice .product-emoji {
+    width: 42px;
+    height: 42px;
+    font-size: 30px;
+}
+.dish-ingredients {
+    display: block;
+    margin-left: 46px;
+    color: #666;
+}
