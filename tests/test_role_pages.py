@@ -77,7 +77,7 @@ class RolePageTests(unittest.TestCase):
     def test_citizen_work_levels_have_career_names(self):
         html = (FRONT / "citizen.html").read_text(encoding="utf-8")
         script = (FRONT / "js/citizen.js").read_text(encoding="utf-8")
-        for name in ("Estagiário", "Efetivo", "Consultor"):
+        for name in ("Intern", "Employee", "Consultant"):
             self.assertIn(name, script)
         self.assertIn("levelNames[option]", html)
         self.assertIn("levelNames[challenge.level]", html)
@@ -181,12 +181,42 @@ class RolePageTests(unittest.TestCase):
             self.assertIn('class="resource-health"', html)
             self.assertIn('class="section-head compact"', html)
             self.assertIn('class="resource-actions"', html)
-        self.assertIn("<h3>Saúde do Solo</h3>", farmer)
-        self.assertIn("<h3>Energia</h3>", citizen)
+        self.assertIn("<h3>Soil Health</h3>", farmer)
+        self.assertIn("<h3>Energy</h3>", citizen)
         self.assertIn(".resource-health", css)
         self.assertNotIn("soil-health", css)
         self.assertIn("profile.role = 'farmer'", farmer_js)
         self.assertIn("profile.role = 'citizen'", citizen_js)
+
+    def test_english_ui_and_pixel_art_coins(self):
+        coin = FRONT / "css/images/pixel-coin.svg"
+        self.assertTrue(coin.is_file())
+        asset = coin.read_text(encoding="utf-8")
+        self.assertIn("<svg", asset)
+        self.assertIn('shape-rendering="crispEdges"', asset)
+        css = (FRONT / "css/dashboard.css").read_text(encoding="utf-8")
+        self.assertIn(".coin-icon", css)
+        self.assertIn("image-rendering:pixelated", css)
+        for name in ("farmer.html", "citizen.html"):
+            page = (FRONT / name).read_text(encoding="utf-8")
+            self.assertIn('class="coin-balance"', page)
+            self.assertIn('src="/css/images/pixel-coin.svg"', page)
+            self.assertIn('alt="Coins"', page)
+            self.assertNotIn("Coins <strong>", page)
+        for name in ("farmer.html", "citizen.html", "dashboard.html",
+                     "js/farmer.js", "js/citizen.js"):
+            text = (FRONT / name).read_text(encoding="utf-8")
+            for phrase in ("Saúde do Solo", "Grátis", "moedas", "Energia",
+                           "Descansar", "Comer Food", "Personagens", "Personagem",
+                           "Estagiário", "Efetivo", "Consultor", "Multicultura",
+                           "Ver padrão novamente", "Cancelar desafio"):
+                self.assertNotIn(phrase, text, msg=name)
+        farmer = (FRONT / "js/farmer.js").read_text(encoding="utf-8")
+        citizen = (FRONT / "js/citizen.js").read_text(encoding="utf-8")
+        for label in ("Family Monoculture", "Large-Scale Monoculture", "Polyculture"):
+            self.assertIn(label, farmer)
+        for label in ("Intern", "Employee", "Consultant"):
+            self.assertIn(label, citizen)
 
     def test_nginx_routes_and_responsive_css(self):
         nginx = (ROOT / "nginx/conf.d/city-farm.conf").read_text()

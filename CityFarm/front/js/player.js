@@ -1,4 +1,4 @@
-/* Identidade casual por papel. Farmer e Citizen são duas pessoas no mesmo browser. */
+/* Local identity per role: Farmer and Citizen are separate players. */
 window.CityFarmPlayer = {
     prefix: function () {
         var role = window.location.pathname.indexOf('/citizen') === 0 ?

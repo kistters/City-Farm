@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>City-Farm — Dashboard</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=30">
+  <link rel="stylesheet" href="/css/dashboard.css?v=31">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -41,21 +41,21 @@
     <section class="panel">
       <div class="section-head">
         <div>
-          <p class="eyebrow">Personagens</p>
-          <h2>Produção, consumo e moedas</h2>
+          <p class="eyebrow">Characters</p>
+          <h2>Production, consumption and coins</h2>
         </div>
       </div>
-      <p class="hint">Contadores acumulados desde esta atualização. Atividades anteriores não foram reconstruídas.</p>
-      <p class="hint" v-if="!characters.length">Nenhum personagem registrado ainda. Entre como Farmer ou Citizen para aparecer aqui.</p>
-      <div class="stats-scroll" v-else role="region" aria-label="Estatísticas por personagem" tabindex="0">
+      <p class="hint">Totals recorded since this feature was introduced. Earlier activities could not be reconstructed.</p>
+      <p class="hint" v-if="!characters.length">No characters registered yet. Join as Farmer or Citizen to appear here.</p>
+      <div class="stats-scroll" v-else role="region" aria-label="Statistics by character" tabindex="0">
         <table class="character-stats">
           <thead>
             <tr>
-              <th scope="col">Personagem</th>
-              <th scope="col">Food produzido</th>
-              <th scope="col">Food comido</th>
-              <th scope="col">Moedas ganhas no trabalho</th>
-              <th scope="col">Moedas gastas no solo</th>
+              <th scope="col">Character</th>
+              <th scope="col">Food produced</th>
+              <th scope="col">Food eaten</th>
+              <th scope="col"><img class="coin-icon coin-icon-small" src="/css/images/pixel-coin.svg" alt="" aria-hidden="true"> Coins earned from work</th>
+              <th scope="col"><img class="coin-icon coin-icon-small" src="/css/images/pixel-coin.svg" alt="" aria-hidden="true"> Coins spent on soil</th>
             </tr>
           </thead>
           <tbody>
@@ -84,6 +84,6 @@
       </div>
     </section>
   </main>
-  <script src="/js/dashboard.js?v=30"></script>
+  <script src="/js/dashboard.js?v=31"></script>
 </body>
 </html>
