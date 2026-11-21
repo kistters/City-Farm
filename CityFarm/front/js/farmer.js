@@ -63,18 +63,26 @@ var farmer = new Vue({
                     self.challenge = data.challenge;
                     self.busy = false;
                     self.answer = Array(data.challenge.size * data.challenge.size).fill(null);
-                    self.showPattern = true;
-                    if (self.observationTimer) clearTimeout(self.observationTimer);
-                    self.observationTimer = setTimeout(function () {
-                        self.showPattern = false;
-                    }, data.challenge.observe_seconds * 1000);
+                    self.beginObservation();
                     self.gameMessage = 'Memorize the ingredient positions.';
+                }
+                if (data.challenge_cancelled && self.challenge &&
+                    data.challenge_cancelled.id === self.challenge.id) {
+                    if (self.observationTimer) clearTimeout(self.observationTimer);
+                    self.observationTimer = null;
+                    self.challenge = null;
+                    self.showPattern = false;
+                    self.answer = [];
+                    self.busy = false;
+                    self.gameMessage = 'Desafio cancelado. Nenhum alimento ou ponto de solo foi gasto.';
                 }
                 if (data.challenge_result && data.challenge_result.kind === 'farmer') {
                     var reward = data.challenge_result.reward;
                     self.challenge = null;
                     self.busy = false;
                     self.showPattern = false;
+                    if (self.observationTimer) clearTimeout(self.observationTimer);
+                    self.observationTimer = null;
                     self.gameMessage = 'Harvest complete! +' + reward.qty + ' foods: ' +
                         reward.items.map(function (item) {
                             return item.qty + ' ' + item.name;
@@ -140,6 +148,27 @@ var farmer = new Vue({
                 next[index] = next[index] ? null : this.challenge.product;
             }
             this.answer = next;
+        },
+        beginObservation: function () {
+            if (!this.challenge) return;
+            var self = this;
+            this.showPattern = true;
+            if (this.observationTimer) clearTimeout(this.observationTimer);
+            this.observationTimer = setTimeout(function () {
+                self.showPattern = false;
+                self.observationTimer = null;
+            }, this.challenge.observe_seconds * 1000);
+        },
+        reviewPattern: function () {
+            if (!this.challenge || this.busy || this.showPattern) return;
+            this.beginObservation();
+            this.gameMessage = 'Memorize novamente. Sua resposta foi preservada.';
+        },
+        cancelChallenge: function () {
+            if (!this.challenge || this.busy) return;
+            this.busy = true;
+            this.gameMessage = 'Cancelando desafio...';
+            if (!this.send({farm_cancel: {id: this.challenge.id}})) this.busy = false;
         },
         startFarm: function () {
             if (!this.canPlant) return;

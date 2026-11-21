@@ -31,6 +31,10 @@ Escolha apelido, ingrediente e nível. O backend mostra o padrão por 5 segundos
 
 Em 1 e 2, clicar marca/desmarca a célula com o ingrediente escolhido. No Extra, clicar repetidamente alterna entre vazio e os cinco ingredientes. A ordem dos cliques nunca importa.
 
+**Seleção visual da Multicultura:** a grade dos cinco ingredientes continua visível quando o nível 3 é selecionado; **todos aparecem marcados**, sem sumir da tela. Não é necessário escolher três ingredientes: o desafio sorteia quatro ingredientes diferentes dentre os cinco.
+
+**Durante o desafio:** o jogador pode usar **Ver padrão novamente** para rever a referência por mais 5 segundos (6 no Extra), sem perder as células já preenchidas, ou **Cancelar desafio** para abandonar a tentativa. Cancelar invalida o desafio no servidor sem gastar Saúde do Solo nem gerar alimentos. A revisão do padrão não concede nenhuma recompensa; somente a resposta correta é validada pelo servidor.
+
 Não há seleção, compra, desbloqueio ou ocupação de terrenos. Cada unidade
 produzida fica no **estoque do seu ingrediente**, com o identificador do
 Farmer que a produziu. Ao comprar, o Citizen transfere as moedas a esse

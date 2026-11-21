@@ -40,6 +40,14 @@ end
 return 1
 """
 
+# Cancelamento invalida o desafio e libera o próximo início numa única operação.
+CANCEL_CHALLENGE = """
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+if redis.call('GET', KEYS[2]) ~= ARGV[2] then return 0 end
+redis.call('DEL', KEYS[1], KEYS[2])
+return 1
+"""
+
 FINISH_WORK = """
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
 if redis.call('GET', KEYS[2]) ~= ARGV[2] then return 0 end
@@ -256,6 +264,28 @@ def submit(red, owner, challenge_id, answer):
     if outcome != 1:
         raise ValueError("Challenge expired or already completed")
     return {"kind": kind, "reward": reward}
+
+
+def cancel_challenge(red, owner, challenge_id):
+    """Descarta um desafio não concluído, sem recompensa ou gasto de recursos."""
+    if not isinstance(challenge_id, str) or len(challenge_id) != 32:
+        raise ValueError("Invalid challenge")
+    key = _challenge(challenge_id)
+    raw = red.get(key)
+    if not raw:
+        raise ValueError("Challenge expired or already completed")
+    challenge = json.loads(raw)
+    if challenge["owner"] != owner:
+        raise ValueError("Challenge belongs to another player")
+    if challenge["public"]["kind"] != "farmer":
+        raise ValueError("Only Farmer challenges can be cancelled here")
+    result = int(red.register_script(CANCEL_CHALLENGE)(
+        keys=[key, _active(owner, challenge["public"]["kind"])],
+        args=[raw, challenge_id],
+    ))
+    if result != 1:
+        raise ValueError("Challenge expired or already completed")
+    return {"id": challenge_id}
 
 
 def _restore_basic(red, key):
