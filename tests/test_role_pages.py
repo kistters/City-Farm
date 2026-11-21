@@ -127,7 +127,7 @@ class RolePageTests(unittest.TestCase):
 
         sprite = FRONT / "css/images/pixel-cityfarm.png"
         data = sprite.read_bytes()
-        self.assertEqual(data[:8], b"\\x89PNG\\r\\n\\x1a\\n")
+        self.assertEqual(data[:8], bytes.fromhex("89504e470d0a1a0a"))
         self.assertEqual(struct.unpack(">II", data[16:24]), (200, 120))
 
         css = (FRONT / "css/dashboard.css").read_text(encoding="utf-8")
