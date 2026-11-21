@@ -2,7 +2,7 @@ import hashlib
 import unittest
 from unittest.mock import patch
 
-from tasks import valid_proof, verify_tomato_proof
+from tasks import valid_proof, verify_tomato_proof, record_proof
 
 
 class ProofOfWorkTests(unittest.TestCase):
@@ -34,6 +34,19 @@ class ProofOfWorkTests(unittest.TestCase):
             self.assertTrue(verify_tomato_proof.run(challenge_id, nonce, "farmer"))
             self.assertFalse(verify_tomato_proof.run(challenge_id, nonce, "farmer"))
             self.assertEqual(accept.call_count, 2)
+
+    def test_history_contains_hash_and_backend_verdict(self):
+        with patch("tasks.r") as redis_mock, patch("tasks.notify"):
+            record_proof("abc", 42, "farmer", "000abc", True, "accepted")
+            redis_mock.pipeline.return_value.lpush.assert_called_once()
+            payload = redis_mock.pipeline.return_value.lpush.call_args.args[1]
+            import json
+            event = json.loads(payload)
+            self.assertTrue(event["valid"])
+            self.assertEqual(event["hash"], "000abc")
+            self.assertEqual(event["nonce"], 42)
+            redis_mock.pipeline.return_value.ltrim.assert_called_with("pow:history", 0, 49)
+            redis_mock.pipeline.return_value.execute.assert_called_once()
 
     def test_malformed_nonce_rejected(self):
         with patch("tasks.r") as redis_mock:
