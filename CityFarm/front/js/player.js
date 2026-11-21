@@ -1,9 +1,18 @@
-/* Identidade casual compartilhada entre Farmer e Citizen (não é login). */
+/* Identidade casual por papel. Farmer e Citizen são duas pessoas no mesmo browser. */
 window.CityFarmPlayer = {
+    prefix: function () {
+        var role = window.location.pathname.indexOf('/citizen') === 0 ?
+            'citizen' : 'farmer';
+        return 'cityfarm.' + role + '.player.';
+    },
     load: function () {
+        var prefix = this.prefix();
+        var farmer = prefix === 'cityfarm.farmer.player.';
         return {
-            id: localStorage.getItem('cityfarm.player.id') || '',
-            name: localStorage.getItem('cityfarm.player.name') || ''
+            id: localStorage.getItem(prefix + 'id') ||
+                (farmer ? localStorage.getItem('cityfarm.player.id') : '') || '',
+            name: localStorage.getItem(prefix + 'name') ||
+                (farmer ? localStorage.getItem('cityfarm.player.name') : '') || ''
         };
     },
     save: function (name) {
@@ -11,7 +20,10 @@ window.CityFarmPlayer = {
         if (!name || name.length > 24 || !/^[\p{L}\p{N} _-]+$/u.test(name)) {
             throw new Error('Use a nickname with 1–24 letters or numbers.');
         }
-        var id = localStorage.getItem('cityfarm.player.id') || '';
+        var prefix = this.prefix();
+        var id = localStorage.getItem(prefix + 'id') ||
+            (prefix === 'cityfarm.farmer.player.' ?
+                localStorage.getItem('cityfarm.player.id') : '') || '';
         if (!/^[0-9a-f]{32}$/.test(id)) {
             var bytes = new Uint8Array(16);
             if (window.crypto && window.crypto.getRandomValues) {
@@ -25,8 +37,8 @@ window.CityFarmPlayer = {
                 return b.toString(16).padStart(2, '0');
             }).join('');
         }
-        localStorage.setItem('cityfarm.player.id', id);
-        localStorage.setItem('cityfarm.player.name', name);
+        localStorage.setItem(prefix + 'id', id);
+        localStorage.setItem(prefix + 'name', name);
         return {id: id, name: name};
     },
     websocketUrl: function () {
