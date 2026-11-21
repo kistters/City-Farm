@@ -284,3 +284,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .character-name strong, .character-name small { display: block; }
 .character-name small { color: var(--muted); font-weight: 400; margin-top: 3px; }
 .character-avatar { width: 42px; height: 42px; flex: 0 0 42px; }
+
+/* Pixel-art coin shared by Farmer and Citizen wallets. */
+.wallet-summary .coin-balance { display:inline-flex; align-items:center; gap:7px; }
+.coin-icon { width:30px; height:30px; display:inline-block; flex:none; image-rendering:pixelated; vertical-align:middle; }
+.wallet-summary .coin-balance strong { margin-left:0; font-variant-numeric:tabular-nums; font-size:1.04rem; }
+.coin-icon-small { width:18px; height:18px; vertical-align:text-bottom; }
