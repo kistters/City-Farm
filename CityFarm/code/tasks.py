@@ -1,13 +1,14 @@
 from celery import Celery
 from high_helpers import decr_resource_if_available
+import os
 import redis, requests
 
-app = Celery('tasks', broker='pyamqp://guest@rabbitmq//', backend='amqp')
+app = Celery('tasks', broker=os.environ.get('CELERY_BROKER_URL', 'amqp://cityfarm:cityfarm_dev@rabbitmq:5672//'))
 
 r = redis.StrictRedis(host='redis', port=6379, db=0)
 
 def notify():
-	requests.get('http://websocket:8888/update')
+	requests.get('http://websocket:8888/update', timeout=3)
 
 """ farmer planting """
 @app.task

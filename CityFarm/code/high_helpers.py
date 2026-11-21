@@ -17,7 +17,7 @@ def decr_resource_if_available(red, key, min_limit=0):
     if current_value then \
         current_value_int = tonumber(current_value) \
     end \
-    if current_value_int > min_limit then \
+    if current_value_int and current_value_int > min_limit then \
     redis.call('decrby', KEYS[1], 1) \
     return 1 \
     else \
