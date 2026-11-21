@@ -1,8 +1,6 @@
-FROM python:3.6.4-alpine3.7
-
-ADD ./code /code
-ADD ./requirements.txt .
-
-RUN pip install -r requirements.txt
+FROM python:3.12-slim
 
 WORKDIR /code
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+COPY code/ /code/

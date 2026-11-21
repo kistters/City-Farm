@@ -1,60 +1,43 @@
-version: '2'
 services:
-
-  
-#Nginx
   web:
-    image: nginx:1.13.8
-    #cpu_shares: 30
-    #mem_limit: 128M
+    image: nginx:1.27-alpine
     ports:
-        - "80:80"
-        - "443:443"
+      - "80:80"
     volumes:
-        - ./nginx/conf.d:/etc/nginx/conf.d
-        - ./CityFarm/front:/code
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./CityFarm/front:/code:ro
 
-#Tornado
   websocket:
-    build: CityFarm
+    build: ./CityFarm
     command: ["python", "websocket.py"]
-    #cpu_shares: 30
-    #mem_limit: 256M
     ports:
       - "8888:8888"
     volumes:
-      - ./CityFarm/code:/code
+      - ./CityFarm/code:/code:ro
     depends_on:
       - redis
+      - rabbitmq
+    environment:
+      CELERY_BROKER_URL: amqp://cityfarm:cityfarm_dev@rabbitmq:5672//
 
-#Celery
   worker:
-    build: CityFarm
-    #cpu_shares: 30
-    #mem_limit: 128M
-    command: ["sh","run-worker.sh"]
+    build: ./CityFarm
+    command: ["sh", "run-worker.sh"]
     volumes:
-      - ./CityFarm/code:/code
+      - ./CityFarm/code:/code:ro
     depends_on:
       - rabbitmq
       - redis
+    environment:
+      CELERY_BROKER_URL: amqp://cityfarm:cityfarm_dev@rabbitmq:5672//
 
-#RabbitMQ
   rabbitmq:
-    image: rabbitmq:3.6.15
-    command: ["rabbitmq-server"]
-    #cpu_shares: 30
-    #mem_limit: 256M
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: cityfarm
+      RABBITMQ_DEFAULT_PASS: cityfarm_dev
     ports:
-      - "15672:15672"
-    volumes:
-      - "./rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins"
+      - "127.0.0.1:15672:15672"
 
-#Database
   redis:
-    image: redis
-    container_name: db_redis
-    #cpu_shares: 30
-    #mem_limit: 256M
-    ports:
-      - "6379:6379"
+    image: redis:7.4-alpine

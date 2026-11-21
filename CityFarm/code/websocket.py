@@ -110,12 +110,10 @@ class PublihserHandler(websocket.WebSocketHandler):
 
 class FarmRequestHandler(web.RequestHandler):
 
-    @web.asynchronous
     def get(self, *args):
-        self.finish()
-
         dashboard_update()
         connections_update()
+        self.finish()
         
             
 
