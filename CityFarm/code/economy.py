@@ -16,7 +16,9 @@ ENERGY_COST = 10
 FOOD_ENERGY = 30
 MAX_ENERGY = 100
 FOOD_PRICE = 5
-PLOTS = 3
+BASE_PLOTS = 3
+MAX_PLOTS = 6
+PLOT_UPGRADE_COST = 20
 
 FINISH_FARM = """
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
@@ -65,6 +67,34 @@ return {1, seller}
 """
 
 
+UPGRADE_PLOT = """
+local coins = tonumber(redis.call('GET', KEYS[1]) or '0')
+local capacity = tonumber(redis.call('GET', KEYS[2]) or '0')
+if capacity >= tonumber(ARGV[2]) then return -1 end
+if coins < tonumber(ARGV[1]) then return -2 end
+redis.call('DECRBY', KEYS[1], ARGV[1])
+return redis.call('INCR', KEYS[2])
+"""
+
+
+def upgrade_plot(red, owner):
+    initialize_player(red, owner)
+    result = int(red.register_script(UPGRADE_PLOT)(
+        keys=["game:coins:" + owner, "game:plot_limit:" + owner],
+        args=[PLOT_UPGRADE_COST, MAX_PLOTS],
+    ))
+    if result == -1:
+        raise ValueError("Maximum number of plots reached")
+    if result == -2:
+        raise ValueError("Not enough coins to unlock a plot")
+    return {"plots": result, "cost": PLOT_UPGRADE_COST}
+
+
+def plot_limit(red, owner):
+    initialize_player(red, owner)
+    return int(red.get("game:plot_limit:" + owner))
+
+
 def _text(value):
     return value.decode("utf-8") if isinstance(value, bytes) else value
 
@@ -83,6 +113,7 @@ def _plot(owner, index):
 
 def initialize_player(red, owner):
     red.setnx("game:energy:" + owner, INITIAL_ENERGY)
+    red.setnx("game:plot_limit:" + owner, BASE_PLOTS)
 
 
 def market(red):
@@ -92,7 +123,7 @@ def market(red):
 def state(red, owner):
     initialize_player(red, owner)
     plots = []
-    for index in range(PLOTS):
+    for index in range(plot_limit(red, owner)):
         values = red.hgetall(_plot(owner, index))
         plots.append({
             "index": index,
@@ -103,6 +134,7 @@ def state(red, owner):
         "coins": int(red.get("game:coins:" + owner) or 0),
         "energy": int(red.get("game:energy:" + owner) or 0),
         "plots": plots,
+        "plot_upgrade_cost": PLOT_UPGRADE_COST,
     }
 
 
@@ -112,8 +144,8 @@ def start(red, owner, kind, level, product=None, plot=None):
     if type(level) is not int or level not in LEVEL_REWARD:
         raise ValueError("Invalid level")
     if kind == "farmer":
-        if type(plot) is not int or plot not in range(PLOTS):
-            raise ValueError("Choose one of the three plots")
+        if type(plot) is not int or plot not in range(plot_limit(red, owner)):
+            raise ValueError("Choose an available plot")
         if red.exists(_plot(owner, plot)):
             raise ValueError("This plot is occupied until its food is sold")
         public, expected = create_farm(level, product)
