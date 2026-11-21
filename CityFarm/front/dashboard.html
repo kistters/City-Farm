@@ -34,8 +34,7 @@
           </div>
           <div class="panel-body">
             <div v-for="plant in groceries">
-              <img v-if="productInfo(plant.what).image" v-bind:src="'/css/images/' + plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-              <span v-else class="product-emoji">{{ productInfo(plant.what).emoji }}</span>
+              <img v-bind:src="'/css/images/' + plant.what + '.svg'" class="plant" v-bind:alt="plant.what" />
               {{ plant.qty }}
             </div>
           </div>
