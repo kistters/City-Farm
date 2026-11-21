@@ -9,7 +9,9 @@ var farmer = new Vue({
         playerMessage: '',
         productCatalog: [],
         market: {},
-        playerState: {coins: 0, energy: 60, plots: [], plot_upgrade_cost: 20},
+        playerState: {coins: 0, energy: 60, soil_health: 100, plots: []},
+        soilCosts: {1: 10, 2: 35, 3: 20},
+        levelNames: {1: 'Monocultura familiar', 2: 'Monocultura latifúndio', 3: 'Multicultura'},
         selectedProduct: 'tomato',
         selectedPlot: 0,
         level: 1,
@@ -31,6 +33,11 @@ var farmer = new Vue({
         },
         boardSize: function () {
             return this.challenge ? this.challenge.size : 3;
+        },
+        canPlant: function () {
+            var plot = this.playerState.plots[this.selectedPlot];
+            return this.playerReady && !this.busy && !this.challenge &&
+                plot && !plot.product && this.playerState.soil_health >= this.soilCosts[this.level];
         }
     },
     methods: {
@@ -70,10 +77,15 @@ var farmer = new Vue({
                     self.challenge = null;
                     self.busy = false;
                     self.showPattern = false;
-                    self.gameMessage = 'Harvest complete! +' + reward.qty + ' ' + reward.product;
+                    self.gameMessage = 'Harvest complete! +' + reward.qty + ' foods: ' +
+                        reward.items.map(function (item) {
+                            return item.qty + ' ' + item.name;
+                        }).join(', ') + ' · Soil −' + reward.soil_cost;
                 }
-                if (data.upgrade_result) {
-                    self.gameMessage = 'New plot unlocked!';
+                if (data.care_result) {
+                    self.gameMessage = data.care_result.cost ?
+                        'Soil prepared. −' + data.care_result.cost + ' coins.' :
+                        'Basic soil care complete.';
                     self.busy = false;
                 }
                 if (data.game_error) {
@@ -135,7 +147,7 @@ var farmer = new Vue({
             this.answer = next;
         },
         startFarm: function () {
-            if (!this.playerReady || this.challenge || this.busy) return;
+            if (!this.canPlant) return;
             this.busy = true;
             this.gameMessage = 'Generating memory pattern...';
             if (!this.send({farm_start: {
@@ -151,10 +163,16 @@ var farmer = new Vue({
                 id: this.challenge.id, answer: this.answer
             }})) this.busy = false;
         },
-        upgrade: function () {
-            if (this.busy) return;
+        careSoil: function () {
+            if (!this.playerReady || this.busy || this.playerState.soil_health >= 10) return;
             this.busy = true;
-            if (!this.send({upgrade_plot: true})) this.busy = false;
+            this.send({care_for_soil: true});
+        },
+        prepareSoil: function () {
+            if (!this.playerReady || this.busy || this.playerState.soil_health >= 100 ||
+                this.playerState.coins < 5) return;
+            this.busy = true;
+            this.send({prepare_soil: true});
         }
     }
 });
