@@ -192,3 +192,16 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
  .plot-grid {gap:5px;}
  .plot-tile {padding:6px;min-height:68px;}
 }
+
+/* Citizen activities and market. */
+.energy-track {width:100%;max-width:400px;height:11px;border-radius:99px;background:#dbe9dc;overflow:hidden;margin:10px 0;}
+.energy-fill {height:100%;background:#61aa75;transition:width .2s;}
+.math-challenge {padding:10px 0;}
+.math-expression {font-size:clamp(1.7rem,5vw,2.6rem);font-weight:800;text-align:center;padding:18px 8px;margin-bottom:14px;background:#edf6ed;border-radius:14px;}
+.math-challenge label {display:block;margin-bottom:8px;font-weight:600;}
+.market-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:14px;}
+.market-item {display:flex;align-items:center;flex-direction:column;gap:9px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#f8fbf7;}
+.market-item img {width:65px;height:65px;object-fit:contain;}
+.market-item span {color:var(--muted);font-size:.85rem;}
+.market-item .button {width:100%;}
+@media(max-width:600px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}.market-item{padding:10px;}.market-item .button{padding:10px 4px;font-size:.84rem;}}
