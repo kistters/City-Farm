@@ -229,7 +229,12 @@ def submit(red, owner, challenge_id, answer):
     if kind == "farmer":
         plot = public["plot"]
         cost = FARM_LEVELS[public["level"]]["soil_cost"]
-        counts = Counter(product for product in data["expected"] if product)
+        # Dificuldade visual (células) e produção são regras distintas.
+        # Só na multicultura a colheita corresponde a cada ícone mostrado.
+        if public["level"] == 3:
+            counts = Counter(crop for crop in data["expected"] if crop)
+        else:
+            counts = Counter({public["product"]: FARM_LEVELS[public["level"]]["production"]})
         outcome = int(red.register_script(FINISH_FARM)(
             keys=[_challenge(challenge_id), active, _plot(owner, plot),
                   "game:soil_health:" + owner],
