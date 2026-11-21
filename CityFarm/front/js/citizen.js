@@ -9,6 +9,9 @@ var citizen = new Vue({
         plant: '',
         tries: null,
         groceries: [],
+        productCatalog: [],
+        dishes: [],
+        dishMessage: '',
         status: 'close',
         ws_publish: null,
         statusClass: {
@@ -99,6 +102,12 @@ var citizen = new Vue({
         },
 
         handleUpdate: function(data) {
+            if (data.product_catalog) this.productCatalog = data.product_catalog;
+            if (data.dishes) this.dishes = data.dishes;
+            if (data.dish_ordered) {
+                this.dishMessage = 'Order placed: ' + data.dish_ordered.dish + '. The kitchen will prepare it when all ingredients are available.';
+            }
+            if (data.dish_error) this.dishMessage = data.dish_error;
             if (data.work) {
                 this.tries = data.work
 
@@ -106,6 +115,21 @@ var citizen = new Vue({
             if (data.groceries) {
                 this.groceries = data.groceries
             }
+        },
+
+        ingredientList: function (ingredients) {
+            return Object.keys(ingredients).map(function(name) {
+                return ingredients[name] + '× ' + name.replace(/_/g, ' ');
+            }).join(' + ');
+        },
+
+        orderDish: function (dish) {
+            if (!this.ws_publish || this.ws_publish.readyState !== WebSocket.OPEN) {
+                this.dishMessage = 'Wait for WebSocket connection';
+                return;
+            }
+            this.dishMessage = 'Submitting ' + dish + '...';
+            this.publish(JSON.stringify({order_dish: dish}));
         },
 
         consume: function (plant) {
