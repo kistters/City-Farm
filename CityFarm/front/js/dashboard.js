@@ -1,141 +1,38 @@
+/* Read-only market and activity dashboard; also used in Farmer sidebar. */
 var dashboard = new Vue({
-
-    // Elemento que o aplicativo será iniciado
-    el: "#dashboard",
-
-    // Propriedades do aplicativo
+    el: '#dashboard',
     data: {
-        global_msg: '',
-        status: 'close',
-        web_status: 'close',
-        ws_dashboard: null,
-        groceries: [],
-        pendingOrders: [],
-        pendingDishes: [],
+        web_status: 'connecting',
+        market: {},
+        history: [],
         productCatalog: [],
-        powHistory: [],
-        userIpList: [],
-        ipClick: '',
-        statusClass: {'label label-danger': true },
-        webStatusClass: {
-            'label label-success': false,
-            'label label-info': false,
-            'label label-danger': true,
-            'label label-warning': false
-          }
+        ws_dashboard: null
     },
-
-    created: function() {
-        // Inicia a conexão com o websocket
+    created: function () {
         this.connect();
     },
-
-    // Métodos do aplicatvo
     methods: {
-        productInfo: function(name) {
-            return this.productCatalog.find(function(p) { return p.name === name; }) || {name: name, emoji: '📦', image: false};
-        },
-
-        connect: function(onOpen) {
-
+        connect: function () {
             var self = this;
-            var host = window.location.hostname;
-            
-            self.ws_dashboard = new WebSocket('ws://'+host+':8888'+'/dashboard');
-
-            self.ws_dashboard.onopen = function() {
-                self.web_status = 'open'
-                self.webStatusClass = {
-                    'label label-success': true
-                }
-
-                if (onOpen) {
-                    onOpen();
-                }
+            var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            var socket = new WebSocket(protocol + window.location.hostname + ':8888/dashboard');
+            this.ws_dashboard = socket;
+            socket.onopen = function () { self.web_status = 'open'; };
+            socket.onmessage = function (event) {
+                var data;
+                try { data = JSON.parse(event.data); }
+                catch (e) { return; }
+                if (data.market) self.market = data.market;
+                if (data.history) self.history = data.history;
+                if (data.product_catalog) self.productCatalog = data.product_catalog;
             };
-
-            self.ws_dashboard.onerror = function() {
-                self.status = 'fail'
-                self.statusClass = {
-                    'label label-danger': true
-                }
+            socket.onerror = function () { self.web_status = 'error'; };
+            socket.onclose = function () {
+                self.web_status = 'offline';
+                setTimeout(function () {
+                    if (self.ws_dashboard === socket) self.connect();
+                }, 2500);
             };
-
-            self.ws_dashboard.onmessage = function(e) {
-                self.status = 'recieved'
-                self.statusClass = {
-                    'label label-info': true
-                }
-
-                self.handleUpdate(JSON.parse(e.data));
-
-                setTimeout(() => {
-                    self.status = 'waiting'
-                    self.statusClass = {
-                        'label label-warning': true
-                    }
-                }, 1000)
-            };
-
-            self.ws_dashboard.onclose = function(){
-                self.web_status = 'closed'
-                self.webStatusClass = {
-                    'label label-danger': true
-                }
-
-                setTimeout(() => {
-                    self.connect();
-                }, 5000);
-            };
-        },
-
-        publish: function(json_data) {
-
-            var self = this;
-
-            if (self.ws_dashboard.readyState !== self.ws_dashboard.OPEN) {
-
-                self.connect(function() {
-                    self.publish(JSON.stringify({update:true}));
-                });
-
-                return;
-            }
-
-            self.ws_dashboard.send(json_data);
-        },
-
-        handleUpdate: function(data) {
-            if (data.userIpList) {
-                this.userIpList = data.userIpList
-            }
-
-            if (data.pow_history) {
-                this.powHistory = data.pow_history;
-            }
-
-            if (data.product_catalog) {
-                this.productCatalog = data.product_catalog;
-            }
-            if (data.pending_dishes) {
-                this.pendingDishes = data.pending_dishes;
-            }
-            if (data.pending_orders) {
-                this.pendingOrders = data.pending_orders;
-            }
-
-            if (data.groceries) {
-                this.groceries = data.groceries
-            }
-
-            if (data.global_msg) {
-                this.global_msg = data.global_msg
-            }
-
-            if (data.ipClick) {
-                this.ipClick = data.ipClick
-            }
         }
     }
-
 });

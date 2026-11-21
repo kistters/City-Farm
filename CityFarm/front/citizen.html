@@ -6,34 +6,98 @@
   <meta name="theme-color" content="#245c43">
   <title>City-Farm — Citizen</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=3">
+  <link rel="stylesheet" href="/css/dashboard.css?v=19">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <a class="brand" href="/" aria-label="City-Farm home"><span aria-hidden="true">🌱</span> City-Farm</a>
+      <a class="brand" href="/">🌱 City-Farm</a>
       <nav class="site-nav" aria-label="Main navigation">
-        <a href="/farmer" >Farmer</a>
+        <a href="/farmer">Farmer</a>
         <a href="/citizen" aria-current="page">Citizen</a>
-        <a href="/dashboard" >Dashboard</a>
+        <a href="/dashboard">Dashboard</a>
       </nav>
     </div>
-  </header><main id="citizen" class="page-container role-layout" aria-labelledby="citizen-heading">
+  </header>
+  <main id="citizen" class="page-container role-layout">
     <section class="page-intro">
       <p class="eyebrow">Play as a Citizen</p>
-      <h1 id="citizen-heading">Choose an ingredient</h1>
-      <p>Order any of the five ingredients. If it is missing, Farmers will see your request.</p>
+      <h1>Work, buy food, recover energy.</h1>
+      <p>Solve arithmetic challenges to earn coins. Buy fresh food from Farmers to keep working.</p>
     </section>
-    <section class="panel" aria-labelledby="single-heading">
-      <div class="section-head"><div><h2 id="single-heading">Available ingredients</h2><p class="hint">Choose just one item.</p></div></div>
-      <div class="product-grid">
-        <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
-          v-on:click="consume(plant.name)">
-          <img v-bind:src="'/css/images/' + plant.name + '.svg'" v-bind:alt="plant.name">
-          <strong>{{ plant.name.replace(/_/g, ' ') }}</strong>
-        </button>
+    <section class="panel">
+      <div class="section-head">
+        <h2>Your Citizen</h2>
+        <span class="connection-pill" v-bind:class="status==='ready'?'is-connected':''">{{ status }}</span>
       </div>
-      <p class="feedback" role="status" aria-live="polite" v-if="orderMessage">{{ orderMessage }}</p>
+      <label for="citizen-name">Player nickname</label>
+      <div class="name-entry">
+        <input id="citizen-name" maxlength="24" v-model="playerName"
+          v-on:keyup.enter="registerPlayer" placeholder="Nickname">
+        <button class="button button-primary" type="button" v-on:click="registerPlayer">Join</button>
+      </div>
+      <p class="hint" role="status">{{ playerMessage }}</p>
+      <div class="wallet-summary">
+        <span>Coins <strong>{{ playerState.coins }}</strong></span>
+        <span>Energy <strong>{{ playerState.energy }}/100</strong></span>
+      </div>
+      <div class="energy-track"><div class="energy-fill"
+        v-bind:style="{width:playerState.energy + '%'}"></div></div>
+      <button type="button" class="button button-ghost" v-on:click="rest"
+        v-bind:disabled="!playerReady || busy || playerState.energy >= 10">
+        Rest · Free · recover up to 10 energy
+      </button>
     </section>
-  </main><script src="/js/citizen.js?v=3"></script></body></html>
+    <section class="panel">
+      <div class="section-head">
+        <div><h2>Go to work</h2><p class="hint">A correct answer gives coins immediately and uses 10 energy.</p></div>
+      </div>
+      <div v-if="!challenge">
+        <div class="level-buttons">
+          <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
+            v-bind:class="{'chosen':level===option}" v-on:click="level=option">
+            {{ 'Level '+option }}
+          </button>
+        </div>
+        <p class="hint" v-if="level===1">Addition and subtraction · 5 coins</p>
+        <p class="hint" v-if="level===2">Multiplication and exact division · 10 coins</p>
+        <p class="hint" v-if="level===3">Expressions with multiple operations · 15 coins</p>
+        <button class="button button-primary" type="button" v-on:click="startWork"
+          v-bind:disabled="!playerReady || busy || playerState.energy<10">Start working</button>
+      </div>
+      <div v-else class="math-challenge">
+        <p class="eyebrow">Level {{ challenge.level }}</p>
+        <div class="math-expression">{{ challenge.expression }} = ?</div>
+        <label for="math-answer">Your answer</label>
+        <div class="name-entry">
+          <input id="math-answer" type="number" inputmode="numeric" step="1"
+            v-model="answer" v-on:keyup.enter="submitAnswer" placeholder="Whole number">
+          <button class="button button-primary" type="button" v-on:click="submitAnswer"
+            v-bind:disabled="busy">Check</button>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="section-head">
+        <div><h2>Buy and eat</h2><p class="hint">Every ingredient costs 5 coins and restores 30 energy (up to 100).</p></div>
+      </div>
+      <div class="market-grid">
+        <div class="market-item" v-for="plant in productCatalog" v-bind:key="plant.name">
+          <img v-bind:src="'/css/images/'+plant.name+'.svg'" v-bind:alt="plant.name">
+          <strong>{{ plant.name }}</strong>
+          <span>In stock: {{ market[plant.name] || 0 }}</span>
+          <button class="button button-primary" type="button"
+            v-on:click="buyFood(plant.name)"
+            v-bind:disabled="!playerReady || busy || (market[plant.name]||0)<1 || playerState.coins<5 || playerState.energy>=100">
+            Buy · 5 coins
+          </button>
+        </div>
+      </div>
+    </section>
+    <p class="feedback" role="status" aria-live="polite" v-if="gameMessage">{{ gameMessage }}</p>
+  </main>
+  <script src="/js/player.js?v=19"></script>
+  <script src="/js/citizen.js?v=19"></script>
+</body>
+</html>

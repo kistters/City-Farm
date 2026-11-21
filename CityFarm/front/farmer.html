@@ -51,7 +51,22 @@
         <p class="hint" role="status">{{ playerMessage }}</p>
         <div class="wallet-summary">
           <span>Coins <strong>{{ playerState.coins }}</strong></span>
-          <span>Plots <strong>{{ playerState.plots.length }}/6</strong></span>
+          <span>Plots <strong>{{ playerState.plots.length }}</strong></span>
+        </div>
+        <div class="resource-panel">
+          <div class="section-head"><h3>Soil Health</h3><strong>{{ playerState.soil_health }}/100</strong></div>
+          <div class="energy-track"><div class="energy-fill" v-bind:style="{width:playerState.soil_health + '%'}"></div></div>
+          <p class="hint">Farming uses soil health: Family −10 · Large monoculture −35 · Polyculture −20.</p>
+          <div class="level-buttons">
+            <button type="button" v-on:click="careForLand"
+              v-bind:disabled="!playerReady || busy || playerState.soil_health >= 10">
+              Care for the land · Free · up to 10
+            </button>
+            <button type="button" v-on:click="prepareSoil"
+              v-bind:disabled="!playerReady || busy || playerState.coins < 5 || playerState.soil_health >= 100">
+              Prepare soil · 5 coins · +40
+            </button>
+          </div>
         </div>
         <h3>Choose a plot</h3>
         <div class="plot-grid">
@@ -60,15 +75,12 @@
             v-bind:disabled="!!plot.product || !!challenge"
             v-on:click="choosePlot(plot)">
             <strong>Plot {{ plot.index+1 }}</strong>
-            <span v-if="plot.product">{{ plot.qty }} × {{ plot.product }}</span>
+            <span v-if="plot.product">{{ plot.qty }} food · {{ plot.product==='mixed' ? 'Mixed crops' : plot.product }}</span>
             <span v-else>Available</span>
           </button>
         </div>
         <p class="hint">A plot is available again when Citizens buy the entire batch.</p>
-        <button type="button" class="button button-ghost" v-on:click="upgrade"
-          v-bind:disabled="!playerReady || busy || playerState.coins < playerState.plot_upgrade_cost || playerState.plots.length >= 6">
-          Unlock plot · {{ playerState.plot_upgrade_cost }} coins
-        </button>
+
         <div class="section-divider"></div>
         <div v-if="!challenge">
           <h3>Choose an ingredient</h3>
@@ -84,14 +96,14 @@
           <div class="level-buttons">
             <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
               v-bind:class="{'chosen':level===option}" v-on:click="level=option">
-              {{ option===3?'Extra':'Level '+option }}
+              {{ option===1?'Family monoculture':option===2?'Large monoculture':'Polyculture' }}
             </button>
           </div>
-          <p class="hint" v-if="level===1">3×3: remember the positions.</p>
-          <p class="hint" v-if="level===2">6×6: remember smaller positions in the same area.</p>
-          <p class="hint" v-if="level===3">Extra: remember the position AND ingredient in every cell.</p>
+          <p class="hint" v-if="level===1">3×3: remember the positions · +1 food, −10 soil health.</p>
+          <p class="hint" v-if="level===2">6×6: remember smaller positions · +3 food, −35 soil health.</p>
+          <p class="hint" v-if="level===3">Extra: remember the position AND ingredient · +4 mixed food, −20 soil health.</p>
           <button class="button button-primary" type="button" v-on:click="startFarm"
-            v-bind:disabled="!playerReady || busy || !playerState.plots.length">Start planting</button>
+            v-bind:disabled="!playerReady || busy || !playerState.plots.length || playerState.soil_health < (level===1?10:level===2?35:20)">Start planting</button>
         </div>
         <div v-else class="memory-game">
           <div class="section-head">
