@@ -66,7 +66,12 @@ if not seller or string.len(seller) ~= 32 then return {-4, ''} end
 local plot = 'game:plot:' .. seller .. ':' .. slot
 local field = 'crop:' .. ARGV[3]
 local count = tonumber(redis.call('HGET', plot, field) or '0')
-local legacy = false
+local legacy, previous = false, false
+if count == 0 then
+    field = 'stock:' .. ARGV[3]
+    count = tonumber(redis.call('HGET', plot, field) or '0')
+    previous = count > 0
+end
 if count == 0 and redis.call('HGET', plot, 'product') == ARGV[3] then
     count = tonumber(redis.call('HGET', plot, 'qty') or '0')
     legacy = true
@@ -78,6 +83,11 @@ redis.call('INCRBY', 'game:coins:' .. seller, ARGV[1])
 redis.call('SET', KEYS[2], math.min(tonumber(ARGV[2]), energy + tonumber(ARGV[4])))
 if legacy then
     if redis.call('HINCRBY', plot, 'qty', -1) == 0 then redis.call('DEL', plot) end
+elseif previous then
+    redis.call('HINCRBY', plot, field, -1)
+    if redis.call('HINCRBY', plot, 'remaining', -1) == 0 then
+        redis.call('DEL', plot)
+    end
 else
     if redis.call('HINCRBY', plot, field, -1) == 0 then
         redis.call('HDEL', plot, field)
@@ -125,7 +135,10 @@ def _plot(owner, index):
 
 def initialize_player(red, owner):
     red.setnx("game:energy:" + owner, INITIAL_ENERGY)
-    red.setnx("game:soil_health:" + owner, INITIAL_SOIL_HEALTH)
+    # Migra o saldo de solo da versão #22 sem sobrescrever jogadores já migrados.
+    previous_soil = red.get("game:soil:" + owner)
+    red.setnx("game:soil_health:" + owner,
+              int(previous_soil) if previous_soil is not None else INITIAL_SOIL_HEALTH)
     # Preservar terrenos já adquiridos em versões de teste, sem vender novos.
     red.setnx("game:plot_limit:" + owner, BASE_PLOTS)
 
@@ -149,6 +162,11 @@ def state(red, owner):
             key.removeprefix("crop:"): int(value)
             for key, value in decoded.items() if key.startswith("crop:")
         }
+        # Lotes mistos criados na #22 usavam "stock:<produto>" e "remaining".
+        for key, value in decoded.items():
+            if key.startswith("stock:") and int(value) > 0:
+                name = key.removeprefix("stock:")
+                products[name] = products.get(name, 0) + int(value)
         if "product" in decoded:  # legado de lotes da PR #22
             products[decoded["product"]] = int(decoded["qty"])
         plots.append({

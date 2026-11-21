@@ -98,6 +98,28 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(economy.market(self.red)["lettuce"], 0)
         self.assertIsNone(economy.state(self.red, self.farmer)["plots"][0]["product"])
 
+    def test_previous_mixed_plot_and_soil_survive_upgrade(self):
+        self.red.set("game:soil:" + self.farmer, 47)
+        plot_key = "game:plot:" + self.farmer + ":0"
+        self.red.hset(plot_key, mapping={
+            "stock:corn": 1, "stock:tomato": 1, "remaining": 2,
+        })
+        self.red.rpush("game:stock:corn", self.farmer + ":0")
+        self.red.rpush("game:stock:tomato", self.farmer + ":0")
+        self.red.set("game:coins:" + self.citizen, 10)
+
+        farmer = economy.state(self.red, self.farmer)
+        self.assertEqual(farmer["soil_health"], 47)
+        self.assertEqual(farmer["plots"][0]["products"], {"corn": 1, "tomato": 1})
+
+        economy.buy(self.red, self.citizen, "corn")
+        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["qty"], 1)
+        self.red.set("game:energy:" + self.citizen, 0)
+        economy.buy(self.red, self.citizen, "tomato")
+        self.assertEqual(economy.state(self.red, self.farmer)["plots"][0]["qty"], 0)
+        self.assertEqual(economy.state(self.red, self.farmer)["coins"], 10)
+        self.assertEqual(economy.state(self.red, self.farmer)["soil_health"], 47)
+
     def test_basic_soil_care_is_free_only_below_ten(self):
         self.red.set("game:soil_health:" + self.farmer, 0)
         self.assertEqual(economy.care_for_soil(self.red, self.farmer)["soil_health"], 10)
