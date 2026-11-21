@@ -43,8 +43,9 @@ redis.call('SET', KEYS[6], ARGV[2])
 redis.call('SET', KEYS[7], '1')
 redis.call('RPUSH', KEYS[3], ARGV[1])
 redis.call('INCR', KEYS[4])
-completed = completed + drain_orders(KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5], ARGV[2])
-return {1, completed}
+drain_orders(KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5], ARGV[2])
+-- Report only whether THIS order was settled; older orders may also finish.
+return {1, redis.call('EXISTS', KEYS[6]) == 0 and 1 or 0}
 """
 
 # Previous versions created eat:pending:<id> and incremented the pending counter
@@ -84,7 +85,7 @@ def enqueue_eat(red, product, order_id):
     code = int(result[0])
     if code == -1:
         raise ValueError("Too many pending orders for {}".format(product))
-    return {"created": code == 1, "fulfilled": int(result[1])}
+    return {"created": code == 1, "fulfilled": int(result[1]) == 1}
 
 
 def settle_eat(red, product):
