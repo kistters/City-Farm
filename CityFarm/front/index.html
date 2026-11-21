@@ -23,8 +23,7 @@
             </div>
             <div class="panel-body">
               <div v-for="plant in pendingOrders" class="col-md-2 col-sm-3 col-xs-3 nogutter">
-                  <img v-if="productInfo(plant.what).image" v-bind:src="'/css/images/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-                  <span v-else class="product-emoji">{{ productInfo(plant.what).emoji }}</span>
+                  <img v-bind:src="'/css/images/' + plant.what + '.svg'" class="plant" v-bind:alt="plant.what" />
                   <strong>{{ plant.qty }}</strong>
               </div>
             </div>
@@ -64,8 +63,7 @@
             </div>
             <div v-for="plant in productCatalog" class="col-md-4 col-sm-5 col-xs-5 nogutter control-panel">
               <button v-on:click="produce(plant.name)" v-bind:disabled="powBusy || !playerReady" class="btn-link">
-                <img v-if="plant.image" v-bind:src="'/css/images/'+ plant.name + '.png'" class="plant" />
-                <span v-else class="product-emoji">{{ plant.emoji }}</span>
+                <img v-bind:src="'/css/images/' + plant.name + '.svg'" class="plant" v-bind:alt="plant.name" />
                 <p>{{ plant.name }}</p>
                 <small class="text-muted">{{ plant.source }}</small>
               </button>
@@ -90,7 +88,7 @@
             <h4>Dishes</h4>
             <div v-for="dish in dishes" class="dish-choice">
               <button v-on:click="orderDish(dish.id)" class="btn btn-default btn-block">
-                <span class="product-emoji">{{ dish.emoji }}</span>
+                <img v-bind:src="'/css/images/dish-' + dish.id + '.svg'" class="plant" v-bind:alt="dish.name" />
                 <strong>{{ dish.name }}</strong>
                 <small class="dish-ingredients">{{ ingredientList(dish.ingredients) }}</small>
               </button>
@@ -100,8 +98,7 @@
             <h4>Single ingredients</h4>
             <div v-for="plant in productCatalog" class="col-md-4 col-sm-5 col-xs-5 nogutter control-panel">
               <button v-on:click="consume(plant.name)" class="btn-link">
-                <img v-if="plant.image" v-bind:src="'/css/images/'+ plant.name + '.png'" class="plant" />
-                <span v-else class="product-emoji">{{ plant.emoji }}</span>
+                <img v-bind:src="'/css/images/' + plant.name + '.svg'" class="plant" v-bind:alt="plant.name" />
                 <p>{{ plant.name }}</p>
               </button>
             </div>
