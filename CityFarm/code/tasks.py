@@ -29,14 +29,14 @@ def eat(self, what, request_id=None):
     else:
         # Before the request_id release, tasks had no durable order marker.
         # Celery retries keep the same task ID; this deduplicates migrations.
-        migrated = enqueue_eat(r, what, "legacy-" + self.request.id)["created"]
+        migrated = enqueue_eat(r, what, "legacy-" + str(self.request.id or uuid.uuid4()))["created"]
     notify()
     return bool(migrated)
 
 
 # Atomic proof consumption + harvest + FIFO eat fulfillment.
 # The dashboard sees only committed Redis state, never half a production.
-ACCEPT_PROOF = r.register_script(LUA_DRAIN + """
+ACCEPT_PROOF_SCRIPT = LUA_DRAIN + """
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then
     return 0
 end
@@ -45,7 +45,8 @@ redis.call('LPUSH', KEYS[2], ARGV[2])
 redis.call('INCR', KEYS[3])
 drain_orders(KEYS[3], KEYS[2], KEYS[4], KEYS[5], KEYS[6], ARGV[3])
 return 1
-""")
+"""
+ACCEPT_PROOF = r.register_script(ACCEPT_PROOF_SCRIPT)
 
 
 def proof_digest(challenge, nonce):
