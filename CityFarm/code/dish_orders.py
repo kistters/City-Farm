@@ -55,7 +55,7 @@ def enqueue_dish(red, order_id, dish_id):
     return bool(script(keys=keys, args=args))
 
 
-def fulfill_pending_dishes(red, limit=100):
+def fulfill_pending_dishes(red, limit=200):
     """Called after ordering or a validated harvest; Lua serializes fulfillment."""
     fulfilled = 0
     for order_id in red.lrange(QUEUE, 0, limit - 1):
