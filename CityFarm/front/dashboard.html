@@ -9,18 +9,16 @@
       <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body> 
-
-    <!--  -->
-    <div id="dashboard"  class="container col-md-6 col-sm-12 col-xs-12 nogutter">
-
-      <div class="col-md-4 col-sm-6 col-xs-6">
+<body>
+  <div id="dashboard" class="container-fluid">
+    <div class="row">
+      <!-- Painéis originais: conexões e estoque -->
+      <div class="col-md-6 col-sm-6 col-xs-12">
         <div class="panel panel-default">
           <div class="panel-heading">
-            WebSocket : <span v-bind:class="webStatusClass" >{{ web_status }}</span> 
+            WebSocket : <span v-bind:class="webStatusClass">{{ web_status }}</span>
           </div>
           <div class="panel-body">
-
             <p>{{ global_msg }}</p>
             <div v-for="userIp in userIpList">
               <span v-bind:id="userIp" v-bind:class="{ active : ipClick == userIp }" class="label label-success">{{ userIp }}</span>
@@ -29,42 +27,42 @@
         </div>
       </div>
 
-      <div class="col-md-4 col-sm-6 col-xs-6" >
+      <div class="col-md-6 col-sm-6 col-xs-12">
         <div class="panel panel-default">
           <div class="panel-heading">
-            Groceries : <span v-bind:class="statusClass" >{{ status }}</span> 
+            Groceries : <span v-bind:class="statusClass">{{ status }}</span>
           </div>
           <div class="panel-body">
-          <div v-for="plant in groceries">
-              <img v-bind:src="'/css/images/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
+            <div v-for="plant in groceries">
+              <img v-bind:src="'/css/images/' + plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
               {{ plant.qty }}
-          </div>
-          </div>
-          </div>
-        </div>
-
-      <div class="col-md-12">
-      <div class="panel panel-default pow-panel">
-        <div class="panel-heading">Proof of Work — backend verification (last 50)</div>
-        <div class="panel-body">
-          <p v-if="!powHistory.length" class="text-muted">No verified proofs yet. Produce a tomato to see the result.</p>
-          <div v-for="proof in powHistory" v-bind:key="proof.id + proof.timestamp" class="pow-event">
-            <strong v-bind:class="proof.valid ? 'text-success' : 'text-danger'">
-              {{ proof.valid ? '✓ VALID' : '✗ INVALID' }}
-            </strong>
-            <span class="text-muted">🍅 tomato · {{ proof.reason }}</span>
-            <div><small>Farmer: {{ proof.farmer }} · Nonce: {{ proof.nonce }}</small></div>
-            <div class="pow-hash"><code>{{ proof.hash || 'Hash unavailable (expired / invalid request)' }}</code></div>
-            <small class="text-muted">{{ proof.timestamp }}</small>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Histórico novo: abaixo dos painéis existentes -->
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="panel panel-default pow-panel">
+          <div class="panel-heading">Proof of Work — backend verification (last 50)</div>
+          <div class="panel-body">
+            <p v-if="!powHistory.length" class="text-muted">No verified proofs yet. Produce a tomato to see the result.</p>
+            <div v-for="proof in powHistory" v-bind:key="proof.id + proof.timestamp" class="pow-event">
+              <strong v-bind:class="proof.valid ? 'text-success' : 'text-danger'">
+                {{ proof.valid ? '✓ VALID' : '✗ INVALID' }}
+              </strong>
+              <span class="text-muted">🍅 tomato · {{ proof.reason }}</span>
+              <div><small>Farmer: {{ proof.farmer }} · Nonce: {{ proof.nonce }}</small></div>
+              <div class="pow-hash"><code>{{ proof.hash || 'Hash unavailable (expired / invalid request)' }}</code></div>
+              <small class="text-muted">{{ proof.timestamp }}</small>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <!--  -->
-
-    <div  class="col-md-8 col-sm-6 col-xs-6 nogutter" >
-    </div>
+  </div>
 </body>
     <script src="/js/dashboard.js"></script>
 </html>
