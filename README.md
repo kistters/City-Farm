@@ -227,3 +227,41 @@ pedidos pendentes: nenhum `tasks.eat ... Retry in 3s` novo deverá surgir.
 Produza os alimentos via PoW e verifique que os contadores diminuem
 sem estoque negativo, inclusive com dois Citizens conectados.
 Repita após reiniciar os containers (sem `docker compose down -v`).
+
+## Telas por papel e layout responsivo
+
+As interfaces agora são independentes:
+
+- `/`: escolha entre Farmer e Citizen.
+- `/farmer`: nome do Farmer, demanda atual dos Citizens e produção PoW.
+- `/citizen`: pedidos individuais de cinco ingredientes.
+- `/dashboard`: monitoramento técnico, estoque, filas e histórico do PoW.
+
+O Nginx mapeia `/farmer` para `farmer.html` e `/citizen` para
+`citizen.html`. As páginas não carregam scripts Vue de papéis que
+não utilizam. Estilos compartilhados em `css/dashboard.css` usam CSS Grid
+com breakpoints a 850px e 600px, botões apropriados para toque e
+navegação acessível também em telas pequenas.
+
+**Separação de responsabilidades (SRP):** `farmer.js` cuida somente
+da experiência de produzir; `citizen.js` cuida somente de pedidos;
+`dashboard.js` mostra dados e demanda. O WebSocket do backend continua
+sendo o mesmo, sem mudança no contrato nesta PR. Não é uma reescrita
+completa em SOLID: o objetivo é um passo pequeno que podemos estudar,
+testar e refatorar aos poucos.
+
+### Teste de layout
+
+```bash
+python -m unittest discover -s tests -p 'test_role_pages.py'
+docker compose up -d
+```
+
+Confira `/`, `/farmer`, `/citizen` e `/dashboard` em uma janela
+desktop e no modo responsivo do navegador (larguras 375px e 768px).
+Produza uma unidade por PoW e faça um pedido de prato ou ingrediente
+para confirmar as conexões WebSocket. Use `Ctrl+Shift+R` se o navegador
+mostrar uma versão anterior em cache.
+
+Esta PR muda **somente a apresentação e roteamento**; não modifica
+prioridades de fila, regras do Redis, receitas ou tasks Celery.

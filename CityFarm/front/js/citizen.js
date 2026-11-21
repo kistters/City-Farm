@@ -7,8 +7,7 @@ var citizen = new Vue({
         tries: null,
         groceries: [],
         productCatalog: [],
-        dishes: [],
-        dishMessage: '',
+        orderMessage: '',
         ws_publish: null
     },
 
@@ -33,7 +32,7 @@ var citizen = new Vue({
                 try {
                     data = JSON.parse(event.data);
                 } catch (error) {
-                    self.dishMessage = 'Invalid response from the server';
+                    self.orderMessage = 'Invalid response from the server';
                     return;
                 }
                 self.handleUpdate(data);
@@ -60,23 +59,11 @@ var citizen = new Vue({
             if (data.product_catalog) {
                 this.productCatalog = data.product_catalog;
             }
-            if (data.dishes) {
-                this.dishes = data.dishes;
-            }
             if (data.groceries) {
                 this.groceries = data.groceries;
             }
             if (data.work) {
                 this.tries = data.work;
-            }
-            if (data.dish_ordered) {
-                var order = data.dish_ordered;
-                this.dishMessage = order.status === 'prepared'
-                    ? 'Dish prepared: ' + order.dish
-                    : 'Dish ordered: ' + order.dish + '. Waiting for ingredients.';
-            }
-            if (data.dish_error) {
-                this.dishMessage = data.dish_error;
             }
             if (data.eat_ordered) {
                 this.dishMessage = data.eat_ordered.status === 'prepared'
@@ -94,10 +81,6 @@ var citizen = new Vue({
                 return;
             }
             this.ws_publish.send(JSON.stringify(data));
-        },
-
-        orderDish: function (dishId) {
-            this.send({order_dish: dishId});
         },
 
         consume: function (product) {

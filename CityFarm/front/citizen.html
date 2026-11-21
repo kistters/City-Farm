@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#245c43">
+  <title>City-Farm — Citizen</title>
+  <link rel="icon" href="/css/images/favicon.ico">
+  <link rel="stylesheet" href="/css/dashboard.css?v=3">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/" aria-label="City-Farm home"><span aria-hidden="true">🌱</span> City-Farm</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="/farmer" >Farmer</a>
+        <a href="/citizen" aria-current="page">Citizen</a>
+        <a href="/dashboard" >Dashboard</a>
+      </nav>
+    </div>
+  </header><main id="citizen" class="page-container role-layout" aria-labelledby="citizen-heading">
+    <section class="page-intro">
+      <p class="eyebrow">Play as a Citizen</p>
+      <h1 id="citizen-heading">Choose an ingredient</h1>
+      <p>Order any of the five ingredients. If it is missing, Farmers will see your request.</p>
+    </section>
+    <section class="panel" aria-labelledby="single-heading">
+      <div class="section-head"><div><h2 id="single-heading">Available ingredients</h2><p class="hint">Choose just one item.</p></div></div>
+      <div class="product-grid">
+        <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
+          v-on:click="consume(plant.name)">
+          <img v-bind:src="'/css/images/' + plant.name + '.svg'" v-bind:alt="plant.name">
+          <strong>{{ plant.name.replace(/_/g, ' ') }}</strong>
+        </button>
+      </div>
+      <p class="feedback" role="status" aria-live="polite" v-if="orderMessage">{{ orderMessage }}</p>
+    </section>
+  </main><script src="/js/citizen.js?v=3"></script></body></html>

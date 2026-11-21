@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#245c43">
+  <title>City-Farm — Farmer</title>
+  <link rel="icon" href="/css/images/favicon.ico">
+  <link rel="stylesheet" href="/css/dashboard.css?v=3">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/" aria-label="City-Farm home"><span aria-hidden="true">🌱</span> City-Farm</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="/farmer" aria-current="page">Farmer</a>
+        <a href="/citizen" >Citizen</a>
+        <a href="/dashboard" >Dashboard</a>
+      </nav>
+    </div>
+  </header><main class="page-container role-layout" aria-labelledby="role-heading">
+    <section class="page-intro">
+      <p class="eyebrow">Play as a Farmer</p>
+      <h1 id="role-heading">Feed the city</h1>
+      <p>Watch demand and produce ingredients. Mining takes place in your browser, and the backend verifies your proof.</p>
+    </section>
+    <div class="farmer-layout">
+      <section id="dashboard" class="panel demand-panel" aria-labelledby="demand-heading">
+    <div class="section-head">
+      <div><p class="eyebrow">The market</p><h2 id="demand-heading">Ingredients in demand</h2></div>
+      <span class="connection-pill" v-bind:class="web_status === 'open' ? 'is-connected' : ''">{{ web_status }}</span>
+    </div>
+    <p class="hint">Pending Citizen requests. Grow what's missing.</p>
+    <div class="demand-grid">
+      <div class="demand-item" v-for="order in pendingOrders" v-bind:key="order.what">
+        <img v-bind:src="'/css/images/' + order.what + '.svg'" v-bind:alt="order.what">
+        <div><strong>{{ order.qty }}</strong><span>{{ order.what.replace(/_/g, ' ') }}</span></div>
+      </div>
+    </div>
+  </section>
+      <section id="farmer" class="panel farmer-panel" aria-labelledby="farmer-heading">
+    <div class="section-head">
+      <div><p class="eyebrow">Your farm</p><h2 id="farmer-heading">Choose what to produce</h2></div>
+      <span class="connection-pill" v-bind:class="status === 'ready' || status === 'open' || status === 'produce' ? 'is-connected' : ''">{{ status }}</span>
+    </div>
+    <div class="join-row">
+      <label for="farmer-name">Farmer name</label>
+      <div class="name-entry">
+        <input id="farmer-name" type="text" maxlength="24" autocomplete="nickname"
+          v-model="playerName" v-on:keyup.enter="registerPlayer" placeholder="Your nickname">
+        <button type="button" class="button button-primary" v-on:click="registerPlayer">Join</button>
+      </div>
+      <p class="hint" role="status" aria-live="polite">{{ playerMessage }}</p>
+    </div>
+    <div class="section-divider"></div>
+    <div class="section-head compact"><div><h3>Available products</h3><p class="hint">Each harvest uses Proof of Work in your browser.</p></div></div>
+    <div class="product-grid">
+      <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
+        v-on:click="produce(plant.name)" v-bind:disabled="powBusy || !playerReady">
+        <img v-bind:src="'/css/images/' + plant.name + '.svg'" v-bind:alt="plant.name">
+        <strong>{{ plant.name.replace(/_/g, ' ') }}</strong>
+        <span>{{ plant.source }}</span>
+      </button>
+    </div>
+    <p class="feedback" role="status" aria-live="polite" v-if="powMessage">{{ powMessage }}</p>
+  </section>
+    </div>
+  </main>
+  <script src="/js/dashboard.js?v=3"></script>
+  <script src="/js/farmer.js?v=3"></script>
+</body></html>
