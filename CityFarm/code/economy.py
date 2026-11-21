@@ -33,6 +33,7 @@ redis.call('DECRBY', KEYS[3], ARGV[3])
 for i = 1, tonumber(ARGV[4]) do
     redis.call('RPUSH', KEYS[4], ARGV[5])
 end
+redis.call('HINCRBY', KEYS[5], 'food_produced', ARGV[4])
 return 1
 """
 
@@ -51,6 +52,7 @@ if tonumber(redis.call('GET', KEYS[3]) or '0') < tonumber(ARGV[3]) then return -
 redis.call('DEL', KEYS[1], KEYS[2])
 redis.call('DECRBY', KEYS[3], ARGV[3])
 redis.call('INCRBY', KEYS[4], ARGV[4])
+redis.call('HINCRBY', KEYS[5], 'coins_earned_work', ARGV[4])
 return 1
 """
 
@@ -63,7 +65,7 @@ if coins < tonumber(ARGV[1]) then return {-1, ''} end
 if energy >= tonumber(ARGV[2]) then return {-2, ''} end
 
 local stock_key, item, product
-for i = 3, #KEYS do
+for i = 3, #KEYS - 1 do
     local candidate = redis.call('LINDEX', KEYS[i], 0)
     if candidate then
         stock_key, item, product = KEYS[i], candidate, ARGV[i+1]
@@ -121,6 +123,7 @@ if slot then
         end
     end
 end
+redis.call('HINCRBY', KEYS[#KEYS], 'food_eaten', 1)
 return {1, seller}
 """
 
@@ -140,6 +143,7 @@ if coins < tonumber(ARGV[1]) then return -2 end
 local renewed = math.min(tonumber(ARGV[2]), soil + tonumber(ARGV[3]))
 redis.call('DECRBY', KEYS[1], ARGV[1])
 redis.call('SET', KEYS[2], renewed)
+redis.call('HINCRBY', KEYS[3], 'coins_spent_soil', ARGV[1])
 return renewed
 """
 
@@ -154,6 +158,51 @@ def _active(owner, kind):
 
 def _challenge(challenge_id):
     return "game:challenge:" + challenge_id
+
+def _stats(owner):
+    return "game:stats:" + owner
+
+
+def register_character(red, owner, name, role):
+    """Persiste o personagem pelo ID, independentemente da conexão WebSocket."""
+    if role not in ("farmer", "citizen"):
+        raise ValueError("Invalid character role")
+    pipe = red.pipeline()
+    pipe.hset("game:character:" + owner, mapping={"name": name, "role": role})
+    pipe.sadd("game:characters", owner)
+    pipe.execute()
+
+
+def characters(red):
+    """Acumulados por personagem, ordenados para o painel do jogo."""
+    owners = red.smembers("game:characters")
+    if not owners:
+        return []
+    pipe = red.pipeline()
+    for owner in owners:
+        owner = _text(owner)
+        pipe.hgetall("game:character:" + owner)
+        pipe.hgetall(_stats(owner))
+    values = pipe.execute()
+    result = []
+    for index, owner in enumerate(owners):
+        profile, counts = values[2 * index:2 * index + 2]
+        if not profile:
+            continue
+        profile = {_text(key): _text(value) for key, value in profile.items()}
+        counts = {_text(key): int(value) for key, value in counts.items()}
+        result.append({
+            "id": _text(owner),
+            "name": profile.get("name", ""),
+            "role": profile.get("role", ""),
+            "food_produced": counts.get("food_produced", 0),
+            "food_eaten": counts.get("food_eaten", 0),
+            "coins_earned_work": counts.get("coins_earned_work", 0),
+            "coins_spent_soil": counts.get("coins_spent_soil", 0),
+        })
+    return sorted(result, key=lambda character: (
+        character["role"], character["name"].casefold(), character["id"]))
+
 
 
 def initialize_player(red, owner):
@@ -243,7 +292,7 @@ def submit(red, owner, challenge_id, answer):
         quantity = FARM_LEVELS[public["level"]]["production"]
         outcome = int(red.register_script(FINISH_FARM)(
             keys=[_challenge(challenge_id), active, "game:soil_health:" + owner,
-                  "game:stock:" + FOOD],
+                  "game:stock:" + FOOD, _stats(owner)],
             args=[raw, challenge_id, cost, quantity, owner],
         ))
         if outcome == -2:
@@ -253,7 +302,8 @@ def submit(red, owner, challenge_id, answer):
         coins = WORK_REWARDS[public["level"]]
         outcome = int(red.register_script(FINISH_WORK)(
             keys=[_challenge(challenge_id), active,
-                  "game:energy:" + owner, "game:coins:" + owner],
+                  "game:energy:" + owner, "game:coins:" + owner,
+                  _stats(owner)],
             args=[raw, challenge_id, ENERGY_COST, coins],
         ))
         if outcome == -2:
@@ -308,7 +358,7 @@ def rest(red, owner):
 def prepare_soil(red, owner):
     initialize_player(red, owner)
     result = int(red.register_script(PAID_SOIL_CARE)(
-        keys=["game:coins:" + owner, "game:soil_health:" + owner],
+        keys=["game:coins:" + owner, "game:soil_health:" + owner, _stats(owner)],
         args=[SOIL_PREPARE_COST, MAX_RESOURCE, SOIL_PREPARE_RECOVERY],
     ))
     if result == -1:
@@ -324,6 +374,7 @@ def buy(red, owner):
     products = (FOOD,) + LEGACY_PRODUCTS
     keys = ["game:coins:" + owner, "game:energy:" + owner]
     keys += ["game:stock:" + product for product in products]
+    keys.append(_stats(owner))
     code, seller = red.register_script(BUY_FOOD)(
         keys=keys,
         args=[FOOD_PRICE, MAX_RESOURCE, FOOD_ENERGY, *products],

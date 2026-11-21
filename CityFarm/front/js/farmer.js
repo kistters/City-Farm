@@ -7,7 +7,6 @@ var farmer = new Vue({
         playerReady: false,
         playerName: '',
         playerMessage: '',
-        market: {},
         playerState: {coins: 0, energy: 60, soil_health: 100},
         soilCosts: {1: 10, 2: 35, 3: 20},
         levelNames: {1: 'Monocultura familiar', 2: 'Monocultura latifúndio', 3: 'Multicultura'},
@@ -50,7 +49,6 @@ var farmer = new Vue({
                 var data;
                 try { data = JSON.parse(event.data); }
                 catch (e) { self.gameMessage = 'Invalid server response'; return; }
-                if (data.market) self.market = data.market;
                 if (data.player_state) self.playerState = data.player_state;
                 if (data.player_registered) {
                     self.playerReady = true;
@@ -125,6 +123,7 @@ var farmer = new Vue({
             try {
                 var profile = CityFarmPlayer.save(this.playerName);
                 this.playerReady = false;
+                profile.role = 'farmer';
                 this.send({player_register: profile});
             } catch (error) {
                 this.playerMessage = error.message;

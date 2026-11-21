@@ -93,7 +93,9 @@ var citizen = new Vue({
         registerPlayer: function () {
             try {
                 this.playerReady = false;
-                this.send({player_register: CityFarmPlayer.save(this.playerName)});
+                var profile = CityFarmPlayer.save(this.playerName);
+                profile.role = 'citizen';
+                this.send({player_register: profile});
             } catch (error) {
                 this.playerMessage = error.message;
             }

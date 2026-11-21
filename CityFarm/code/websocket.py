@@ -6,8 +6,9 @@ from datetime import datetime, timezone
 import redis
 from tornado import ioloop, web, websocket
 
-from economy import (buy, cancel_challenge, care_for_soil, market,
-                     prepare_soil, rest, start, state, submit)
+from economy import (buy, cancel_challenge, care_for_soil, characters,
+                     market, prepare_soil, register_character, rest, start,
+                     state, submit)
 from players import normalize_player
 
 red = redis.StrictRedis(host="redis", port=6379, db=0)
@@ -21,7 +22,8 @@ def send(handler, data):
 
 def dashboard_snapshot():
     history = [json.loads(item) for item in red.lrange("game:history", 0, 49)]
-    return {"market": market(red), "history": history}
+    return {"market": market(red), "history": history,
+            "characters": characters(red)}
 
 
 def dashboard_update():
@@ -90,9 +92,12 @@ class PublihserHandler(websocket.WebSocketHandler):
                 profile = message["player_register"]
                 if not isinstance(profile, dict):
                     raise ValueError("Invalid profile")
-                self.player = normalize_player(profile.get("id"), profile.get("name"))
-                send(self, {"player_registered": self.player,
-                            "player_state": state(red, self.player["id"])})
+                player = normalize_player(profile.get("id"), profile.get("name"))
+                register_character(red, player["id"], player["name"], profile.get("role"))
+                self.player = player
+                send(self, {"player_registered": player,
+                            "player_state": state(red, player["id"])})
+                dashboard_update()
                 return
             if not self.player:
                 raise ValueError("Choose a nickname and join first")
