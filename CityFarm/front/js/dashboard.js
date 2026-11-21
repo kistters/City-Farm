@@ -10,6 +10,7 @@ var dashboard = new Vue({
         web_status: 'close',
         ws_dashboard: null,
         groceries: [],
+        pendingOrders: [],
         powHistory: [],
         userIpList: [],
         ipClick: '',
@@ -106,6 +107,10 @@ var dashboard = new Vue({
 
             if (data.pow_history) {
                 this.powHistory = data.pow_history;
+            }
+
+            if (data.pending_orders) {
+                this.pendingOrders = data.pending_orders;
             }
 
             if (data.groceries) {

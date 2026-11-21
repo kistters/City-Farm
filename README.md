@@ -95,3 +95,32 @@ valores de dificuldade enviados pelo cliente.
 
 Teste: `docker compose exec worker python -m unittest test_pow`.
 Valores são ilustrativos e devem ser ajustados após medições.
+
+## Identidade casual dos Farmers
+
+No painel Farmer, escolha um apelido e clique em **Join** antes de produzir.
+O perfil (ID aleatório de 128 bits e apelido) fica guardado no
+`localStorage` do navegador; o WebSocket registra o perfil e associa
+as provas e produtos a esse Farmer. O servidor valida formato e tamanho.
+O Farmer pode mudar o apelido sem perder o ID no navegador.
+
+**Não é autenticação:** o cliente controla o identificador e o apelido;
+não use como prova de identidade, proteção contra trapaça ou base de
+recompensas reais. A geração funciona também no HTTP da rede local,
+mas usa `Math.random()`, impróprio para identificadores de segurança.
+
+## Pedidos de consumo pendentes
+
+A página principal mostra **Pending Eat requests** no lugar do painel de
+estoque. Cada clique do Citizen registra um pedido com ID no Redis, incrementa
+o contador por produto e agenda a tarefa Celery de consumo. Quando a tarefa
+consegue consumir o alimento, o mesmo script Redis que baixa o estoque
+remove o pedido e decrementa seu contador atomicamente.
+
+O `dashboard.html` continua exibindo o estoque completo, conexões e
+histórico PoW. O painel de pedidos inclui somente solicitações criadas depois
+desta alteração; tarefas antigas sem identificador continuam funcionando,
+mas não aparecem nos contadores. Os retries infinitos continuam **sem
+alteração** nesta etapa; a issue #12 acompanha sua revisão.
+
+Teste: `docker compose exec worker python -m unittest test_pending_eat`.

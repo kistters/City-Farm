@@ -1,31 +1,29 @@
+def decr_resource_if_available(red, key, min_limit=0, request_id=None):
+    """Consume one item and settle its pending eat order atomically in Redis.
 
-def decr_resource_if_available(red, key, min_limit=0):
+    Older eat tasks without request_id continue to work without changing
+    the pending counters of newer orders.
     """
-    Controls the TPT (Transactions per time) for a given key. Useful when you need to respect some APIs rate limits,
-    for instance. Better than using default celery rate_limit in cases where you have more than one worker machine
-    running celery.
-    :param key:
-    :param min_limit: 
-    :return:
+    script = """
+    local current = tonumber(redis.call('GET', KEYS[1]) or '0')
+    if current <= tonumber(ARGV[1]) then
+        return 0
+    end
+    redis.call('DECR', KEYS[1])
+    if redis.call('LLEN', KEYS[2]) > 0 then
+        redis.call('RPOP', KEYS[2])
+    end
+    if KEYS[3] ~= 'eat:pending:legacy' and redis.call('GET', KEYS[3]) == ARGV[2] then
+        redis.call('DEL', KEYS[3])
+        if tonumber(redis.call('GET', KEYS[4]) or '0') > 0 then
+            redis.call('DECR', KEYS[4])
+        end
+    end
+    return 1
     """
-
-    # Lua script which does the controlling work:
-    script = "\
-    local current_value, current_value_int, min_limit \
-    current_value = redis.call('GET', KEYS[1]) \
-    min_limit = tonumber(ARGV[1]) \
-    if current_value then \
-        current_value_int = tonumber(current_value) \
-    end \
-    if current_value_int and current_value_int > min_limit then \
-    redis.call('decrby', KEYS[1], 1) \
-    if redis.call('LLEN', KEYS[2]) > 0 then redis.call('RPOP', KEYS[2]) end \
-    return 1 \
-    else \
-        return 0 \
-    end \
-    "
-    is_rate_okay = red.register_script(script)
-
-    return bool(is_rate_okay(keys=[key, 'products:' + key], args=[min_limit]))
-
+    consume = red.register_script(script)
+    marker = "eat:pending:" + request_id if request_id else "eat:pending:legacy"
+    return bool(consume(
+        keys=[key, "products:" + key, marker, "eat:waiting:" + key],
+        args=[min_limit, key],
+    ))

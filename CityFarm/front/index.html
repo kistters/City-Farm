@@ -19,14 +19,17 @@
         <div class="panel-group">
           <div class="panel panel-default">
             <div class="panel-heading">
-              Groceries : <span v-bind:class="statusClass" >{{ status }}</span> 
+              Pending Eat requests <span v-bind:class="statusClass">{{ status }}</span> 
             </div>
             <div class="panel-body">
-              <div v-for="plant in groceries"  class="col-md-2 col-sm-3 col-xs-3 nogutter">
+              <div v-for="plant in pendingOrders" class="col-md-2 col-sm-3 col-xs-3 nogutter">
                   <img v-bind:src="'/css/images/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-                  {{ plant.qty }}
+                  <strong>{{ plant.qty }}</strong>
               </div>
             </div>
+            <p class="text-muted" style="clear:both; padding-top:8px">
+              Citizen orders not yet consumed (new requests only).
+            </p>
           </div>
         </div>
       </div>
@@ -46,8 +49,20 @@
           </div>
 
           <div class="panel-body">
+            <div class="form-group">
+              <label for="farmer-name">Farmer name</label>
+              <div class="input-group">
+                <input id="farmer-name" class="form-control" maxlength="24"
+                  v-model="playerName" v-on:keyup.enter="registerPlayer"
+                  placeholder="Choose your nickname" />
+                <span class="input-group-btn">
+                  <button class="btn btn-default" v-on:click="registerPlayer">Join</button>
+                </span>
+              </div>
+              <small aria-live="polite">{{ playerMessage }}</small>
+            </div>
             <div v-for="plant in groceries" class="col-md-4 col-sm-5 col-xs-5 nogutter control-panel">
-              <button v-on:click="produce(plant)" v-bind:disabled="powBusy" class="btn-link">
+              <button v-on:click="produce(plant)" v-bind:disabled="powBusy || !playerReady" class="btn-link">
                 <img v-bind:src="'/css/images/'+ plant + '.png'"  class="plant" />
                 <p>{{plant}}</p>
               </button>

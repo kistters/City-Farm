@@ -17,8 +17,8 @@ def notify():
 """ citizen eating """
 #@app.task(bind=True, max_retries=3)
 @app.task(bind=True, max_retries=None)
-def eat(self, what):
-	if not decr_resource_if_available(r, what):
+def eat(self, what, request_id=None):
+	if not decr_resource_if_available(r, what, request_id=request_id):
 		self.retry(countdown=3)
 
 	notify()
@@ -50,7 +50,8 @@ def record_proof(challenge_id, nonce, farmer, digest, valid, reason, product):
     event = json.dumps({
         "id": challenge_id,
         "product": product,
-        "farmer": farmer,
+        "farmer": farmer["name"] if isinstance(farmer, dict) else str(farmer),
+        "farmer_id": farmer.get("id") if isinstance(farmer, dict) else None,
         "nonce": nonce,
         "hash": digest,
         "valid": valid,
@@ -80,10 +81,14 @@ def verify_product_proof(challenge_id, nonce, farmer):
                 challenge = challenge_data["challenge"]
                 product = challenge_data["product"]
                 difficulty = challenge_data["difficulty"]
+                registered_farmer = challenge_data.get("farmer")
             except (ValueError, KeyError, TypeError):
                 reason = "invalid_challenge"
             else:
-                if (product not in PRODUCT_DIFFICULTIES or
+                if (not isinstance(registered_farmer, dict) or
+                    not isinstance(registered_farmer.get("name"), str) or
+                    registered_farmer != farmer or
+                    product not in PRODUCT_DIFFICULTIES or
                     type(difficulty) is not int or
                     difficulty != PRODUCT_DIFFICULTIES[product] or
                     not challenge.startswith("cityfarm:v1:{}:{}:".format(challenge_id, product))):
@@ -94,7 +99,8 @@ def verify_product_proof(challenge_id, nonce, farmer):
                         reason = "invalid_hash"
                     else:
                         item = json.dumps({
-                            "id": str(uuid.uuid4()), "name": product, "farmer": farmer,
+                            "id": str(uuid.uuid4()), "name": product,
+                            "farmer": farmer["id"], "farmer_name": farmer["name"],
                         })
                         accepted = bool(ACCEPT_PROOF(
                             keys=[key, "products:" + product, product],

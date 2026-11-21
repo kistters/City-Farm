@@ -14,6 +14,10 @@ var farmer = new Vue({
         powWorker: null,
         powBusy: false,
         powMessage: '',
+        playerName: '',
+        playerId: '',
+        playerReady: false,
+        playerMessage: '',
         statusClass: {
             'label label-success': false,
             'label label-info': false,
@@ -23,6 +27,8 @@ var farmer = new Vue({
     },
 
     created: function() {
+        this.playerName = localStorage.getItem('cityfarm.player.name') || '';
+        this.playerId = localStorage.getItem('cityfarm.player.id') || '';
         // Inicia a conexão com o websocket
         this.connect();
     },
@@ -40,6 +46,8 @@ var farmer = new Vue({
             self.ws_publish.onopen = function() {
 
                 self.powBusy = false;
+                self.playerReady = false;
+                if (self.playerName) self.registerPlayer();
                 self.status = 'open'
                 self.statusClass = {
                     'label label-success': true
@@ -76,6 +84,7 @@ var farmer = new Vue({
             self.ws_publish.onclose = function(){
                 if (self.powWorker) { self.powWorker.terminate(); self.powWorker = null; }
                 self.powBusy = false;
+                self.playerReady = false;
                 self.status = 'closed'
                 self.statusClass = {
                     'label label-danger': true
@@ -103,6 +112,14 @@ var farmer = new Vue({
         },
 
         handleUpdate: function(data) {
+            if (data.player_registered) {
+                this.playerReady = true;
+                this.playerMessage = 'Playing as ' + data.player_registered.name;
+            }
+            if (data.player_error) {
+                this.playerReady = false;
+                this.playerMessage = data.player_error;
+            }
             if (data.pow_challenge) {
                 var worker = new Worker('/js/pow-worker.js');
                 this.powWorker = worker;
@@ -146,7 +163,39 @@ var farmer = new Vue({
             }
         },
 
+        registerPlayer: function () {
+            var name = this.playerName.trim();
+            if (!name || name.length > 24 || !/^[\p{L}\p{N} _-]+$/u.test(name)) {
+                this.playerMessage = 'Choose a name (1–24 characters)';
+                return;
+            }
+            if (!this.ws_publish || this.ws_publish.readyState !== WebSocket.OPEN) {
+                this.playerMessage = 'Waiting for connection';
+                return;
+            }
+            if (!/^[0-9a-f]{32}$/.test(this.playerId)) {
+                var bytes = new Uint8Array(16);
+                for (var i = 0; i < bytes.length; i++) {
+                    bytes[i] = Math.floor(Math.random() * 256);
+                }
+                this.playerId = Array.from(bytes).map(function(b) {
+                    return b.toString(16).padStart(2, '0');
+                }).join('');
+            }
+            this.playerName = name;
+            localStorage.setItem('cityfarm.player.name', name);
+            localStorage.setItem('cityfarm.player.id', this.playerId);
+            this.playerReady = false;
+            this.publish(JSON.stringify({player_register: {
+                id: this.playerId, name: name
+            }}));
+        },
+
         produce: function (plant) {
+            if (!this.playerReady) {
+                this.powMessage = 'Register your Farmer name first';
+                return;
+            }
             if (this.groceries.indexOf(plant) !== -1) {
                 if (this.powBusy) return;
                 if (!this.ws_publish || this.ws_publish.readyState !== WebSocket.OPEN) {
