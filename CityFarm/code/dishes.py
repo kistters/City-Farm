@@ -26,6 +26,10 @@ DISHES = {
 def public_dishes():
     return [
         {"id": code, "name": dish["name"], "emoji": dish["emoji"],
-         "ingredients": dish["ingredients"]}
+         "ingredients": dish["ingredients"],
+         "ingredients_text": " + ".join(
+             "{}× {}".format(count, ingredient.replace("_", " "))
+             for ingredient, count in dish["ingredients"].items()
+         )}
         for code, dish in DISHES.items()
     ]
