@@ -140,7 +140,7 @@ var farmer = new Vue({
                 var all = [null, 'corn', 'wheat', 'carrot', 'lettuce', 'tomato'];
                 next[index] = all[(all.indexOf(next[index]) + 1) % all.length];
             } else {
-                next[index] = next[index] ? null : (this.challenge.product || 'food');
+                next[index] = next[index] ? null : (this.challenge.symbol || 'food');
             }
             this.answer = next;
         },
