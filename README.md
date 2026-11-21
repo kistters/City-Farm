@@ -1,118 +1,114 @@
 # City-Farm
 
-Jogo multiplayer local de produção, trabalho e consumo. O Farmer resolve desafios de memória espacial para produzir alimentos; o Citizen resolve operações matemáticas para ganhar moedas, comprar comida e recuperar energia.
+A local multiplayer game about farming, work, and consumption. Farmers complete memory puzzles to produce Food; Citizens solve arithmetic challenges to earn coins, buy Food, and restore Energy.
 
-**Issue #19:** atividade humana substitui Proof of Work. Alimentos e moedas são concedidos **imediatamente após a validação** no backend, sem Celery, RabbitMQ ou tempo de crescimento.
+Food and coins are awarded **immediately after server-side validation**—no Celery, RabbitMQ, or waiting for crops to grow.
 
-## Executar
+## Run locally
 
-Pré-requisito: Docker Compose v2.
+Docker Compose v2 is required.
 
 ~~~bash
 docker compose up --build -d
 ~~~
 
-- `http://localhost/`: escolha do papel.
-- `http://localhost/farmer`: memória, Saúde do Solo e plantio.
-- `http://localhost/citizen`: aritmética, moedas, energia e mercado.
-- `http://localhost/dashboard`: mercado, atividades e contadores persistentes por personagem.
+- http://localhost/ — choose your role.
+- http://localhost/farmer — memory puzzles, Soil Health, and Food production.
+- http://localhost/citizen — arithmetic, coins, Energy, and eating Food.
+- http://localhost/dashboard — the Food market, recent activity, and character statistics.
 
-No celular conectado à mesma rede Wi-Fi, acesse `http://IP_LOCAL_DO_PC`. As portas 80 e 8888 precisam estar acessíveis na rede local. **Não publique o jogo na internet**: não há login real.
+A phone on the same Wi-Fi can reach the game using your computer's local IP address, provided ports 80 and 8888 are accessible. **Do not expose the game to the public internet:** player IDs are not authenticated.
 
-## Economia: somente Food
+## Economy: only Food
 
-O jogo possui **um único produto: Food**. O Farmer resolve memória e produz Food, independentemente do nível. O Citizen resolve contas para ganhar moedas, compra Food por **5 moedas** e recupera **até 30 de Energia** (máximo 100). A compra credita as 5 moedas ao Farmer dono da unidade.
+There is **one tradeable product: Food**. A Farmer produces Food by completing a memory puzzle. A Citizen earns coins by completing arithmetic and buys one Food for **5 coins**, restoring up to **30 Energy** (maximum 100). The Farmer who produced the Food receives the coins.
 
-Não existe escolha de ingrediente, preço por ingrediente, receita nem vários estoques na interface.
+Vegetable icons are memory clues, not separate products. No ingredient selection or individual prices exist.
 
-**Compatibilidade:** o estoque de versões anteriores (corn, wheat, carrot, lettuce, tomato) continua disponível dentro do **total de Food**. Ao comprar Food, o backend prioriza unidades novas e depois consome as antigas, preservando o proprietário e a transferência de moedas. Não há exclusão de dados nem migração destrutiva.
+Older stock from previous versions (corn, wheat, carrot, lettuce, tomato) still counts toward the total Food available. New Food sells first, followed by legacy stock, while payments still go to the original Farmer. No destructive migration is needed.
 
 ## Farmer
 
-Escolha o nível, memorize o padrão temporário e reproduza as posições. Todos os acertos criam somente Food:
-
-| Nível | Puzzle | Produção | Saúde do Solo |
+| Difficulty | Memory puzzle | Food produced | Soil Health cost |
 |---|---|---:|---:|
-| Monocultura familiar | 3×3, posições com o mesmo vegetal | +1 Food | −10 |
-| Monocultura latifúndio | 4×4, seis posições com o mesmo vegetal | +3 Food | −35 |
-| Multicultura | 4×4, quatro vegetais diferentes | +4 Food | −20 |
+| Family Monoculture | 3×3, one vegetable | 1 | 10 |
+| Large-Scale Monoculture | 4×4, six positions with one vegetable | 3 | 35 |
+| Polyculture | 4×4, four different vegetables | 4 | 20 |
 
-Os vegetais aparecem como imagens pixel art nos três puzzles. Nas monoculturas, um vegetal é sorteado para todas as posições; na multicultura, são quatro vegetais diferentes. Eles são **apenas símbolos visuais**: **não existem produtos diferentes nem escolha de ingredientes.** O jogador pode rever o padrão sem apagar sua resposta, ou cancelar o desafio sem gastar Saúde do Solo.
+Vegetables use pixel-art icons. Monoculture selects one vegetable for that challenge; Polyculture uses four different vegetable symbols. **All three difficulties produce Food**, not different crops.
 
-O Farmer pode produzir quantas vezes desejar, inclusive com estoque não vendido, desde que tenha Saúde do Solo. A barra vai de 0 a 100; **Cuidar da Terra** (grátis) recupera até 10 quando abaixo de 10, e **Preparar o Solo** custa 5 moedas para recuperar até 40 (máximo 100).
+**Show Pattern Again** reveals the pattern without clearing the player's selections. **Cancel Challenge** ends an attempt without consuming Soil Health or producing Food.
+
+Farmers may produce repeatedly, even with unsold stock. **Soil Health (0–100)** limits production, not plots. **Care for Soil** is free below 10 and restores Soil Health up to 10. **Prepare Soil** costs 5 coins and restores up to 40 Soil Health, capped at 100.
 
 ## Citizen
 
-| Cargo | Trabalho | Recompensa |
+| Work level | Arithmetic | Coins earned |
 |---|---|---:|
-| Estagiário | Soma/subtração | 5 moedas |
-| Efetivo | Multiplicação/divisão exata | 10 moedas |
-| Consultor | Expressões com precedência | 15 moedas |
+| Intern | Addition and subtraction | 5 |
+| Employee | Multiplication and exact division | 10 |
+| Consultant | Expressions with multiple operations | 15 |
 
-Cada trabalho correto gasta 10 de Energia. O Citizen começa com 60/100 e 0 moedas; **Descansar** recupera gratuitamente até 10 (somente quando abaixo de 10). Comprar **1 Food** por 5 moedas recupera até +30, com atualização atômica de estoque e saldos.
+Successful work consumes 10 Energy. A Citizen starts with 60/100 Energy and zero coins. **Rest** is free when Energy is below 10 and restores it up to 10. **Eat Food** buys one Food for 5 coins and restores up to 30 Energy.
 
+## Pixel-art identity and layout
 
-## Identidade visual — Pixel Art
+A shared spritesheet at CityFarm/front/css/images/pixel-cityfarm.png displays a hoe, tractor, the three farm levels, sleeping, a bowl of Food, three career levels, and vegetables. The wallet uses a separate gold pixel-art coin at CityFarm/front/css/images/pixel-coin.svg.
 
-Direção 4, **Escala e Ferramenta**. Sprites PNG 16-bit (com CSS `image-rendering: pixelated`) em `CityFarm/front/css/images/pixel-cityfarm.png`, reutilizados por todas as páginas: enxada, trator, hortinha familiar, plantação extensiva, horta diversificada, dormir, prato de Food e os cargos Estagiário/Efetivo/Consultor. Os cinco vegetais também são sprites do puzzle.
+Farmer and Citizen use matching screens: player identity, a coin icon and numeric balance, a labeled Soil Health or Energy bar, two action cards, and the challenge area. The wallet icon has accessible alt text, even though the word "Coins" is no longer visible beside the number.
 
-Farmer e Citizen usam os mesmos componentes CSS para ações e níveis. No Citizen, **Descansar** e **Comer Food** aparecem juntos ao lado da barra de Energia; a compra continua custando 5 moedas e recuperando até 30 de Energia. O estoque continua sendo um único Food.
+**All user-facing text and feedback are in English.**
 
-## Dashboard de personagens
+## Dashboard: market and persistent character statistics
 
-O painel `/dashboard` concentra **Market · Food available** (com status da conexão e estoque total), o histórico recente e os acumulados **por personagem** (identificado pelo ID salvo no navegador):
+The Dashboard contains the total Food stock, a recent activity feed, and per-character totals:
 
-| Indicador | Quando aumenta |
+| Counter | When it increases |
 |---|---|
-| Food produzido | Farmer conclui um puzzle com sucesso: +1, +3 ou +4 |
-| Food comido | Citizen compra e consome uma unidade de Food para recuperar Energia |
-| Moedas ganhas no trabalho | Citizen conclui conta corretamente: +5, +10 ou +15 |
-| Moedas gastas no solo | Farmer usa **Preparar o Solo**: +5 ao total gasto |
+| Food produced | A Farmer successfully completes a memory puzzle (+1, +3, or +4) |
+| Food eaten | A Citizen buys and eats one Food |
+| Coins earned from work | A Citizen completes an arithmetic challenge (+5, +10, or +15) |
+| Coins spent on soil | A Farmer pays 5 coins to Prepare Soil |
 
-Os contadores ficam no Redis (`game:stats:<id>`) e são incrementados **na mesma transação atômica** que altera o estoque, as moedas ou os recursos. Cancelar ou errar desafios, descansar e cuidar gratuitamente da terra não aumentam os contadores. A venda de Food paga o Farmer, mas **não** conta como dinheiro produzido no trabalho do Citizen.
+Counters are stored in Redis under game:stats:<player-id> and updated **atomically with the corresponding stock or balance changes**. Failed or cancelled challenges and free actions do not increase these totals. Revenue from selling Food is separate from coins earned from work.
 
-Cada personagem é registrado com seu apelido e papel ao entrar no jogo, e o Dashboard recebe atualizações em tempo real. Os contadores **começam nesta versão**; não é possível recuperar um histórico completo a partir dos últimos 50 eventos já existentes. Eles persistem entre reconexões e não são zerados ao atualizar o Docker, desde que o Redis seja preservado.
+Characters are identified by their locally stored player ID, nickname, and role. The Dashboard updates live. **Counters began when tracking was introduced**, so earlier incomplete history is not backfilled. Data persists across Docker restarts as long as Redis is preserved.
 
-### Layout Farmer / Citizen
+## Architecture
 
-As páginas `/farmer` e `/citizen` usam a mesma estrutura: identidade e moedas, barra de **Saúde do Solo** ou **Energia** com título e valor `/100`, dois cartões de ação e painel separado para os desafios. O bloco de mercado saiu do Farmer para ficar exclusivamente no Dashboard.
+- Nginx serves responsive Vue 2 pages.
+- Tornado provides /publihser and /dashboard WebSockets.
+- Redis holds challenges (180-second TTL), Food stock and ownership, coins, Energy, Soil Health, and persistent statistics.
+- puzzles.py generates and checks challenges.
+- economy.py defines economic rules; Redis Lua is used for atomic updates across multiple keys.
+- websocket.py handles transport and broadcasts.
+- player.js keeps local Farmer and Citizen identities separate, even in the same browser.
 
-## Arquitetura
+Each valid challenge awards its reward only once, even under concurrent submissions. This is a **local architecture experiment**, not a secure internet-facing product: patterns are visible to the client, and localStorage IDs can be forged.
 
-- Nginx: páginas Vue 2 responsivas.
-- Tornado: WebSockets `/publihser` e `/dashboard`.
-- Redis: desafios com TTL de 180 segundos, estoque de Food e identificadores dos Farmers, moedas, Energia e Saúde do Solo; leitura compatível de estoques legados.
-- `puzzles.py`: geração/validação das regras dos desafios.
-- `economy.py`: regras econômicas centralizadas; Lua só para operações atômicas envolvendo múltiplas chaves (produção, compra, preparo pago).
-- `websocket.py`: transporte e notificações.
-- `player.js`: identidade casual separada por papel, permitindo jogar com Farmer e Citizen diferentes em duas abas do mesmo navegador.
+**Development principle:** simple code and a kind heart. SOLID and Zen of Python, applied pragmatically: readable functions, explicit responsibilities, and no unnecessary abstraction.
 
-Cada desafio válido pode conceder recompensa **uma única vez**, mesmo sob chamadas simultâneas. As respostas são verificadas pelo servidor; entretanto, os padrões enviados ao navegador podem ser lidos por bots, e o ID em `localStorage` pode ser falsificado. É um estudo de arquitetura para uso **exclusivamente local**.
+Legacy Proof-of-Work queues and Dish orders are not included in the Food economy. **Never run FLUSHDB against the game Redis database without a backup.**
 
-**Princípio de desenvolvimento:** simplicidade no código e amor no coração.
-SOLID pragmático e Zen of Python: funções pequenas e explícitas, código legível,
-responsabilidades claras, sem hierarquias ou frameworks adicionais desnecessários.
-
-O mercado usa chaves Redis `game:*`. Filas antigas de PoW e pedidos Dish não entram na economia atual. Os cinco estoques de ingredientes da implementação anterior entram no total Food e podem ser vendidos até acabar. Não execute `FLUSHDB` no Redis do jogo sem backup.
-
-## Testar
+## Tests
 
 ~~~bash
 docker compose exec websocket python -m unittest test_puzzles test_economy_redis test_players
 python -m unittest discover -s tests -p 'test_role_pages.py'
 ~~~
 
-Os testes de integração limpam somente o banco Redis **DB 15**; o jogo usa o **DB 0**. O workflow GitHub Actions executa testes com Redis e checagem de sintaxe JavaScript.
+The integration tests clear only **Redis DB 15**; the game uses DB 0. GitHub Actions runs the Python, JavaScript, and page tests.
 
-### Cenário manual
+### Manual gameplay check
 
-1. Abra Farmer e Citizen em duas abas, com IDs diferentes.
-2. Farmer conclui Monocultura familiar: o mercado ganha 1 Food.
-3. Repita antes de vender: o estoque Food acumula enquanto houver Saúde do Solo.
-4. Citizen conclui uma conta, ganha moedas, compra 1 Food e recupera energia. O Farmer recebe 5 moedas.
-5. Farmer conclui Multicultura: o puzzle usa quatro ícones diferentes, mas produz somente 4 Food.
-6. Teste **Ver padrão novamente**, **Cancelar desafio**, cuidados do solo e descanso básico.
-7. Confirme que itens dos estoques antigos aparecem no total Food e ainda pagam o Farmer original.
-8. Tente completar o mesmo desafio e comprar a mesma unidade simultaneamente: sem recursos duplicados.
+1. Open Farmer and Citizen with different player identities.
+2. Complete Family Monoculture to add 1 Food to the market.
+3. Harvest again without selling. Food accumulates while Soil Health allows it.
+4. Complete arithmetic, earn coins, buy Food, and verify the Farmer is paid.
+5. Complete Polyculture: four distinct vegetable symbols generate 4 Food.
+6. Test Show Pattern Again, Cancel Challenge, soil care, and Rest.
+7. Open /dashboard to view Food stock and per-character counters.
+8. Verify legacy vegetable stock still sells as Food and pays the original Farmer.
+9. Retry the same challenge or concurrently buy the final Food unit: no duplicate rewards or charges.
 
-Logs: `docker compose logs -f websocket`.
+Logs: docker compose logs -f websocket.
