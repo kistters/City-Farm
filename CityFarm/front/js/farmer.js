@@ -165,7 +165,7 @@ var farmer = new Vue({
 
         registerPlayer: function () {
             var name = this.playerName.trim();
-            if (!name || name.length > 24 || !/^[\\p{L}\\p{N} _-]+$/u.test(name)) {
+            if (!name || name.length > 24 || !/^[\p{L}\p{N} _-]+$/u.test(name)) {
                 this.playerMessage = 'Choose a name (1–24 characters)';
                 return;
             }
