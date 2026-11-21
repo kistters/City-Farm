@@ -117,8 +117,10 @@ class RolePageTests(unittest.TestCase):
         dashboard = (FRONT / "dashboard.html").read_text(encoding="utf-8")
         citizen_js = (FRONT / "js/citizen.js").read_text(encoding="utf-8")
         for html in (farmer, citizen, dashboard):
-            self.assertIn("market.food", html)
             self.assertNotIn("productCatalog", html)
+        self.assertNotIn("market.food", farmer)
+        self.assertIn("market.food", citizen)
+        self.assertIn("market.food", dashboard)
         self.assertIn("buy_food: true", citizen_js)
         self.assertNotIn("buy_food: product", citizen_js)
 
