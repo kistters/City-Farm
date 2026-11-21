@@ -168,3 +168,40 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
     .name-entry { width: 100%; }
     .demand-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
+
+/* Issue #19: memory puzzle. Same board footprint for 3x3 and 6x6. */
+.wallet-summary {display:flex; gap:12px; flex-wrap:wrap; margin:15px 0;}
+.wallet-summary span {background:var(--mint);padding:10px 12px;border-radius:12px;}
+.wallet-summary strong {margin-left:8px;}
+.plot-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;}
+.plot-tile {border:1px solid var(--line);background:#f7fbf5;border-radius:12px;min-height:72px;padding:8px;color:var(--ink);}
+.plot-tile strong,.plot-tile span {display:block;font-size:.82rem;}
+.plot-tile span {margin-top:6px;color:var(--muted);}
+.plot-tile.chosen,.product-tile.chosen,.level-buttons .chosen {border:2px solid #3d8258;background:#e6f4e8;}
+.button-ghost {background:#e5f1e6;color:#23513b;border:1px solid #bfd9c4;}
+.level-buttons {display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+.level-buttons button {border:1px solid var(--line);background:#f7faf6;border-radius:10px;padding:12px;min-height:44px;flex:1;}
+.memory-grid {display:grid;gap:4px;width:min(100%,324px);aspect-ratio:1;margin:16px auto;}
+.memory-cell {background:#f0dfc0;border:1px solid #b9a47f;border-radius:7px;aspect-ratio:1;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;padding:2px;}
+.memory-cell img {width:88%;height:88%;object-fit:contain;}
+.memory-cell span {color:#aa9270;font-size:1.2rem;}
+.memory-cell:disabled {opacity:1;cursor:default;}
+.memory-game .button-primary {display:block;margin:14px auto 0;}
+@media(max-width:600px) {
+ .memory-grid {gap:3px;width:min(100%,312px);}
+ .plot-grid {gap:5px;}
+ .plot-tile {padding:6px;min-height:68px;}
+}
+
+/* Citizen activities and market. */
+.energy-track {width:100%;max-width:400px;height:11px;border-radius:99px;background:#dbe9dc;overflow:hidden;margin:10px 0;}
+.energy-fill {height:100%;background:#61aa75;transition:width .2s;}
+.math-challenge {padding:10px 0;}
+.math-expression {font-size:clamp(1.7rem,5vw,2.6rem);font-weight:800;text-align:center;padding:18px 8px;margin-bottom:14px;background:#edf6ed;border-radius:14px;}
+.math-challenge label {display:block;margin-bottom:8px;font-weight:600;}
+.market-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:14px;}
+.market-item {display:flex;align-items:center;flex-direction:column;gap:9px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#f8fbf7;}
+.market-item img {width:65px;height:65px;object-fit:contain;}
+.market-item span {color:var(--muted);font-size:.85rem;}
+.market-item .button {width:100%;}
+@media(max-width:600px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}.market-item{padding:10px;}.market-item .button{padding:10px 4px;font-size:.84rem;}}

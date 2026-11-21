@@ -1,13 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <link href="/css/images/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-    <title>CityFarm - Dashboard</title>
-      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-      <link rel="stylesheet" type="text/css" href="/css/dashboard.css">
-      <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>City-Farm — Dashboard</title>
+  <link rel="icon" href="/css/images/favicon.ico">
+  <link rel="stylesheet" href="/css/dashboard.css?v=19">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -20,87 +19,31 @@
       </nav>
     </div>
   </header>
-  <main class="page-container">
-  <div id="dashboard" class="container-fluid">
-    <div class="row">
-      <!-- Painéis originais: conexões e estoque -->
-      <div class="col-md-6 col-sm-6 col-xs-12">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            WebSocket : <span v-bind:class="webStatusClass">{{ web_status }}</span>
-          </div>
-          <div class="panel-body">
-            <p>{{ global_msg }}</p>
-            <div v-for="userIp in userIpList">
-              <span v-bind:id="userIp" v-bind:class="{ active : ipClick == userIp }" class="label label-success">{{ userIp }}</span>
-            </div>
-          </div>
+  <main id="dashboard" class="page-container role-layout">
+    <section class="page-intro">
+      <p class="eyebrow">Real-time market</p>
+      <h1>City-Farm Dashboard</h1>
+      <p>Stock, work, harvests and purchases. All rewards are validated on the server.</p>
+      <span class="connection-pill" v-bind:class="web_status==='open'?'is-connected':''">{{ web_status }}</span>
+    </section>
+    <section class="panel">
+      <h2>Available food</h2>
+      <div class="demand-grid">
+        <div class="demand-item" v-for="(qty,name) in market" v-bind:key="name">
+          <img v-bind:src="'/css/images/'+name+'.svg'" v-bind:alt="name">
+          <div><strong>{{ qty }}</strong><span>{{ name }}</span></div>
         </div>
       </div>
-
-      <div class="col-md-6 col-sm-6 col-xs-12">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            Groceries : <span v-bind:class="statusClass">{{ status }}</span>
-          </div>
-          <div class="panel-body">
-            <div v-for="plant in groceries">
-              <img v-bind:src="'/css/images/' + plant.what + '.svg'" class="plant" v-bind:alt="plant.what" />
-              {{ plant.qty }}
-            </div>
-          </div>
-        </div>
+    </section>
+    <section class="panel">
+      <h2>Last activities</h2>
+      <p class="hint" v-if="!history.length">No activity yet.</p>
+      <div v-for="(event,index) in history" v-bind:key="index" class="pow-event">
+        <strong>{{ event.actor }} · {{ event.kind }}</strong>
+        <div><small>{{ event.details }} · {{ event.timestamp }}</small></div>
       </div>
-    </div>
-
-    <!-- Métricas das filas: a feira na tela inicial continua intacta. -->
-    <div class="row">
-      <div class="col-xs-12">
-        <div class="panel panel-default">
-          <div class="panel-heading">Eat orders — waiting and fulfilled</div>
-          <div class="panel-body">
-            <div class="table-responsive">
-              <table class="table table-condensed">
-                <thead>
-                  <tr><th>Ingredient</th><th>Waiting</th><th>Fulfilled (single)</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="order in pendingOrders" v-if="order.qty > 0 || order.fulfilled > 0">
-                    <td>{{ order.what }}</td>
-                    <td>{{ order.qty }}</td>
-                    <td>{{ order.fulfilled }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <small class="text-muted">Waiting includes ingredients needed by pending dishes. Fulfilled counts individual eat requests only.</small>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Histórico novo: abaixo dos painéis existentes -->
-    <div class="row">
-      <div class="col-xs-12">
-        <div class="panel panel-default pow-panel">
-          <div class="panel-heading">Proof of Work — backend verification (last 50)</div>
-          <div class="panel-body">
-            <p v-if="!powHistory.length" class="text-muted">No verified proofs yet. Produce a tomato to see the result.</p>
-            <div v-for="proof in powHistory" v-bind:key="proof.id + proof.timestamp" class="pow-event">
-              <strong v-bind:class="proof.valid ? 'text-success' : 'text-danger'">
-                {{ proof.valid ? '✓ VALID' : '✗ INVALID' }}
-              </strong>
-              <span class="text-muted">{{ proof.product || 'unknown' }} · {{ proof.reason }}</span>
-              <div><small>Farmer: {{ proof.farmer }} · Nonce: {{ proof.nonce }}</small></div>
-              <div class="pow-hash"><code>{{ proof.hash || 'Hash unavailable (expired / invalid request)' }}</code></div>
-              <small class="text-muted">{{ proof.timestamp }}</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</main>
+    </section>
+  </main>
+  <script src="/js/dashboard.js?v=19"></script>
 </body>
-    <script src="/js/dashboard.js"></script>
 </html>

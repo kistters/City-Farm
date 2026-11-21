@@ -1,90 +1,132 @@
-// Citizen: keep this compatible with the Vue 2.1.x used by the game.
+/* Citizen: aritmética, energia e mercado. Vue 2.1. */
 var citizen = new Vue({
     el: '#citizen',
     data: {
         status: 'connecting',
-        statusClass: {'label label-warning': true},
-        tries: null,
-        groceries: [],
+        socket: null,
+        playerReady: false,
+        playerName: '',
+        playerMessage: '',
         productCatalog: [],
-        orderMessage: '',
-        ws_publish: null
+        market: {},
+        playerState: {coins: 0, energy: 60, plots: []},
+        level: 1,
+        challenge: null,
+        answer: '',
+        busy: false,
+        gameMessage: ''
     },
-
     created: function () {
+        this.playerName = CityFarmPlayer.load().name;
         this.connect();
     },
-
     methods: {
         connect: function () {
             var self = this;
-            var host = window.location.hostname;
-            var socket = new WebSocket('ws://' + host + ':8888/publihser');
-            self.ws_publish = socket;
-
+            var socket = new WebSocket(CityFarmPlayer.websocketUrl());
+            this.socket = socket;
             socket.onopen = function () {
                 self.status = 'ready';
-                self.statusClass = {'label label-success': true};
+                self.playerReady = false;
+                if (self.playerName) self.registerPlayer();
             };
-
             socket.onmessage = function (event) {
                 var data;
-                try {
-                    data = JSON.parse(event.data);
-                } catch (error) {
-                    self.orderMessage = 'Invalid response from the server';
-                    return;
+                try { data = JSON.parse(event.data); }
+                catch (e) { self.gameMessage = 'Invalid server response'; return; }
+                if (data.product_catalog) self.productCatalog = data.product_catalog;
+                if (data.market) self.market = data.market;
+                if (data.player_state) self.playerState = data.player_state;
+                if (data.player_registered) {
+                    self.playerReady = true;
+                    self.playerMessage = 'Playing as ' + data.player_registered.name;
                 }
-                self.handleUpdate(data);
-            };
-
-            socket.onerror = function () {
-                self.status = 'error';
-                self.statusClass = {'label label-danger': true};
-            };
-
-            socket.onclose = function () {
-                self.status = 'closed';
-                self.statusClass = {'label label-danger': true};
-                // Reconnect without touching the other Vue components.
-                setTimeout(function () {
-                    if (self.ws_publish === socket) {
-                        self.connect();
+                if (data.challenge && data.challenge.kind === 'citizen') {
+                    self.challenge = data.challenge;
+                    self.answer = '';
+                    self.busy = false;
+                    self.gameMessage = 'Solve the expression to earn coins.';
+                }
+                if (data.challenge_result && data.challenge_result.kind === 'citizen') {
+                    self.challenge = null;
+                    self.busy = false;
+                    self.answer = '';
+                    self.gameMessage = 'Work complete! +' + data.challenge_result.reward.coins + ' coins.';
+                }
+                if (data.recovery_result) {
+                    self.busy = false;
+                    self.gameMessage = 'Rest complete: ' + data.recovery_result.value + '/100 energy.';
+                }
+                if (data.purchase_result) {
+                    self.busy = false;
+                    self.gameMessage = 'You ate ' + data.purchase_result.product + '! +30 energy, -' +
+                        data.purchase_result.price + ' coins.';
+                }
+                if (data.game_error) {
+                    self.busy = false;
+                    self.gameMessage = data.game_error;
+                    if (data.game_error.indexOf('expired') !== -1 ||
+                        data.game_error.indexOf('already completed') !== -1) {
+                        self.challenge = null;
                     }
-                }, 5000);
+                }
+            };
+            socket.onerror = function () { self.status = 'error'; };
+            socket.onclose = function () {
+                self.status = 'offline';
+                self.playerReady = false;
+                self.busy = false;
+                self.challenge = null;
+                setTimeout(function () {
+                    if (self.socket === socket) self.connect();
+                }, 2500);
             };
         },
-
-        handleUpdate: function (data) {
-            if (data.product_catalog) {
-                this.productCatalog = data.product_catalog;
+        send: function (payload) {
+            if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                this.gameMessage = 'Waiting for the server';
+                this.busy = false;
+                return false;
             }
-            if (data.groceries) {
-                this.groceries = data.groceries;
-            }
-            if (data.work) {
-                this.tries = data.work;
-            }
-            if (data.eat_ordered) {
-                this.dishMessage = data.eat_ordered.status === 'prepared'
-                    ? 'Ingredient consumed: ' + data.eat_ordered.product
-                    : 'Waiting for harvest: ' + data.eat_ordered.product;
-            }
-            if (data.eat_error) {
-                this.dishMessage = data.eat_error;
+            this.socket.send(JSON.stringify(payload));
+            return true;
+        },
+        registerPlayer: function () {
+            try {
+                this.playerReady = false;
+                this.send({player_register: CityFarmPlayer.save(this.playerName)});
+            } catch (error) {
+                this.playerMessage = error.message;
             }
         },
-
-        send: function (data) {
-            if (!this.ws_publish || this.ws_publish.readyState !== WebSocket.OPEN) {
-                this.dishMessage = 'Waiting for WebSocket connection';
+        startWork: function () {
+            if (!this.playerReady || this.challenge || this.busy || this.playerState.energy < 10) return;
+            this.busy = true;
+            this.gameMessage = 'Generating arithmetic challenge...';
+            if (!this.send({work_start: {level: this.level}})) this.busy = false;
+        },
+        submitAnswer: function () {
+            if (!this.challenge || this.busy) return;
+            var input = this.answer.trim();
+            if (!/^-?\d+$/.test(input)) {
+                this.gameMessage = 'Enter a whole number.';
                 return;
             }
-            this.ws_publish.send(JSON.stringify(data));
+            this.busy = true;
+            this.gameMessage = 'Checking answer...';
+            if (!this.send({challenge_submit: {
+                id: this.challenge.id, answer: Number(input)
+            }})) this.busy = false;
         },
-
-        consume: function (product) {
-            this.send({consume: product});
+        rest: function () {
+            if (!this.playerReady || this.busy) return;
+            this.busy = true;
+            if (!this.send({basic_recovery: 'citizen'})) this.busy = false;
+        },
+        buyFood: function (product) {
+            if (!this.playerReady || this.busy) return;
+            this.busy = true;
+            if (!this.send({buy_food: product})) this.busy = false;
         }
     }
 });
