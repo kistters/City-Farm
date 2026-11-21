@@ -1,48 +1,43 @@
-"""Economia e desafios em Redis: conclusão e compra atômicas em Lua.
+"""Economia do City-Farm: desafios, saldos e transações atômicas no Redis.
 
-Protótipo local sem autenticação: o identificador casual do jogador não é
-uma credencial. Não exponha o jogo à Internet pública.
+Funções Python expressam as regras; Lua é usado apenas onde múltiplas
+chaves precisam mudar de forma indivisível (produção, pagamento e compra).
+O identificador casual de jogador NÃO autentica o usuário.
 """
+from collections import Counter
 import json
 import secrets
 import time
 
 from products import PRODUCTS
-from puzzles import create_farm, create_work, check_solution, LEVEL_REWARD
+from puzzles import FARM_LEVELS, WORK_REWARDS, check_solution, create_farm, create_work
 
 CHALLENGE_TTL = 180
 INITIAL_ENERGY = 60
+INITIAL_SOIL_HEALTH = 100
+MAX_RESOURCE = 100
+BASIC_RECOVERY = 10
 ENERGY_COST = 10
 FOOD_ENERGY = 30
-MAX_ENERGY = 100
 FOOD_PRICE = 5
-PLOTS = 3
-INITIAL_SOIL_HEALTH = 100
-SOIL_COST = {1: 10, 2: 35, 3: 20}
-FARM_OUTPUT = {1: 1, 2: 3, 3: 4}
-SOIL_CARE_COST = 5
-SOIL_CARE_GAIN = 40
-BASIC_RECOVERY = 10
+SOIL_PREPARE_COST = 5
+SOIL_PREPARE_RECOVERY = 40
+BASE_PLOTS = 3
 
+# Desafio e saldo do solo são verificados ANTES da criação dos lotes.
+# Cada campo "crop:<produto>" contém as unidades ainda não vendidas.
 FINISH_FARM = """
--- Validate both the challenge and resources before changing anything.
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
 if redis.call('GET', KEYS[2]) ~= ARGV[2] then return 0 end
 if redis.call('EXISTS', KEYS[3]) == 1 then return -1 end
 if tonumber(redis.call('GET', KEYS[4]) or '0') < tonumber(ARGV[3]) then return -2 end
-local products = cjson.decode(ARGV[4])
-local total = 0
-for name, quantity in pairs(products) do
-    if quantity < 1 or not string.match(name, '^[a-z_]+$') then return -3 end
-    total = total + quantity
-end
+local crops = cjson.decode(ARGV[5])
 redis.call('DEL', KEYS[1], KEYS[2])
 redis.call('DECRBY', KEYS[4], ARGV[3])
-redis.call('HSET', KEYS[3], 'remaining', total)
-for name, quantity in pairs(products) do
-    redis.call('HSET', KEYS[3], 'stock:' .. name, quantity)
-    for i=1,quantity do
-        redis.call('RPUSH', 'game:stock:' .. name, ARGV[5])
+for product, count in pairs(crops) do
+    redis.call('HSET', KEYS[3], 'crop:' .. product, count)
+    for i = 1, count do
+        redis.call('RPUSH', 'game:stock:' .. product, ARGV[4])
     end
 end
 return 1
@@ -58,93 +53,68 @@ redis.call('INCRBY', KEYS[4], ARGV[4])
 return 1
 """
 
+# Estoque antigo com campos "product" e "qty" segue vendável, sem migração.
 BUY_FOOD = """
-local balance = tonumber(redis.call('GET', KEYS[1]) or '0')
+local coins = tonumber(redis.call('GET', KEYS[1]) or '0')
 local energy = tonumber(redis.call('GET', KEYS[2]) or '0')
-if balance < tonumber(ARGV[1]) then return {-1, ''} end
+if coins < tonumber(ARGV[1]) then return {-1, ''} end
 if energy >= tonumber(ARGV[2]) then return {-2, ''} end
 local item = redis.call('LINDEX', KEYS[3], 0)
 if not item then return {-3, ''} end
 local seller, slot = string.match(item, '^([0-9a-f]+):([0-9]+)$')
 if not seller or string.len(seller) ~= 32 then return {-4, ''} end
-local plot_key = 'game:plot:' .. seller .. ':' .. slot
-local remaining = tonumber(redis.call('HGET', plot_key, 'remaining') or '0')
-if remaining > 0 then
-    if tonumber(redis.call('HGET', plot_key, 'stock:' .. ARGV[3]) or '0') < 1 then
-        return {-4, ''}
-    end
-else
-    -- Compatibility with plots produced by the previous draft implementation.
-    if redis.call('HGET', plot_key, 'product') ~= ARGV[3] or
-       tonumber(redis.call('HGET', plot_key, 'qty') or '0') < 1 then
-        return {-4, ''}
-    end
+local plot = 'game:plot:' .. seller .. ':' .. slot
+local field = 'crop:' .. ARGV[3]
+local count = tonumber(redis.call('HGET', plot, field) or '0')
+local legacy, previous = false, false
+if count == 0 then
+    field = 'stock:' .. ARGV[3]
+    count = tonumber(redis.call('HGET', plot, field) or '0')
+    previous = count > 0
 end
+if count == 0 and redis.call('HGET', plot, 'product') == ARGV[3] then
+    count = tonumber(redis.call('HGET', plot, 'qty') or '0')
+    legacy = true
+end
+if count < 1 then return {-4, ''} end
 redis.call('LPOP', KEYS[3])
 redis.call('DECRBY', KEYS[1], ARGV[1])
 redis.call('INCRBY', 'game:coins:' .. seller, ARGV[1])
 redis.call('SET', KEYS[2], math.min(tonumber(ARGV[2]), energy + tonumber(ARGV[4])))
-if remaining > 0 then
-    redis.call('HINCRBY', plot_key, 'stock:' .. ARGV[3], -1)
-    if redis.call('HINCRBY', plot_key, 'remaining', -1) == 0 then
-        redis.call('DEL', plot_key)
+if legacy then
+    if redis.call('HINCRBY', plot, 'qty', -1) == 0 then redis.call('DEL', plot) end
+elseif previous then
+    redis.call('HINCRBY', plot, field, -1)
+    if redis.call('HINCRBY', plot, 'remaining', -1) == 0 then
+        redis.call('DEL', plot)
     end
-elseif redis.call('HINCRBY', plot_key, 'qty', -1) == 0 then
-    redis.call('DEL', plot_key)
+else
+    if redis.call('HINCRBY', plot, field, -1) == 0 then
+        redis.call('HDEL', plot, field)
+        if redis.call('HLEN', plot) == 0 then redis.call('DEL', plot) end
+    end
 end
 return {1, seller}
 """
 
-RECOVER = """
+# Recuperação gratuita é até 10, nunca +10 acima desse limite.
+BASIC_RESTORE = """
 local current = tonumber(redis.call('GET', KEYS[1]) or '0')
 if current >= tonumber(ARGV[1]) then return -1 end
-local value = math.min(tonumber(ARGV[1]), current + tonumber(ARGV[2]))
-redis.call('SET', KEYS[1], value)
-return value
+redis.call('SET', KEYS[1], ARGV[1])
+return tonumber(ARGV[1])
 """
 
-PREPARE_SOIL = """
+PAID_SOIL_CARE = """
 local coins = tonumber(redis.call('GET', KEYS[1]) or '0')
 local soil = tonumber(redis.call('GET', KEYS[2]) or '0')
 if soil >= tonumber(ARGV[2]) then return -1 end
 if coins < tonumber(ARGV[1]) then return -2 end
+local renewed = math.min(tonumber(ARGV[2]), soil + tonumber(ARGV[3]))
 redis.call('DECRBY', KEYS[1], ARGV[1])
-local value = math.min(tonumber(ARGV[2]), soil + tonumber(ARGV[3]))
-redis.call('SET', KEYS[2], value)
-return value
+redis.call('SET', KEYS[2], renewed)
+return renewed
 """
-
-
-def recover_basic(red, owner, kind):
-    if kind not in ("farmer", "citizen"):
-        raise ValueError("Unknown recovery")
-    initialize_player(red, owner)
-    resource = "game:soil:" if kind == "farmer" else "game:energy:"
-    amount = int(red.register_script(RECOVER)(
-        keys=[resource + owner], args=[BASIC_RECOVERY, BASIC_RECOVERY]))
-    if amount < 0:
-        raise ValueError("Basic recovery is available only below 10")
-    return {"resource": "soil_health" if kind == "farmer" else "energy",
-            "value": amount}
-
-
-def prepare_soil(red, owner):
-    initialize_player(red, owner)
-    value = int(red.register_script(PREPARE_SOIL)(
-        keys=["game:coins:" + owner, "game:soil:" + owner],
-        args=[SOIL_CARE_COST, 100, SOIL_CARE_GAIN]))
-    if value == -1:
-        raise ValueError("Soil health is already full")
-    if value == -2:
-        raise ValueError("Not enough coins to prepare soil")
-    return {"soil_health": value, "cost": SOIL_CARE_COST}
-
-
-def harvest_products(level, pattern, product):
-    if level != 3:
-        return {product: FARM_OUTPUT[level]}
-    return {name: pattern.count(name) for name in PRODUCTS if name in pattern}
-
 
 
 def _text(value):
@@ -165,7 +135,17 @@ def _plot(owner, index):
 
 def initialize_player(red, owner):
     red.setnx("game:energy:" + owner, INITIAL_ENERGY)
-    red.setnx("game:soil:" + owner, INITIAL_SOIL_HEALTH)
+    # Migra o saldo de solo da versão #22 sem sobrescrever jogadores já migrados.
+    previous_soil = red.get("game:soil:" + owner)
+    red.setnx("game:soil_health:" + owner,
+              int(previous_soil) if previous_soil is not None else INITIAL_SOIL_HEALTH)
+    # Preservar terrenos já adquiridos em versões de teste, sem vender novos.
+    red.setnx("game:plot_limit:" + owner, BASE_PLOTS)
+
+
+def plot_limit(red, owner):
+    initialize_player(red, owner)
+    return int(red.get("game:plot_limit:" + owner))
 
 
 def market(red):
@@ -175,49 +155,53 @@ def market(red):
 def state(red, owner):
     initialize_player(red, owner)
     plots = []
-    for index in range(PLOTS):
+    for index in range(plot_limit(red, owner)):
         values = red.hgetall(_plot(owner, index))
-        amounts = {
-            name: int(values.get(("stock:" + name).encode()) or
-                      values.get("stock:" + name) or 0)
-            for name in PRODUCTS
-        } if values else {}
-        legacy_product = _text(values.get(b"product") or values.get("product")) if values else None
-        if legacy_product:
-            amounts[legacy_product] = int(values.get(b"qty") or values.get("qty") or 0)
+        decoded = {_text(k): _text(v) for k, v in values.items()}
+        products = {
+            key.removeprefix("crop:"): int(value)
+            for key, value in decoded.items() if key.startswith("crop:")
+        }
+        # Lotes mistos criados na #22 usavam "stock:<produto>" e "remaining".
+        for key, value in decoded.items():
+            if key.startswith("stock:") and int(value) > 0:
+                name = key.removeprefix("stock:")
+                products[name] = products.get(name, 0) + int(value)
+        if "product" in decoded:  # legado de lotes da PR #22
+            products[decoded["product"]] = int(decoded["qty"])
         plots.append({
             "index": index,
-            "product": legacy_product or ("mixed" if sum(amounts.values()) else None),
-            "qty": sum(amounts.values()),
-            "products": {name: qty for name, qty in amounts.items() if qty > 0},
+            "product": next(iter(products)) if len(products) == 1 else
+                       ("mixed" if products else None),
+            "qty": sum(products.values()),
+            "products": products,
         })
     return {
         "coins": int(red.get("game:coins:" + owner) or 0),
         "energy": int(red.get("game:energy:" + owner) or 0),
+        "soil_health": int(red.get("game:soil_health:" + owner) or 0),
         "plots": plots,
-        "soil_health": int(red.get("game:soil:" + owner) or 0),
     }
 
 
 def start(red, owner, kind, level, product=None, plot=None):
     if kind not in ("farmer", "citizen"):
         raise ValueError("Unknown activity")
-    if type(level) is not int or level not in LEVEL_REWARD:
+    if type(level) is not int or level not in WORK_REWARDS:
         raise ValueError("Invalid level")
+    initialize_player(red, owner)
     if kind == "farmer":
-        if type(plot) is not int or plot not in range(PLOTS):
+        if type(plot) is not int or plot not in range(plot_limit(red, owner)):
             raise ValueError("Choose an available plot")
-        initialize_player(red, owner)
-        if int(red.get("game:soil:" + owner) or 0) < SOIL_COST[level]:
-            raise ValueError("Not enough soil health. Care for the land.")
         if red.exists(_plot(owner, plot)):
             raise ValueError("This plot is occupied until its food is sold")
+        if int(red.get("game:soil_health:" + owner)) < FARM_LEVELS[level]["soil_cost"]:
+            raise ValueError("Soil health too low. Care for the soil first.")
         public, expected = create_farm(level, product)
         public["plot"] = plot
     else:
-        initialize_player(red, owner)
         if int(red.get("game:energy:" + owner)) < ENERGY_COST:
-            raise ValueError("Not enough energy. Buy food to recover.")
+            raise ValueError("Not enough energy. Rest or buy food.")
         public, expected = create_work(level)
 
     active = _active(owner, kind)
@@ -261,34 +245,75 @@ def submit(red, owner, challenge_id, answer):
     kind = public["kind"]
     active = _active(owner, kind)
     if kind == "farmer":
-        product, plot = public["product"], public["plot"]
-        level = public["level"]
-        products = harvest_products(level, data["expected"], product)
-        count = sum(products.values())
+        plot = public["plot"]
+        cost = FARM_LEVELS[public["level"]]["soil_cost"]
+        # Dificuldade visual (células) e produção são regras distintas.
+        # Só na multicultura a colheita corresponde a cada ícone mostrado.
+        if public["level"] == 3:
+            counts = Counter(crop for crop in data["expected"] if crop)
+        else:
+            counts = Counter({public["product"]: FARM_LEVELS[public["level"]]["production"]})
         outcome = int(red.register_script(FINISH_FARM)(
             keys=[_challenge(challenge_id), active, _plot(owner, plot),
-                  "game:soil:" + owner],
-            args=[raw, challenge_id, SOIL_COST[level], json.dumps(products),
-                  "{}:{}".format(owner, plot)],
+                  "game:soil_health:" + owner],
+            args=[raw, challenge_id, cost, "{}:{}".format(owner, plot),
+                  json.dumps(counts)],
         ))
         if outcome == -1:
             raise ValueError("Plot occupied; choose a free plot")
         if outcome == -2:
             raise ValueError("Not enough soil health")
-        reward = {"product": product, "qty": count, "products": products,
-                  "soil_cost": SOIL_COST[level]}
+        reward = {
+            "items": [{"name": product, "qty": counts[product]}
+                      for product in PRODUCTS if counts[product]],
+            "qty": sum(counts.values()),
+            "soil_cost": cost,
+        }
     else:
+        coins = WORK_REWARDS[public["level"]]
         outcome = int(red.register_script(FINISH_WORK)(
             keys=[_challenge(challenge_id), active,
                   "game:energy:" + owner, "game:coins:" + owner],
-            args=[raw, challenge_id, ENERGY_COST, LEVEL_REWARD[public["level"]] * 5],
+            args=[raw, challenge_id, ENERGY_COST, coins],
         ))
         if outcome == -2:
             raise ValueError("Not enough energy")
-        reward = {"coins": LEVEL_REWARD[public["level"]] * 5}
+        reward = {"coins": coins}
     if outcome != 1:
         raise ValueError("Challenge expired or already completed")
     return {"kind": kind, "reward": reward}
+
+
+def _restore_basic(red, key):
+    result = int(red.register_script(BASIC_RESTORE)(
+        keys=[key], args=[BASIC_RECOVERY],
+    ))
+    if result == -1:
+        raise ValueError("Basic care is available only below 10")
+    return result
+
+
+def care_for_soil(red, owner):
+    initialize_player(red, owner)
+    return {"soil_health": _restore_basic(red, "game:soil_health:" + owner)}
+
+
+def rest(red, owner):
+    initialize_player(red, owner)
+    return {"energy": _restore_basic(red, "game:energy:" + owner)}
+
+
+def prepare_soil(red, owner):
+    initialize_player(red, owner)
+    result = int(red.register_script(PAID_SOIL_CARE)(
+        keys=["game:coins:" + owner, "game:soil_health:" + owner],
+        args=[SOIL_PREPARE_COST, MAX_RESOURCE, SOIL_PREPARE_RECOVERY],
+    ))
+    if result == -1:
+        raise ValueError("Soil health is already full")
+    if result == -2:
+        raise ValueError("Not enough coins to prepare soil")
+    return {"soil_health": result, "cost": SOIL_PREPARE_COST}
 
 
 def buy(red, owner, product):
@@ -298,7 +323,7 @@ def buy(red, owner, product):
     code, seller = red.register_script(BUY_FOOD)(
         keys=["game:coins:" + owner, "game:energy:" + owner,
               "game:stock:" + product],
-        args=[FOOD_PRICE, MAX_ENERGY, product, FOOD_ENERGY],
+        args=[FOOD_PRICE, MAX_RESOURCE, product, FOOD_ENERGY],
     )
     code = int(code)
     if code != 1:

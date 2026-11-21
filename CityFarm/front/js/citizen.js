@@ -53,9 +53,9 @@ var citizen = new Vue({
                     self.answer = '';
                     self.gameMessage = 'Work complete! +' + data.challenge_result.reward.coins + ' coins.';
                 }
-                if (data.recovery_result) {
+                if (data.rest_result) {
                     self.busy = false;
-                    self.gameMessage = 'Rest complete: ' + data.recovery_result.value + '/100 energy.';
+                    self.gameMessage = 'Rest complete. Energy recovered up to 10.';
                 }
                 if (data.purchase_result) {
                     self.busy = false;
@@ -119,9 +119,9 @@ var citizen = new Vue({
             }})) this.busy = false;
         },
         rest: function () {
-            if (!this.playerReady || this.busy) return;
+            if (!this.playerReady || this.busy || this.playerState.energy >= 10) return;
             this.busy = true;
-            if (!this.send({basic_recovery: 'citizen'})) this.busy = false;
+            this.send({rest: true});
         },
         buyFood: function (product) {
             if (!this.playerReady || this.busy) return;

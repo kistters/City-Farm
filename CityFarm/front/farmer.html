@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#245c43">
   <title>City-Farm — Farmer</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=19">
+  <link rel="stylesheet" href="/css/dashboard.css?v=23">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -53,18 +53,22 @@
           <span>Coins <strong>{{ playerState.coins }}</strong></span>
           <span>Plots <strong>{{ playerState.plots.length }}</strong></span>
         </div>
-        <div class="resource-panel">
-          <div class="section-head"><h3>Soil Health</h3><strong>{{ playerState.soil_health }}/100</strong></div>
-          <div class="energy-track"><div class="energy-fill" v-bind:style="{width:playerState.soil_health + '%'}"></div></div>
-          <p class="hint">Farming uses soil health: Family −10 · Large monoculture −35 · Polyculture −20.</p>
-          <div class="level-buttons">
-            <button type="button" v-on:click="careForLand"
-              v-bind:disabled="!playerReady || busy || playerState.soil_health >= 10">
-              Care for the land · Free · up to 10
+        <div class="soil-health">
+          <div class="section-head compact">
+            <h3>Saúde do Solo</h3><strong>{{ playerState.soil_health }}/100</strong>
+          </div>
+          <div class="energy-track" role="progressbar" aria-label="Saúde do Solo"
+            aria-valuemin="0" aria-valuemax="100" v-bind:aria-valuenow="playerState.soil_health">
+            <div class="energy-fill soil-fill" v-bind:style="{width:playerState.soil_health+'%'}"></div>
+          </div>
+          <div class="soil-actions">
+            <button class="button button-ghost" type="button" v-on:click="careSoil"
+              v-bind:disabled="!playerReady || busy || playerState.soil_health>=10">
+              Cuidar da Terra · grátis (até 10)
             </button>
-            <button type="button" v-on:click="prepareSoil"
-              v-bind:disabled="!playerReady || busy || playerState.coins < 5 || playerState.soil_health >= 100">
-              Prepare soil · 5 coins · +40
+            <button class="button button-ghost" type="button" v-on:click="prepareSoil"
+              v-bind:disabled="!playerReady || busy || playerState.soil_health>=100 || playerState.coins<5">
+              Preparar o Solo · 5 moedas (+40)
             </button>
           </div>
         </div>
@@ -75,16 +79,15 @@
             v-bind:disabled="!!plot.product || !!challenge"
             v-on:click="choosePlot(plot)">
             <strong>Plot {{ plot.index+1 }}</strong>
-            <span v-if="plot.product">{{ plot.qty }} food · {{ plot.product==='mixed' ? 'Mixed crops' : plot.product }}</span>
+            <span v-if="plot.product"><span v-for="(qty,name) in plot.products" v-bind:key="name">{{ qty }} × {{ name }} </span></span>
             <span v-else>Available</span>
           </button>
         </div>
-        <p class="hint">A plot is available again when Citizens buy the entire batch.</p>
-
+        <p class="hint">Plots hold food until it is sold. Soil care is the recurring expense.</p>
         <div class="section-divider"></div>
         <div v-if="!challenge">
-          <h3>Choose an ingredient</h3>
-          <div class="product-grid">
+          <h3 v-if="level!==3">Choose an ingredient</h3><p v-else class="hint">Multicultura produces four different ingredients chosen by the puzzle.</p>
+          <div class="product-grid" v-if="level!==3">
             <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
               v-bind:class="{'chosen':selectedProduct===plant.name}"
               v-on:click="selectedProduct=plant.name">
@@ -96,14 +99,15 @@
           <div class="level-buttons">
             <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
               v-bind:class="{'chosen':level===option}" v-on:click="level=option">
-              {{ option===1?'Family monoculture':option===2?'Large monoculture':'Polyculture' }}
+              {{ levelNames[option] }}
             </button>
           </div>
-          <p class="hint" v-if="level===1">3×3: remember the positions · +1 food, −10 soil health.</p>
-          <p class="hint" v-if="level===2">6×6: remember smaller positions · +3 food, −35 soil health.</p>
-          <p class="hint" v-if="level===3">Extra: remember the position AND ingredient · +4 mixed food, −20 soil health.</p>
+          <p class="hint" v-if="level===1">3×3 · 1 food · −10 Saúde do Solo.</p>
+          <p class="hint" v-if="level===2">6×6 · 3 foods · −35 Saúde do Solo.</p>
+          <p class="hint" v-if="level===3">3×3 · 4 different foods · −20 Saúde do Solo.</p>
+          <p class="hint" v-if="playerState.soil_health < soilCosts[level]">Care for the soil before planting at this level.</p>
           <button class="button button-primary" type="button" v-on:click="startFarm"
-            v-bind:disabled="!playerReady || busy || !playerState.plots.length || playerState.soil_health < (level===1?10:level===2?35:20)">Start planting</button>
+            v-bind:disabled="!canPlant">Start planting</button>
         </div>
         <div v-else class="memory-game">
           <div class="section-head">
@@ -129,5 +133,5 @@
   </main>
   <script src="/js/dashboard.js?v=19"></script>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/farmer.js?v=19"></script>
+  <script src="/js/farmer.js?v=23"></script>
 </body></html>
