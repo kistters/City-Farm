@@ -53,7 +53,7 @@ São apenas cinco alimentos: milho, trigo, cenoura, alface e tomate. Não existe
 - `puzzles.py`: geração/validação das regras dos desafios.
 - `economy.py`: conclusão atômica, produção, compra e transferência em scripts Lua.
 - `websocket.py`: transporte e notificações.
-- `player.js`: ID/apelido casual comum às duas páginas.
+- `player.js`: identidade casual separada por papel, permitindo jogar com Farmer e Citizen diferentes em duas abas do mesmo navegador.
 
 Cada desafio válido pode conceder recompensa **uma única vez**, mesmo sob chamadas simultâneas. As respostas são verificadas pelo servidor; entretanto, os padrões enviados ao navegador podem ser lidos por bots, e o ID em `localStorage` pode ser falsificado. É um estudo de arquitetura para uso **exclusivamente local**.
 
@@ -70,7 +70,7 @@ Os testes de integração limpam somente o banco Redis **DB 15**; o jogo usa o *
 
 ### Cenário manual
 
-1. Abra Farmer e Citizen em duas abas.
+1. Abra Farmer e Citizen em duas abas; cada papel tem ID casual próprio mesmo no mesmo navegador.
 2. Farmer produz um tomate no nível 1 e o vê no mercado.
 3. Citizen conclui uma soma, recebe 5 moedas e compra o tomate.
 4. Citizen recupera energia, o Farmer recebe moedas e o terreno é liberado.
