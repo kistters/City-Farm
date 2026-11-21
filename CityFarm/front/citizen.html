@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#245c43">
   <title>City-Farm — Citizen</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=29">
+  <link rel="stylesheet" href="/css/dashboard.css?v=30">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -40,9 +40,12 @@
       <p class="hint" role="status">{{ playerMessage }}</p>
       <div class="wallet-summary">
         <span>Coins <strong>{{ playerState.coins }}</strong></span>
-        <span>Energy <strong>{{ playerState.energy }}/100</strong></span>
       </div>
-      <div class="energy-track" role="progressbar" aria-label="Energy"
+      <div class="resource-health">
+        <div class="section-head compact">
+          <h3>Energia</h3><strong>{{ playerState.energy }}/100</strong>
+        </div>
+        <div class="energy-track" role="progressbar" aria-label="Energia"
         aria-valuemin="0" aria-valuemax="100" v-bind:aria-valuenow="playerState.energy">
         <div class="energy-fill" v-bind:style="{width:playerState.energy + '%'}"></div>
       </div>
@@ -58,7 +61,8 @@
           <strong>Comer Food</strong><small>5 moedas · energia +30</small>
         </button>
       </div>
-      <p class="hint">Food disponível no mercado: <strong>{{ market.food || 0 }}</strong></p>
+        <p class="hint">Food disponível no mercado: <strong>{{ market.food || 0 }}</strong></p>
+      </div>
     </section>
     <section class="panel">
       <div class="section-head">
@@ -94,6 +98,6 @@
     <p class="feedback" role="status" aria-live="polite" v-if="gameMessage">{{ gameMessage }}</p>
   </main>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/citizen.js?v=29"></script>
+  <script src="/js/citizen.js?v=30"></script>
 </body>
 </html>

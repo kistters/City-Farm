@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>City-Farm — Dashboard</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=29">
+  <link rel="stylesheet" href="/css/dashboard.css?v=30">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -24,15 +24,55 @@
       <p class="eyebrow">Real-time market</p>
       <h1>City-Farm Dashboard</h1>
       <p>Stock, work, harvests and purchases. All rewards are validated on the server.</p>
-      <span class="connection-pill" v-bind:class="web_status==='open'?'is-connected':''">{{ web_status }}</span>
     </section>
     <section class="panel">
-      <h2>Available food</h2>
+      <div class="section-head">
+        <div><p class="eyebrow">Market</p><h2>Food available</h2></div>
+        <span class="connection-pill" v-bind:class="web_status==='open'?'is-connected':''">{{ web_status }}</span>
+      </div>
+      <p class="hint">Food supplied by all Farmers, ready for Citizens to buy.</p>
       <div class="demand-grid">
         <div class="demand-item">
           <span class="pixel-sprite sprite-food" aria-hidden="true"></span>
           <div><strong>{{ market.food || 0 }}</strong><span>Food</span></div>
         </div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Personagens</p>
+          <h2>Produção, consumo e moedas</h2>
+        </div>
+      </div>
+      <p class="hint">Contadores acumulados desde esta atualização. Atividades anteriores não foram reconstruídas.</p>
+      <p class="hint" v-if="!characters.length">Nenhum personagem registrado ainda. Entre como Farmer ou Citizen para aparecer aqui.</p>
+      <div class="stats-scroll" v-else role="region" aria-label="Estatísticas por personagem" tabindex="0">
+        <table class="character-stats">
+          <thead>
+            <tr>
+              <th scope="col">Personagem</th>
+              <th scope="col">Food produzido</th>
+              <th scope="col">Food comido</th>
+              <th scope="col">Moedas ganhas no trabalho</th>
+              <th scope="col">Moedas gastas no solo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="character in characters" v-bind:key="character.id">
+              <th scope="row">
+                <span class="character-name">
+                  <span class="pixel-sprite character-avatar" v-bind:class="character.role==='farmer'?'sprite-farm-1':'sprite-career-2'" aria-hidden="true"></span>
+                  <span><strong>{{ character.name }}</strong><small>{{ character.role==='farmer'?'Farmer':'Citizen' }}</small></span>
+                </span>
+              </th>
+              <td>{{ character.food_produced }}</td>
+              <td>{{ character.food_eaten }}</td>
+              <td>{{ character.coins_earned_work }}</td>
+              <td>{{ character.coins_spent_soil }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
     <section class="panel">
@@ -44,6 +84,6 @@
       </div>
     </section>
   </main>
-  <script src="/js/dashboard.js?v=19"></script>
+  <script src="/js/dashboard.js?v=30"></script>
 </body>
 </html>

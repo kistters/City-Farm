@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#245c43">
   <title>City-Farm — Farmer</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=29">
+  <link rel="stylesheet" href="/css/dashboard.css?v=30">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -19,27 +19,15 @@
         <a href="/dashboard" >Dashboard</a>
       </nav>
     </div>
-  </header><main class="page-container role-layout" aria-labelledby="role-heading">
+  </header><main id="farmer" class="page-container role-layout" aria-labelledby="role-heading">
     <section class="page-intro">
       <p class="eyebrow">Play as a Farmer</p>
       <h1 id="role-heading">Feed the city</h1>
       <p>Memorize the growing pattern and reproduce it. A correct answer produces food instantly, ready to sell to Citizens.</p>
     </section>
-    <div class="farmer-layout">
-      <section id="dashboard" class="panel demand-panel">
-        <div class="section-head"><div><p class="eyebrow">Market</p><h2>Food available</h2></div>
-          <span class="connection-pill" v-bind:class="web_status === 'open' ? 'is-connected' : ''">{{ web_status }}</span></div>
-        <p class="hint">Food supplied by all Farmers, ready for Citizens to buy.</p>
-        <div class="demand-grid">
-          <div class="demand-item">
-            <span class="pixel-sprite sprite-food" aria-hidden="true"></span>
-            <div><strong>{{ market.food || 0 }}</strong><span>Food</span></div>
-          </div>
-        </div>
-      </section>
-      <section id="farmer" class="panel farmer-panel">
+    <section class="panel">
         <div class="section-head">
-          <div><p class="eyebrow">Your farm</p><h2>Memory planting</h2></div>
+          <h2>Your Farmer</h2>
           <span class="connection-pill" v-bind:class="status==='ready'?'is-connected':''">{{ status }}</span>
         </div>
         <label for="farmer-name">Player nickname</label>
@@ -52,7 +40,7 @@
         <div class="wallet-summary">
           <span>Coins <strong>{{ playerState.coins }}</strong></span>
         </div>
-        <div class="soil-health">
+        <div class="resource-health">
           <div class="section-head compact">
             <h3>Saúde do Solo</h3><strong>{{ playerState.soil_health }}/100</strong>
           </div>
@@ -74,8 +62,10 @@
           </div>
         </div>
         <p class="hint">Harvest as often as your soil health allows. Food stays in the market until Citizens buy it.</p>
-        <div class="section-divider"></div>
-        <div v-if="!challenge">
+    </section>
+    <section class="panel">
+      <div class="section-head"><h2>Memory planting</h2></div>
+      <div v-if="!challenge">
           <p class="hint">Every successful planting produces <strong>Food</strong>. In Multicultura, different icons only make the memory puzzle harder.</p>
           <h3>Choose a difficulty</h3>
           <div class="level-buttons pixel-levels">
@@ -118,11 +108,9 @@
               v-bind:disabled="busy" v-on:click="cancelChallenge">Cancelar desafio</button>
           </div>
         </div>
-        <p v-if="gameMessage" class="feedback" aria-live="polite" role="status">{{ gameMessage }}</p>
-      </section>
-    </div>
+    </section>
+    <p v-if="gameMessage" class="feedback" aria-live="polite" role="status">{{ gameMessage }}</p>
   </main>
-  <script src="/js/dashboard.js?v=19"></script>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/farmer.js?v=29"></script>
+  <script src="/js/farmer.js?v=30"></script>
 </body></html>
