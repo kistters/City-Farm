@@ -19,14 +19,17 @@
         <div class="panel-group">
           <div class="panel panel-default">
             <div class="panel-heading">
-              Groceries : <span v-bind:class="statusClass" >{{ status }}</span> 
+              Eat requests waiting for harvest <span v-bind:class="statusClass">{{ status }}</span> 
             </div>
             <div class="panel-body">
-              <div v-for="plant in groceries"  class="col-md-2 col-sm-3 col-xs-3 nogutter">
+              <div v-for="plant in pendingOrders" class="col-md-2 col-sm-3 col-xs-3 nogutter">
                   <img v-bind:src="'/css/images/'+ plant.what + '.png'" class="plant" v-bind:alt="plant.what" />
-                  {{ plant.qty }}
+                  <strong>{{ plant.qty }}</strong>
               </div>
             </div>
+            <p class="text-muted" style="clear:both; padding-top:8px">
+              Pending Citizen orders (new requests only). Zero means no waiting orders.
+            </p>
           </div>
         </div>
       </div>
