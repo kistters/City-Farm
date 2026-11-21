@@ -1,142 +1,102 @@
+// Citizen: keep this compatible with the Vue 2.1.x used by the game.
 var citizen = new Vue({
-
-    // Elemento que o aplicativo será iniciado
-    el: "#citizen",
-
-    // Propriedades do aplicativo
+    el: '#citizen',
     data: {
-        global_msg: '',
-        plant: '',
+        status: 'connecting',
+        statusClass: {'label label-warning': true},
         tries: null,
         groceries: [],
         productCatalog: [],
         dishes: [],
         dishMessage: '',
-        status: 'close',
-        ws_publish: null,
-        statusClass: {
-            'label label-success': false,
-            'label label-info': false,
-            'label label-danger': true,
-            'label label-warning': false
-          }
+        ws_publish: null
     },
 
-    created: function() {
-        // Inicia a conexão com o websocket
+    created: function () {
         this.connect();
     },
 
-    // Métodos do aplicatvo
     methods: {
-
-        connect: function(onOpen) {
-
+        connect: function () {
             var self = this;
             var host = window.location.hostname;
+            var socket = new WebSocket('ws://' + host + ':8888/publihser');
+            self.ws_publish = socket;
 
-            self.ws_publish = new WebSocket('ws://'+host+':8888'+'/publihser');
-
-            self.ws_publish.onopen = function() {
-
-                self.status = 'open'
-                self.statusClass = {
-                    'label label-success': true
-                }
-                // Se houver método de retorno
-                if (onOpen) {
-                    onOpen();
-                }
+            socket.onopen = function () {
+                self.status = 'ready';
+                self.statusClass = {'label label-success': true};
             };
 
-            self.ws_publish.onerror = function() {
-                self.status = 'fail'
-                self.statusClass = {
-                    'label label-danger': true
+            socket.onmessage = function (event) {
+                var data;
+                try {
+                    data = JSON.parse(event.data);
+                } catch (error) {
+                    self.dishMessage = 'Invalid response from the server';
+                    return;
                 }
+                self.handleUpdate(data);
             };
 
-            self.ws_publish.onmessage = function(e) {
-                self.status = 'consume'
-                self.statusClass = {
-                    'label label-info': true
-                }
+            socket.onerror = function () {
+                self.status = 'error';
+                self.statusClass = {'label label-danger': true};
+            };
 
-                self.handleUpdate(JSON.parse(e.data));
-
-                setTimeout(() => {
-                    self.status = 'ready'
-                    self.statusClass = {
-                        'label label-success': true
+            socket.onclose = function () {
+                self.status = 'closed';
+                self.statusClass = {'label label-danger': true};
+                // Reconnect without touching the other Vue components.
+                setTimeout(function () {
+                    if (self.ws_publish === socket) {
+                        self.connect();
                     }
-                }, 1000)
-            };
-
-            self.ws_publish.onclose = function(){
-                self.status = 'closed'
-                self.statusClass = {
-                    'label label-danger': true
-                }
-
-                setTimeout(() => {
-                    self.connect();
                 }, 5000);
             };
-
         },
 
-        publish: function(json_data) {
-
-            var self = this;
-
-            if (self.ws_publish.readyState !== self.ws_publish.OPEN) {
-
-                self.connect(function() {
-                    self.publish(JSON.stringify({update:true}));
-                });
-
-                return;
+        handleUpdate: function (data) {
+            if (data.product_catalog) {
+                this.productCatalog = data.product_catalog;
             }
-
-            self.ws_publish.send(json_data);
-        },
-
-        handleUpdate: function(data) {
-            if (data.product_catalog) this.productCatalog = data.product_catalog;
-            if (data.dishes) this.dishes = data.dishes;
-            if (data.dish_ordered) {
-                this.dishMessage = data.dish_ordered.status === 'prepared' ?
-                    'Dish prepared: ' + data.dish_ordered.dish :
-                    'Dish ordered: ' + data.dish_ordered.dish + '. Waiting for ingredients.';
-            }
-            if (data.dish_error) this.dishMessage = data.dish_error;
-            if (data.work) {
-                this.tries = data.work
-
+            if (data.dishes) {
+                this.dishes = data.dishes;
             }
             if (data.groceries) {
-                this.groceries = data.groceries
+                this.groceries = data.groceries;
+            }
+            if (data.work) {
+                this.tries = data.work;
+            }
+            if (data.dish_ordered) {
+                var order = data.dish_ordered;
+                this.dishMessage = order.status === 'prepared'
+                    ? 'Dish prepared: ' + order.dish
+                    : 'Dish ordered: ' + order.dish + '. Waiting for ingredients.';
+            }
+            if (data.dish_error) {
+                this.dishMessage = data.dish_error;
+            }
+            if (data.eat_error) {
+                this.dishMessage = data.eat_error;
             }
         },
 
-        ingredientList: function (ingredients) {
-            return Object.keys(ingredients).map(function(name) {
-                return ingredients[name] + '× ' + name.replace(/_/g, ' ');
-            }).join(' + ');
-        },
-
-        orderDish: function (dish) {
+        send: function (data) {
             if (!this.ws_publish || this.ws_publish.readyState !== WebSocket.OPEN) {
-                this.dishMessage = 'Wait for WebSocket connection';
+                this.dishMessage = 'Waiting for WebSocket connection';
                 return;
             }
-            this.dishMessage = 'Submitting ' + dish + '...';
-            this.publish(JSON.stringify({order_dish: dish}));
+            this.ws_publish.send(JSON.stringify(data));
         },
 
-        consume: function (plant) {
-            this.publish(JSON.stringify({consume: plant}));
+        orderDish: function (dishId) {
+            this.send({order_dish: dishId});
         },
+
+        consume: function (product) {
+            this.send({consume: product});
+        }
     }
-
 });
