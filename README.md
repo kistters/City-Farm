@@ -65,3 +65,13 @@ Testes do backend: `docker compose exec worker python -m unittest test_pow`.
 **Segurança:** esta é uma experiência para uma rede local confiável.
 Não exponha as portas do jogo à internet; não há autenticação nem
 limitação global de desafios por IP.
+
+### Histórico de Proof of Work
+
+O dashboard mostra as **últimas 50 validações** registradas em Redis, incluindo
+hash SHA-256 (quando o desafio ainda existe), nonce, Farmer, horário e resultado
+**✓ VALID** ou **✗ INVALID**, sempre determinado pelo worker do backend.
+As rejeições exibem um motivo como `invalid_hash`, `expired_or_used`
+ou `already_used`. Ao atualizar a página, o dashboard busca o histórico
+novamente. Não armazena os desafios completos nem apresenta o IP como
+autenticação. O histórico permanece enquanto os dados no Redis existirem.
