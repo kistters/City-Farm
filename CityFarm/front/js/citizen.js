@@ -61,6 +61,10 @@ var citizen = new Vue({
                 if (data.game_error) {
                     self.busy = false;
                     self.gameMessage = data.game_error;
+                    if (data.game_error.indexOf('expired') !== -1 ||
+                        data.game_error.indexOf('already completed') !== -1) {
+                        self.challenge = null;
+                    }
                 }
             };
             socket.onerror = function () { self.status = 'error'; };
