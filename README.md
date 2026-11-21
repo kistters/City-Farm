@@ -33,11 +33,11 @@ Escolha o nível, memorize o padrão temporário e reproduza as posições. Todo
 
 | Nível | Puzzle | Produção | Saúde do Solo |
 |---|---|---:|---:|
-| Monocultura familiar | 3×3, posições com 🍲 | +1 Food | −10 |
-| Monocultura latifúndio | 6×6, posições com 🍲 | +3 Food | −35 |
-| Multicultura | 3×3, posições e quatro ícones diferentes | +4 Food | −20 |
+| Monocultura familiar | 3×3, posições com o mesmo vegetal | +1 Food | −10 |
+| Monocultura latifúndio | 4×4, seis posições com o mesmo vegetal | +3 Food | −35 |
+| Multicultura | 4×4, quatro vegetais diferentes | +4 Food | −20 |
 
-Na Multicultura, os antigos ícones de plantas são **apenas símbolos do puzzle**, para preservar a dificuldade de memorizar posição e tipo. **Não existem produtos diferentes nem escolha de ingredientes.** O jogador pode rever o padrão sem apagar sua resposta, ou cancelar o desafio sem gastar Saúde do Solo.
+Os vegetais aparecem como imagens pixel art nos três puzzles. Nas monoculturas, um vegetal é sorteado para todas as posições; na multicultura, são quatro vegetais diferentes. Eles são **apenas símbolos visuais**: **não existem produtos diferentes nem escolha de ingredientes.** O jogador pode rever o padrão sem apagar sua resposta, ou cancelar o desafio sem gastar Saúde do Solo.
 
 O Farmer pode produzir quantas vezes desejar, inclusive com estoque não vendido, desde que tenha Saúde do Solo. A barra vai de 0 a 100; **Cuidar da Terra** (grátis) recupera até 10 quando abaixo de 10, e **Preparar o Solo** custa 5 moedas para recuperar até 40 (máximo 100).
 
@@ -50,6 +50,13 @@ O Farmer pode produzir quantas vezes desejar, inclusive com estoque não vendido
 | Consultor | Expressões com precedência | 15 moedas |
 
 Cada trabalho correto gasta 10 de Energia. O Citizen começa com 60/100 e 0 moedas; **Descansar** recupera gratuitamente até 10 (somente quando abaixo de 10). Comprar **1 Food** por 5 moedas recupera até +30, com atualização atômica de estoque e saldos.
+
+
+## Identidade visual — Pixel Art
+
+Direção 4, **Escala e Ferramenta**. Sprites PNG 16-bit (com CSS `image-rendering: pixelated`) em `CityFarm/front/css/images/pixel-cityfarm.png`, reutilizados por todas as páginas: enxada, trator, hortinha familiar, plantação extensiva, horta diversificada, dormir, prato de Food e os cargos Estagiário/Efetivo/Consultor. Os cinco vegetais também são sprites do puzzle.
+
+Farmer e Citizen usam os mesmos componentes CSS para ações e níveis. No Citizen, **Descansar** e **Comer Food** aparecem juntos ao lado da barra de Energia; a compra continua custando 5 moedas e recuperando até 30 de Energia. O estoque continua sendo um único Food.
 
 ## Arquitetura
 

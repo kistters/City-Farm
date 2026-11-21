@@ -10,8 +10,8 @@ from products import FOOD, LEGACY_PRODUCTS
 RANDOM = secrets.SystemRandom()
 FARM_LEVELS = {
     1: {"size": 3, "cells": 3, "production": 1, "soil_cost": 10, "observe_seconds": 5},
-    2: {"size": 6, "cells": 6, "production": 3, "soil_cost": 35, "observe_seconds": 5},
-    3: {"size": 3, "cells": 4, "production": 4, "soil_cost": 20, "observe_seconds": 6},
+    2: {"size": 4, "cells": 6, "production": 3, "soil_cost": 35, "observe_seconds": 5},
+    3: {"size": 4, "cells": 4, "production": 4, "soil_cost": 20, "observe_seconds": 6},
 }
 WORK_REWARDS = {1: 5, 2: 10, 3: 15}
 MEMORY_SYMBOLS = LEGACY_PRODUCTS
@@ -23,12 +23,13 @@ def create_farm(level):
     rules = FARM_LEVELS[level]
     board = [None] * (rules["size"] ** 2)
     positions = RANDOM.sample(range(len(board)), rules["cells"])
-    # Os ícones distintos da Multicultura são apenas um desafio de memória.
-    symbols = RANDOM.sample(MEMORY_SYMBOLS, rules["cells"]) if level == 3 else [FOOD] * len(positions)
-    for position, symbol in zip(positions, symbols):
-        board[position] = symbol
+    # Vegetais são símbolos de memória; a recompensa econômica segue sendo Food.
+    symbol = RANDOM.choice(MEMORY_SYMBOLS) if level != 3 else None
+    symbols = RANDOM.sample(MEMORY_SYMBOLS, rules["cells"]) if level == 3 else [symbol] * len(positions)
+    for position, icon in zip(positions, symbols):
+        board[position] = icon
     public = {
-        "kind": "farmer", "level": level,
+        "kind": "farmer", "level": level, "symbol": symbol,
         "size": rules["size"], "pattern": board,
         "observe_seconds": rules["observe_seconds"],
     }

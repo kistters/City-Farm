@@ -10,18 +10,21 @@ from puzzles import (
 
 class PuzzleTests(unittest.TestCase):
     def test_monoculture_same_food_icon_and_exact_positions(self):
-        for level, size, selected in ((1, 3, 3), (2, 6, 6)):
+        for level, size, selected in ((1, 3, 3), (2, 4, 6)):
             for _ in range(12):
                 public, board = create_farm(level)
                 self.assertEqual(public["size"], size)
                 self.assertEqual(len(board), size ** 2)
-                self.assertEqual(board.count(FOOD), selected)
+                symbol = public["symbol"]
+                self.assertIn(symbol, MEMORY_SYMBOLS)
+                self.assertEqual(board.count(symbol), selected)
+                self.assertNotIn(FOOD, board)
                 self.assertNotIn("product", public)
                 self.assertTrue(check_solution({"public": public, "expected": board},
                                                board[:]))
                 wrong = board[:]
                 index = next(i for i, x in enumerate(wrong) if x is None)
-                wrong[index] = FOOD
+                wrong[index] = symbol
                 self.assertFalse(check_solution({"public": public, "expected": board},
                                                 wrong))
 
@@ -29,7 +32,9 @@ class PuzzleTests(unittest.TestCase):
         for _ in range(20):
             public, board = create_farm(3)
             markers = [crop for crop in board if crop is not None]
-            self.assertEqual(len(board), 9)
+            self.assertEqual(public["size"], 4)
+            self.assertEqual(len(board), 16)
+            self.assertIsNone(public["symbol"])
             self.assertEqual(len(markers), 4)
             self.assertEqual(len(set(markers)), 4)
             self.assertTrue(set(markers).issubset(MEMORY_SYMBOLS))

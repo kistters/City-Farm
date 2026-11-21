@@ -100,7 +100,11 @@ class RolePageTests(unittest.TestCase):
         self.assertNotIn("selectedProduct", html)
         self.assertNotIn("selectedProduct", script)
         self.assertIn("Every successful planting", html)
-        self.assertIn("cell==='food'", html)
+        self.assertIn("v-bind:class=\"'sprite-'+cell\"", html)
+        self.assertIn("sprite-farm-", html)
+        self.assertIn("sprite-soil-hoe", html)
+        self.assertIn("sprite-soil-tractor", html)
+        self.assertIn("this.challenge.symbol", script)
         self.assertIn("v-on:click=\"reviewPattern\"", html)
         self.assertIn("v-on:click=\"cancelChallenge\"", html)
         self.assertIn("beginObservation: function", script)
@@ -117,6 +121,36 @@ class RolePageTests(unittest.TestCase):
             self.assertNotIn("productCatalog", html)
         self.assertIn("buy_food: true", citizen_js)
         self.assertNotIn("buy_food: product", citizen_js)
+
+    def test_shared_pixel_art_assets_and_citizen_layout(self):
+        import struct
+
+        sprite = FRONT / "css/images/pixel-cityfarm.png"
+        data = sprite.read_bytes()
+        self.assertEqual(data[:8], bytes.fromhex("89504e470d0a1a0a"))
+        self.assertEqual(struct.unpack(">II", data[16:24]), (200, 120))
+
+        css = (FRONT / "css/dashboard.css").read_text(encoding="utf-8")
+        farmer = (FRONT / "farmer.html").read_text(encoding="utf-8")
+        citizen = (FRONT / "citizen.html").read_text(encoding="utf-8")
+        home = (FRONT / "index.html").read_text(encoding="utf-8")
+        dashboard = (FRONT / "dashboard.html").read_text(encoding="utf-8")
+        for icon in (
+            "soil-hoe", "soil-tractor", "farm-1", "farm-2", "farm-3",
+            "citizen-rest", "food", "career-1", "career-2", "career-3",
+            "corn", "wheat", "carrot", "lettuce", "tomato",
+        ):
+            self.assertIn(".sprite-" + icon, css)
+        for html in (farmer, citizen, home, dashboard):
+            self.assertIn("pixel-sprite", html)
+        self.assertIn("image-rendering:pixelated", css)
+        self.assertIn("sprite-career-", citizen)
+        self.assertIn("sprite-citizen-rest", citizen)
+        self.assertIn("sprite-food", citizen)
+        self.assertIn("v-on:click=\"buyFood\"", citizen)
+        self.assertNotIn("Buy and eat", citizen)
+        self.assertIn("resource-actions", farmer)
+        self.assertIn("resource-actions", citizen)
 
     def test_nginx_routes_and_responsive_css(self):
         nginx = (ROOT / "nginx/conf.d/city-farm.conf").read_text()

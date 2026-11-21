@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#245c43">
   <title>City-Farm — Farmer</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=23">
+  <link rel="stylesheet" href="/css/dashboard.css?v=29">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -32,7 +32,7 @@
         <p class="hint">Food supplied by all Farmers, ready for Citizens to buy.</p>
         <div class="demand-grid">
           <div class="demand-item">
-            <span class="food-emoji" aria-hidden="true">🍲</span>
+            <span class="pixel-sprite sprite-food" aria-hidden="true"></span>
             <div><strong>{{ market.food || 0 }}</strong><span>Food</span></div>
           </div>
         </div>
@@ -60,14 +60,16 @@
             aria-valuemin="0" aria-valuemax="100" v-bind:aria-valuenow="playerState.soil_health">
             <div class="energy-fill soil-fill" v-bind:style="{width:playerState.soil_health+'%'}"></div>
           </div>
-          <div class="soil-actions">
-            <button class="button button-ghost" type="button" v-on:click="careSoil"
+          <div class="resource-actions">
+            <button class="action-tile" type="button" v-on:click="careSoil"
               v-bind:disabled="!playerReady || busy || playerState.soil_health>=10">
-              Cuidar da Terra · grátis (até 10)
+              <span class="pixel-sprite sprite-soil-hoe" aria-hidden="true"></span>
+              <strong>Cuidar da Terra</strong><small>Grátis · solo até 10</small>
             </button>
-            <button class="button button-ghost" type="button" v-on:click="prepareSoil"
+            <button class="action-tile" type="button" v-on:click="prepareSoil"
               v-bind:disabled="!playerReady || busy || playerState.soil_health>=100 || playerState.coins<5">
-              Preparar o Solo · 5 moedas (+40)
+              <span class="pixel-sprite sprite-soil-tractor" aria-hidden="true"></span>
+              <strong>Preparar o Solo</strong><small>5 moedas · solo +40</small>
             </button>
           </div>
         </div>
@@ -76,15 +78,17 @@
         <div v-if="!challenge">
           <p class="hint">Every successful planting produces <strong>Food</strong>. In Multicultura, different icons only make the memory puzzle harder.</p>
           <h3>Choose a difficulty</h3>
-          <div class="level-buttons">
+          <div class="level-buttons pixel-levels">
             <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
-              v-bind:class="{'chosen':level===option}" v-on:click="level=option">
-              {{ levelNames[option] }}
+              v-bind:class="{'chosen':level===option}" v-bind:aria-pressed="level===option"
+              v-on:click="level=option">
+              <span class="pixel-sprite" v-bind:class="'sprite-farm-'+option" aria-hidden="true"></span>
+              <strong>{{ levelNames[option] }}</strong>
             </button>
           </div>
           <p class="hint" v-if="level===1">3×3 · 1 food · −10 Saúde do Solo.</p>
-          <p class="hint" v-if="level===2">6×6 · 3 foods · −35 Saúde do Solo.</p>
-          <p class="hint" v-if="level===3">3×3 · 4 Food · −20 Saúde do Solo.</p>
+          <p class="hint" v-if="level===2">4×4 · 3 Food · −35 Saúde do Solo.</p>
+          <p class="hint" v-if="level===3">4×4 · 4 Food · −20 Saúde do Solo.</p>
           <p class="hint" v-if="playerState.soil_health < soilCosts[level]">Care for the soil before planting at this level.</p>
           <button class="button button-primary" type="button" v-on:click="startFarm"
             v-bind:disabled="!canPlant">Start planting</button>
@@ -100,8 +104,8 @@
             <button type="button" class="memory-cell" v-for="(cell,index) in visibleCells"
               v-bind:key="index" v-bind:disabled="showPattern || busy"
               v-on:click="cycleCell(index)" v-bind:aria-label="cell ? cell : 'empty cell'">
-              <span v-if="cell==='food'" class="food-cell" aria-label="Food">🍲</span>
-              <img v-else-if="cell" v-bind:src="iconFor(cell)" v-bind:alt="cell">
+              <span v-if="cell" class="pixel-sprite"
+                v-bind:class="'sprite-'+cell" role="img" v-bind:aria-label="cell"></span>
               <span v-else aria-hidden="true">·</span>
             </button>
           </div>
@@ -120,5 +124,5 @@
   </main>
   <script src="/js/dashboard.js?v=19"></script>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/farmer.js?v=28"></script>
+  <script src="/js/farmer.js?v=29"></script>
 </body></html>

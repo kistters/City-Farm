@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#245c43">
   <title>City-Farm — Citizen</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=23">
+  <link rel="stylesheet" href="/css/dashboard.css?v=29">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -46,21 +46,31 @@
         aria-valuemin="0" aria-valuemax="100" v-bind:aria-valuenow="playerState.energy">
         <div class="energy-fill" v-bind:style="{width:playerState.energy + '%'}"></div>
       </div>
-      <button class="button button-ghost" type="button" v-on:click="rest"
-        v-bind:disabled="!playerReady || busy || playerState.energy >= 10">
-        Descansar · grátis (energia até 10)
-      </button>
-      <p class="hint">Basic rest prevents getting stuck. Food restores 30 energy.</p>
+      <div class="resource-actions">
+        <button class="action-tile" type="button" v-on:click="rest"
+          v-bind:disabled="!playerReady || busy || playerState.energy>=10">
+          <span class="pixel-sprite sprite-citizen-rest" aria-hidden="true"></span>
+          <strong>Descansar</strong><small>Grátis · energia até 10</small>
+        </button>
+        <button class="action-tile" type="button" v-on:click="buyFood"
+          v-bind:disabled="!playerReady || busy || (market.food||0)<1 || playerState.coins<5 || playerState.energy>=100">
+          <span class="pixel-sprite sprite-food" aria-hidden="true"></span>
+          <strong>Comer Food</strong><small>5 moedas · energia +30</small>
+        </button>
+      </div>
+      <p class="hint">Food disponível no mercado: <strong>{{ market.food || 0 }}</strong></p>
     </section>
     <section class="panel">
       <div class="section-head">
         <div><h2>Go to work</h2><p class="hint">A correct answer gives coins immediately and uses 10 energy.</p></div>
       </div>
       <div v-if="!challenge">
-        <div class="level-buttons">
+        <div class="level-buttons pixel-levels">
           <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
-            v-bind:class="{'chosen':level===option}" v-on:click="level=option">
-            {{ levelNames[option] }}
+            v-bind:class="{'chosen':level===option}" v-bind:aria-pressed="level===option"
+            v-on:click="level=option">
+            <span class="pixel-sprite" v-bind:class="'sprite-career-'+option" aria-hidden="true"></span>
+            <strong>{{ levelNames[option] }}</strong>
           </button>
         </div>
         <p class="hint" v-if="level===1">Addition and subtraction · 5 coins</p>
@@ -81,26 +91,9 @@
         </div>
       </div>
     </section>
-    <section class="panel">
-      <div class="section-head">
-        <div><h2>Buy and eat</h2><p class="hint">One Food costs 5 coins and restores 30 energy (up to 100).</p></div>
-      </div>
-      <div class="market-grid">
-        <div class="market-item">
-          <span class="food-market-emoji" aria-hidden="true">🍲</span>
-          <strong>Food</strong>
-          <span>In stock: {{ market.food || 0 }}</span>
-          <button class="button button-primary" type="button"
-            v-on:click="buyFood"
-            v-bind:disabled="!playerReady || busy || (market.food||0)<1 || playerState.coins<5 || playerState.energy>=100">
-            Buy Food · 5 coins
-          </button>
-        </div>
-      </div>
-    </section>
     <p class="feedback" role="status" aria-live="polite" v-if="gameMessage">{{ gameMessage }}</p>
   </main>
   <script src="/js/player.js?v=19"></script>
-  <script src="/js/citizen.js?v=28"></script>
+  <script src="/js/citizen.js?v=29"></script>
 </body>
 </html>

@@ -130,9 +130,6 @@ var farmer = new Vue({
                 this.playerMessage = error.message;
             }
         },
-        iconFor: function (name) {
-            return name ? '/css/images/' + name + '.svg' : '';
-        },
         cycleCell: function (index) {
             if (!this.challenge || this.showPattern || this.busy) return;
             var next = this.answer.slice();
@@ -140,7 +137,7 @@ var farmer = new Vue({
                 var all = [null, 'corn', 'wheat', 'carrot', 'lettuce', 'tomato'];
                 next[index] = all[(all.indexOf(next[index]) + 1) % all.length];
             } else {
-                next[index] = next[index] ? null : (this.challenge.product || 'food');
+                next[index] = next[index] ? null : (this.challenge.symbol || 'food');
             }
             this.answer = next;
         },
