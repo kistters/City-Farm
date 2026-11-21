@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#245c43">
   <title>City-Farm — Farmer</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=3">
+  <link rel="stylesheet" href="/css/dashboard.css?v=19">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
 </head>
 <body>
@@ -23,50 +23,99 @@
     <section class="page-intro">
       <p class="eyebrow">Play as a Farmer</p>
       <h1 id="role-heading">Feed the city</h1>
-      <p>Watch demand and produce ingredients. Mining takes place in your browser, and the backend verifies your proof.</p>
+      <p>Memorize the growing pattern and reproduce it. A correct answer produces food instantly, ready to sell to Citizens.</p>
     </section>
     <div class="farmer-layout">
-      <section id="dashboard" class="panel demand-panel" aria-labelledby="demand-heading">
-    <div class="section-head">
-      <div><p class="eyebrow">The market</p><h2 id="demand-heading">Ingredients in demand</h2></div>
-      <span class="connection-pill" v-bind:class="web_status === 'open' ? 'is-connected' : ''">{{ web_status }}</span>
-    </div>
-    <p class="hint">Pending Citizen requests. Grow what's missing.</p>
-    <div class="demand-grid">
-      <div class="demand-item" v-for="order in pendingOrders" v-bind:key="order.what">
-        <img v-bind:src="'/css/images/' + order.what + '.svg'" v-bind:alt="order.what">
-        <div><strong>{{ order.qty }}</strong><span>{{ order.what.replace(/_/g, ' ') }}</span></div>
-      </div>
-    </div>
-  </section>
-      <section id="farmer" class="panel farmer-panel" aria-labelledby="farmer-heading">
-    <div class="section-head">
-      <div><p class="eyebrow">Your farm</p><h2 id="farmer-heading">Choose what to produce</h2></div>
-      <span class="connection-pill" v-bind:class="status === 'ready' || status === 'open' || status === 'produce' ? 'is-connected' : ''">{{ status }}</span>
-    </div>
-    <div class="join-row">
-      <label for="farmer-name">Farmer name</label>
-      <div class="name-entry">
-        <input id="farmer-name" type="text" maxlength="24" autocomplete="nickname"
-          v-model="playerName" v-on:keyup.enter="registerPlayer" placeholder="Your nickname">
-        <button type="button" class="button button-primary" v-on:click="registerPlayer">Join</button>
-      </div>
-      <p class="hint" role="status" aria-live="polite">{{ playerMessage }}</p>
-    </div>
-    <div class="section-divider"></div>
-    <div class="section-head compact"><div><h3>Available products</h3><p class="hint">Each harvest uses Proof of Work in your browser.</p></div></div>
-    <div class="product-grid">
-      <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
-        v-on:click="produce(plant.name)" v-bind:disabled="powBusy || !playerReady">
-        <img v-bind:src="'/css/images/' + plant.name + '.svg'" v-bind:alt="plant.name">
-        <strong>{{ plant.name.replace(/_/g, ' ') }}</strong>
-        <span>{{ plant.source }}</span>
-      </button>
-    </div>
-    <p class="feedback" role="status" aria-live="polite" v-if="powMessage">{{ powMessage }}</p>
-  </section>
+      <section id="dashboard" class="panel demand-panel">
+        <div class="section-head"><div><p class="eyebrow">Market</p><h2>Food available</h2></div>
+          <span class="connection-pill" v-bind:class="web_status === 'open' ? 'is-connected' : ''">{{ web_status }}</span></div>
+        <p class="hint">Food supplied by all Farmers, ready for Citizens to buy.</p>
+        <div class="demand-grid">
+          <div class="demand-item" v-for="(qty, name) in market" v-bind:key="name">
+            <img v-bind:src="'/css/images/' + name + '.svg'" v-bind:alt="name">
+            <div><strong>{{ qty }}</strong><span>{{ name }}</span></div>
+          </div>
+        </div>
+      </section>
+      <section id="farmer" class="panel farmer-panel">
+        <div class="section-head">
+          <div><p class="eyebrow">Your farm</p><h2>Memory planting</h2></div>
+          <span class="connection-pill" v-bind:class="status==='ready'?'is-connected':''">{{ status }}</span>
+        </div>
+        <label for="farmer-name">Player nickname</label>
+        <div class="name-entry">
+          <input id="farmer-name" maxlength="24" v-model="playerName"
+            v-on:keyup.enter="registerPlayer" placeholder="Nickname">
+          <button class="button button-primary" type="button" v-on:click="registerPlayer">Join</button>
+        </div>
+        <p class="hint" role="status">{{ playerMessage }}</p>
+        <div class="wallet-summary">
+          <span>Coins <strong>{{ playerState.coins }}</strong></span>
+          <span>Plots <strong>{{ playerState.plots.length }}/6</strong></span>
+        </div>
+        <h3>Choose a plot</h3>
+        <div class="plot-grid">
+          <button type="button" v-for="plot in playerState.plots" v-bind:key="plot.index"
+            class="plot-tile" v-bind:class="{'chosen':selectedPlot===plot.index}"
+            v-bind:disabled="!!plot.product || !!challenge"
+            v-on:click="choosePlot(plot)">
+            <strong>Plot {{ plot.index+1 }}</strong>
+            <span v-if="plot.product">{{ plot.qty }} × {{ plot.product }}</span>
+            <span v-else>Available</span>
+          </button>
+        </div>
+        <p class="hint">A plot is available again when Citizens buy the entire batch.</p>
+        <button type="button" class="button button-ghost" v-on:click="upgrade"
+          v-bind:disabled="!playerReady || busy || playerState.coins < playerState.plot_upgrade_cost || playerState.plots.length >= 6">
+          Unlock plot · {{ playerState.plot_upgrade_cost }} coins
+        </button>
+        <div class="section-divider"></div>
+        <div v-if="!challenge">
+          <h3>Choose an ingredient</h3>
+          <div class="product-grid">
+            <button type="button" class="product-tile" v-for="plant in productCatalog" v-bind:key="plant.name"
+              v-bind:class="{'chosen':selectedProduct===plant.name}"
+              v-on:click="selectedProduct=plant.name">
+              <img v-bind:src="'/css/images/' + plant.name + '.svg'" v-bind:alt="plant.name">
+              <strong>{{ plant.name }}</strong>
+            </button>
+          </div>
+          <h3>Choose a difficulty</h3>
+          <div class="level-buttons">
+            <button v-for="option in [1,2,3]" v-bind:key="option" type="button"
+              v-bind:class="{'chosen':level===option}" v-on:click="level=option">
+              {{ option===3?'Extra':'Level '+option }}
+            </button>
+          </div>
+          <p class="hint" v-if="level===1">3×3: remember the positions.</p>
+          <p class="hint" v-if="level===2">6×6: remember smaller positions in the same area.</p>
+          <p class="hint" v-if="level===3">Extra: remember the position AND ingredient in every cell.</p>
+          <button class="button button-primary" type="button" v-on:click="startFarm"
+            v-bind:disabled="!playerReady || busy || !playerState.plots.length">Start planting</button>
+        </div>
+        <div v-else class="memory-game">
+          <div class="section-head">
+            <h3>{{ showPattern?'Memorize the pattern':'Reproduce the pattern' }}</h3>
+            <span class="connection-pill">{{ challenge.level===3?'Extra':'Level '+challenge.level }}</span>
+          </div>
+          <p class="hint" v-if="showPattern">The pattern will disappear. Look at the positions and ingredients.</p>
+          <p class="hint" v-else>Tap to select or deselect a cell. In Extra, tap repeatedly to change its ingredient.</p>
+          <div class="memory-grid" v-bind:style="{gridTemplateColumns:'repeat('+boardSize+', minmax(0, 1fr))'}">
+            <button type="button" class="memory-cell" v-for="(cell,index) in visibleCells"
+              v-bind:key="index" v-bind:disabled="showPattern || busy"
+              v-on:click="cycleCell(index)" v-bind:aria-label="cell ? cell : 'empty cell'">
+              <img v-if="cell" v-bind:src="iconFor(cell)" v-bind:alt="cell">
+              <span v-else aria-hidden="true">·</span>
+            </button>
+          </div>
+          <button v-if="!showPattern" class="button button-primary" type="button"
+            v-bind:disabled="busy" v-on:click="submitAnswer">Validate pattern</button>
+        </div>
+        <p v-if="gameMessage" class="feedback" aria-live="polite" role="status">{{ gameMessage }}</p>
+      </section>
     </div>
   </main>
-  <script src="/js/dashboard.js?v=3"></script>
-  <script src="/js/farmer.js?v=3"></script>
+  <script src="/js/dashboard.js?v=19"></script>
+  <script src="/js/player.js?v=19"></script>
+  <script src="/js/farmer.js?v=19"></script>
 </body></html>
