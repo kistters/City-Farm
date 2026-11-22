@@ -1,5 +1,12 @@
 """Testes puros: apenas Food é produzido, sem simplificar o desafio visual."""
+from pathlib import Path
+import sys
 import unittest
+
+CODE_DIRECTORY = Path("/code")
+if not CODE_DIRECTORY.is_dir():
+    CODE_DIRECTORY = Path(__file__).resolve().parents[1] / "CityFarm" / "code"
+sys.path.insert(0, str(CODE_DIRECTORY))
 
 from products import FOOD, LEGACY_PRODUCTS
 from puzzles import (

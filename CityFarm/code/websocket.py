@@ -6,9 +6,12 @@ from datetime import datetime, timezone
 import redis
 from tornado import ioloop, web, websocket
 
-from economy import (buy, cancel_challenge, care_for_soil, characters,
-                     market, prepare_soil, register_character, rest, start,
-                     state, submit)
+from economy import (cancel_farming_challenge, complete_challenge,
+                     get_food_market_status, get_player_resource_status,
+                     list_character_summaries, prepare_soil_with_coins,
+                     purchase_food, recover_energy_with_rest,
+                     recover_soil_health, register_player_character,
+                     start_challenge)
 from players import normalize_player
 
 red = redis.StrictRedis(host="redis", port=6379, db=0)
@@ -22,8 +25,8 @@ def send(handler, data):
 
 def dashboard_snapshot():
     history = [json.loads(item) for item in red.lrange("game:history", 0, 49)]
-    return {"market": market(red), "history": history,
-            "characters": characters(red)}
+    return {"market": get_food_market_status(red), "history": history,
+            "characters": list_character_summaries(red)}
 
 
 def dashboard_update():
@@ -47,12 +50,13 @@ def record_event(kind, actor, details):
 
 
 def broadcast():
-    current_market = market(red)
+    current_market = get_food_market_status(red)
     for client in list(players):
         try:
             payload = {"market": current_market}
             if client.player:
-                payload["player_state"] = state(red, client.player["id"])
+                payload["player_state"] = get_player_resource_status(
+                    red, client.player["id"])
             send(client, payload)
         except websocket.WebSocketClosedError:
             players.discard(client)
@@ -78,7 +82,7 @@ class PublihserHandler(websocket.WebSocketHandler):
     def open(self):
         self.player = None
         players.add(self)
-        send(self, {"market": market(red)})
+        send(self, {"market": get_food_market_status(red)})
 
     def on_close(self):
         players.discard(self)
@@ -93,10 +97,11 @@ class PublihserHandler(websocket.WebSocketHandler):
                 if not isinstance(profile, dict):
                     raise ValueError("Invalid profile")
                 player = normalize_player(profile.get("id"), profile.get("name"))
-                register_character(red, player["id"], player["name"], profile.get("role"))
+                register_player_character(
+                    red, player["id"], player["name"], profile.get("role"))
                 self.player = player
                 send(self, {"player_registered": player,
-                            "player_state": state(red, player["id"])})
+                            "player_state": get_player_resource_status(red, player["id"])})
                 dashboard_update()
                 return
             if not self.player:
@@ -106,43 +111,43 @@ class PublihserHandler(websocket.WebSocketHandler):
                 request = message["farm_start"]
                 if not isinstance(request, dict):
                     raise ValueError("Invalid farm request")
-                challenge = start(red, owner, "farmer", request.get("level"))
+                challenge = start_challenge(red, owner, "farmer", request.get("level"))
                 send(self, {"challenge": challenge})
             elif "farm_cancel" in message:
                 request = message["farm_cancel"]
                 if not isinstance(request, dict):
                     raise ValueError("Invalid cancellation")
-                result = cancel_challenge(red, owner, request.get("id"))
+                result = cancel_farming_challenge(red, owner, request.get("id"))
                 send(self, {"challenge_cancelled": result})
             elif "work_start" in message:
                 request = message["work_start"]
                 if not isinstance(request, dict):
                     raise ValueError("Invalid work request")
-                challenge = start(red, owner, "citizen", request.get("level"))
+                challenge = start_challenge(red, owner, "citizen", request.get("level"))
                 send(self, {"challenge": challenge})
             elif "challenge_submit" in message:
                 request = message["challenge_submit"]
                 if not isinstance(request, dict):
                     raise ValueError("Invalid answer")
-                outcome = submit(red, owner, request.get("id"), request.get("answer"))
+                outcome = complete_challenge(red, owner, request.get("id"), request.get("answer"))
                 send(self, {"challenge_result": outcome})
                 record_event(outcome["kind"], self.player, outcome["reward"])
                 broadcast()
             elif message.get("care_for_soil") is True:
-                result = care_for_soil(red, owner)
+                result = recover_soil_health(red, owner)
                 send(self, {"care_result": result})
                 broadcast()
             elif message.get("prepare_soil") is True:
-                result = prepare_soil(red, owner)
+                result = prepare_soil_with_coins(red, owner)
                 send(self, {"care_result": result})
                 record_event("soil_prepared", self.player, result)
                 broadcast()
             elif message.get("rest") is True:
-                result = rest(red, owner)
+                result = recover_energy_with_rest(red, owner)
                 send(self, {"rest_result": result})
                 broadcast()
             elif message.get("buy_food") is True:
-                result = buy(red, owner)
+                result = purchase_food(red, owner)
                 send(self, {"purchase_result": result})
                 record_event("purchase", self.player,
                              {"product": result["product"], "price": result["price"]})

@@ -14,6 +14,8 @@ services:
       - "8888:8888"
     volumes:
       - ./CityFarm/code:/code:ro
+      - ./tests:/tests:ro
+      - ./:/workspace:ro
     depends_on:
       - redis
 
