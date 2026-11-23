@@ -32,6 +32,10 @@ class WorldHandler(websocket.WebSocketHandler):
 
     def open(self):
         self.session = secrets.token_hex(12)
+        self.write_message(json.dumps({
+            "world_map": {"map": WORLD.snapshot()["map"],
+                          "landmarks": WORLD.snapshot()["landmarks"]}
+        }))
 
     def on_close(self):
         CLIENTS.discard(self)
