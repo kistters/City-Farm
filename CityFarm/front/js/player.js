@@ -1,12 +1,15 @@
 /* Local identity per role: Farmer and Citizen are separate players. */
 window.CityFarmPlayer = {
-    prefix: function () {
-        var role = window.location.pathname.indexOf('/citizen') === 0 ?
-            'citizen' : 'farmer';
+    prefix: function (role) {
+        role = role || (window.location.pathname.indexOf('/citizen') === 0 ?
+            'citizen' : 'farmer');
+        if (role !== 'farmer' && role !== 'citizen') {
+            throw new Error('Choose Farmer or Citizen.');
+        }
         return 'cityfarm.' + role + '.player.';
     },
-    load: function () {
-        var prefix = this.prefix();
+    load: function (role) {
+        var prefix = this.prefix(role);
         var farmer = prefix === 'cityfarm.farmer.player.';
         return {
             id: localStorage.getItem(prefix + 'id') ||
@@ -15,12 +18,12 @@ window.CityFarmPlayer = {
                 (farmer ? localStorage.getItem('cityfarm.player.name') : '') || ''
         };
     },
-    save: function (name) {
+    save: function (name, role) {
         name = (name || '').trim();
         if (!name || name.length > 24 || !/^[\p{L}\p{N} _-]+$/u.test(name)) {
             throw new Error('Use a nickname with 1–24 letters or numbers.');
         }
-        var prefix = this.prefix();
+        var prefix = this.prefix(role);
         var id = localStorage.getItem(prefix + 'id') ||
             (prefix === 'cityfarm.farmer.player.' ?
                 localStorage.getItem('cityfarm.player.id') : '') || '';

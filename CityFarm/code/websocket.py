@@ -15,6 +15,7 @@ from economy import (cancel_farming_challenge, complete_challenge,
                      start_challenge)
 from models import PlayerProfile
 from economy_repository import EconomyRepository
+from worldsocket import WorldHandler
 
 red = redis.StrictRedis(host="redis", port=6379, db=0)
 dashboard_clients = set()
@@ -168,6 +169,7 @@ class PlayerHandler(websocket.WebSocketHandler):
 app = web.Application([
     (r"/player", PlayerHandler),
     (r"/dashboard", DashboardHandler),
+    (r"/world", WorldHandler),
 ])
 
 if __name__ == "__main__":
