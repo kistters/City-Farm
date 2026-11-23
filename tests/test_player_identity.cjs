@@ -9,7 +9,7 @@ const source = fs.readFileSync(
 const stored = new Map();
 let seed = 0;
 const window = {
-    location: {pathname: '/farmer'},
+    location: {pathname: '/farmer', hostname: 'example.test'},
     crypto: {
         getRandomValues: (bytes) => {
             for (let i = 0; i < bytes.length; i++) bytes[i] = (seed++ % 256);
@@ -25,6 +25,7 @@ const context = {window, localStorage, Uint8Array, Array, Math};
 vm.runInNewContext(source, context);
 const player = context.window.CityFarmPlayer;
 
+assert.equal(player.websocketUrl(), 'ws://example.test:8888/player');
 const farmer = player.save('Farmer');
 assert.equal(player.load().id, farmer.id);
 window.location.pathname = '/citizen';

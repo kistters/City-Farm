@@ -75,7 +75,7 @@ class DashboardHandler(websocket.WebSocketHandler):
         dashboard_clients.discard(self)
 
 
-class PublihserHandler(websocket.WebSocketHandler):
+class PlayerHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
         return True
 
@@ -162,7 +162,7 @@ class PublihserHandler(websocket.WebSocketHandler):
 
 
 app = web.Application([
-    (r"/publihser", PublihserHandler),
+    (r"/player", PlayerHandler),
     (r"/dashboard", DashboardHandler),
 ])
 

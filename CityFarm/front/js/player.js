@@ -43,6 +43,6 @@ window.CityFarmPlayer = {
     },
     websocketUrl: function () {
         return (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
-            window.location.hostname + ':8888/publihser';
+            window.location.hostname + ':8888/player';
     }
 };
