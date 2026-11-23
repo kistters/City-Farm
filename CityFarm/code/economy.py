@@ -12,7 +12,7 @@ import secrets
 import time
 
 from economy_repository import EconomyRepository, text
-from products import FOOD
+from models import FOOD_PRODUCT
 from puzzles import (MATH_PUZZLE_REWARDS, MEMORY_PUZZLE_LEVELS,
                      check_solution, create_math_puzzle, create_memory_puzzle)
 
@@ -64,7 +64,7 @@ class EconomyService:
         self.repository.initialize_player(owner, INITIAL_ENERGY, INITIAL_SOIL_HEALTH)
 
     def get_food_market_status(self):
-        return {FOOD: self.repository.count_available_food()}
+        return {FOOD_PRODUCT: self.repository.count_available_food()}
 
     def get_player_resource_status(self, owner):
         self.initialize_player_resources(owner)
@@ -177,7 +177,7 @@ class EconomyService:
                 -1: "Not enough coins", -2: "Energy is already full",
                 -3: "Food out of stock", -4: "Stock needs reconciliation",
             }.get(code, "Purchase failed"))
-        return {"product": FOOD, "price": FOOD_PRICE, "seller": seller}
+        return {"product": FOOD_PRODUCT, "price": FOOD_PRICE, "seller": seller}
 
     @staticmethod
     def _validate_activity(kind, level):

@@ -8,7 +8,6 @@ if not CODE_DIRECTORY.is_dir():
     CODE_DIRECTORY = Path(__file__).resolve().parents[1] / "CityFarm" / "code"
 sys.path.insert(0, str(CODE_DIRECTORY))
 
-from products import FOOD
 from puzzles import (
     MATH_PUZZLE_REWARDS, MEMORY_PUZZLE_LEVELS, MEMORY_SYMBOLS,
     check_solution, create_math_puzzle, create_memory_puzzle,
@@ -25,7 +24,7 @@ class PuzzleTests(unittest.TestCase):
                 symbol = public["symbol"]
                 self.assertIn(symbol, MEMORY_SYMBOLS)
                 self.assertEqual(board.count(symbol), selected)
-                self.assertNotIn(FOOD, board)
+                self.assertNotIn("food", board)
                 self.assertNotIn("product", public)
                 self.assertTrue(check_solution({"public": public, "expected": board},
                                                board[:]))

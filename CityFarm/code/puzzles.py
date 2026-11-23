@@ -5,8 +5,6 @@ o servidor ainda valida cada resposta e só concede uma recompensa por desafio.
 """
 import secrets
 
-from products import FOOD
-
 RANDOM = secrets.SystemRandom()
 MEMORY_PUZZLE_LEVELS = {
     1: {"size": 3, "cells": 3, "production": 1, "soil_cost": 10, "observe_seconds": 5},
@@ -68,7 +66,7 @@ def check_solution(challenge, answer):
         if not isinstance(answer, list) or len(answer) != len(expected):
             return False
         if any(value is not None and
-               (not isinstance(value, str) or value not in (FOOD,) + MEMORY_SYMBOLS)
+               (not isinstance(value, str) or value not in MEMORY_SYMBOLS)
                for value in answer):
             return False
         return answer == expected

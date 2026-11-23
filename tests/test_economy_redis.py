@@ -14,7 +14,7 @@ if not CODE_DIRECTORY.is_dir():
 sys.path.insert(0, str(CODE_DIRECTORY))
 
 import economy
-from products import FOOD
+from models import FOOD_PRODUCT
 
 
 class EconomyRedisTests(unittest.TestCase):
@@ -166,7 +166,7 @@ class EconomyRedisTests(unittest.TestCase):
                 self.assertNotIn("product", challenge)
                 self.assertEqual(result["reward"]["qty"], amount)
                 self.assertEqual(economy.get_food_market_status(self.red), {
-                    FOOD: {1: 1, 2: 4, 3: 8}[level],
+                    FOOD_PRODUCT: {1: 1, 2: 4, 3: 8}[level],
                 })
                 self.assertEqual(economy.get_player_resource_status(self.red, self.farmer)["soil_health"], soil)
                 self.assertEqual(
@@ -175,14 +175,14 @@ class EconomyRedisTests(unittest.TestCase):
     def test_unsold_food_does_not_block_new_harvest(self):
         for _ in range(10):
             self.farm(1)
-        self.assertEqual(economy.get_food_market_status(self.red), {FOOD: 10})
+        self.assertEqual(economy.get_food_market_status(self.red), {FOOD_PRODUCT: 10})
         self.assertEqual(self.red.lrange("game:stock:food", 0, -1),
                          [self.farmer.encode()] * 10)
         with self.assertRaisesRegex(ValueError, "Soil health too low"):
             economy.start_challenge(self.red, self.farmer, "farmer", 1)
         economy.recover_soil_health(self.red, self.farmer)
         self.farm(1)
-        self.assertEqual(economy.get_food_market_status(self.red), {FOOD: 11})
+        self.assertEqual(economy.get_food_market_status(self.red), {FOOD_PRODUCT: 11})
 
     def test_citizen_earns_coins_and_buys_food(self):
         self.farm(1)

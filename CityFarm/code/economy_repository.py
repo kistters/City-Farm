@@ -3,7 +3,7 @@
 Esta classe concentra nomes de chaves e comandos Redis. Ela não decide se uma
 ação é permitida pelo jogo; essa regra fica em :mod:`economy`.
 """
-from products import FOOD
+from models import FOOD_PRODUCT
 
 
 # Os scripts garantem que uma transação inteira ocorra no Redis ou não ocorra.
@@ -124,7 +124,7 @@ class EconomyRepository:
         return owners, pipe.execute()
 
     def count_available_food(self):
-        return self.redis.llen("game:stock:" + FOOD)
+        return self.redis.llen("game:stock:" + FOOD_PRODUCT)
 
     def load_active_challenge(self, owner, kind):
         challenge_id = text(self.redis.get(self.active_key(owner, kind)))
@@ -146,7 +146,8 @@ class EconomyRepository:
     def complete_farming_challenge(self, raw, challenge_id, owner, cost, quantity):
         return int(self.redis.register_script(FINISH_FARM)(
             keys=[self.challenge_key(challenge_id), self.active_key(owner, "farmer"),
-                  "game:soil_health:" + owner, "game:stock:" + FOOD, self.stats_key(owner)],
+                  "game:soil_health:" + owner, "game:stock:" + FOOD_PRODUCT,
+                  self.stats_key(owner)],
             args=[raw, challenge_id, cost, quantity, owner]))
 
     def complete_work_challenge(self, raw, challenge_id, owner, cost, coins):
@@ -170,7 +171,7 @@ class EconomyRepository:
 
     def purchase_next_food(self, owner, price, maximum_energy, gained_energy):
         keys = ["game:coins:" + owner, "game:energy:" + owner,
-                "game:stock:" + FOOD, self.stats_key(owner)]
+                "game:stock:" + FOOD_PRODUCT, self.stats_key(owner)]
         code, seller = self.redis.register_script(BUY_FOOD)(
             keys=keys, args=[price, maximum_energy, gained_energy])
         return int(code), text(seller)
