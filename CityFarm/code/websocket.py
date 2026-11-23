@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timezone
 
 import redis
+import psycopg
 from tornado import ioloop, web, websocket
 
 from economy import (cancel_farming_challenge, complete_challenge,
@@ -13,6 +14,7 @@ from economy import (cancel_farming_challenge, complete_challenge,
                      recover_soil_health, register_player_character,
                      start_challenge)
 from models import PlayerProfile
+from economy_repository import EconomyRepository
 
 red = redis.StrictRedis(host="redis", port=6379, db=0)
 dashboard_clients = set()
@@ -158,8 +160,8 @@ class PlayerHandler(websocket.WebSocketHandler):
                 raise ValueError("Unsupported action")
         except (ValueError, TypeError, KeyError, IndexError) as error:
             send(self, {"game_error": str(error)})
-        except redis.RedisError:
-            logging.exception("Redis command failed")
+        except (redis.RedisError, psycopg.Error):
+            logging.exception("Storage command failed")
             send(self, {"game_error": "Storage temporarily unavailable"})
 
 
@@ -169,5 +171,6 @@ app = web.Application([
 ])
 
 if __name__ == "__main__":
+    EconomyRepository().initialize_schema()
     app.listen(8888)
     ioloop.IOLoop.current().start()

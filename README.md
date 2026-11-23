@@ -25,7 +25,7 @@ There is **one tradeable product: Food**. A Farmer produces Food by completing a
 
 Vegetable icons are memory clues, not separate products. No ingredient selection or individual prices exist.
 
-Older stock from previous versions (corn, wheat, carrot, lettuce, tomato) still counts toward the total Food available. New Food sells first, followed by legacy stock, while payments still go to the original Farmer. No destructive migration is needed.
+Food is stored in PostgreSQL lots with `farmer_id`, `quantity`, and `created_at`. Purchases consume the oldest lot and pay its Farmer in the same database transaction.
 
 ## Farmer
 
@@ -70,17 +70,20 @@ The Dashboard contains the total Food stock, a recent activity feed, and per-cha
 | Coins earned from work | A Citizen completes an arithmetic challenge (+5, +10, or +15) |
 | Coins spent on soil | A Farmer pays 5 coins to Prepare Soil |
 
-Counters are stored in Redis under game:stats:<player-id> and updated **atomically with the corresponding stock or balance changes**. Failed or cancelled challenges and free actions do not increase these totals. Revenue from selling Food is separate from coins earned from work.
+Counters are stored in PostgreSQL and updated **atomically with the corresponding stock or balance changes**. Failed or cancelled challenges and free actions do not increase these totals. Revenue from selling Food is separate from coins earned from work.
 
-Characters are identified by their locally stored player ID, nickname, and role. The Dashboard updates live. **Counters began when tracking was introduced**, so earlier incomplete history is not backfilled. Data persists across Docker restarts as long as Redis is preserved.
+Characters are identified by their locally stored player ID, nickname, and role. The Dashboard updates live. **Counters began when tracking was introduced**, so earlier incomplete history is not backfilled. The dashboard shows the first 100 registered characters ordered by role and name. Player state persists in the PostgreSQL named volume across container recreation; `docker compose down -v` deletes that volume.
 
 ## Architecture
 
 - Nginx serves responsive Vue 2 pages.
-- Tornado provides /publihser and /dashboard WebSockets.
-- Redis holds challenges (180-second TTL), Food stock and ownership, coins, Energy, Soil Health, and persistent statistics.
+- Tornado provides /player and /dashboard WebSockets.
+- PostgreSQL stores players, balances, resources, statistics, Food lots, purchase records, and challenge completion/cancellation receipts.
+- Redis holds temporary challenges (180-second TTL) and a bounded feed of 50 recent events. Losing Redis interrupts active puzzles but does not erase durable player state.
 - puzzles.py generates and checks challenges.
-- economy.py defines economic rules; Redis Lua is used for atomic updates across multiple keys.
+- economy.py defines economic rules; economy_repository.py owns SQL transactions and challenge_repository.py owns temporary Redis payloads.
+- The server creates the initial SQL schema on startup. Rewards and durable challenge receipts commit together before Redis cleanup; retries cannot award twice.
+- Purchases serialize FIFO inventory selection, lock player rows in a stable order, and commit stock, debit, credit, counters, and purchase record together.
 - websocket.py handles transport and broadcasts.
 - player.js keeps local Farmer and Citizen identities separate, even in the same browser.
 
@@ -93,11 +96,12 @@ Legacy Proof-of-Work queues and Dish orders are not included in the Food economy
 ## Tests
 
 ~~~bash
-docker compose exec websocket python -m unittest test_puzzles test_economy_redis test_players
-python -m unittest discover -s tests -p 'test_role_pages.py'
+docker compose up -d postgres redis
+docker compose exec postgres createdb -U cityfarm cityfarm_test # once
+docker compose run --rm websocket python -m unittest discover -s /tests -p 'test_*.py'
 ~~~
 
-The integration tests clear only **Redis DB 15**; the game uses DB 0. GitHub Actions runs the Python, JavaScript, and page tests.
+The integration tests clear **Redis DB 15** and tables in **cityfarm_test**, never the game database. Tests require TEST_DATABASE_URL and reject any database name other than cityfarm_test. Compose supplies it; GitHub Actions provides isolated PostgreSQL and Redis services.
 
 ### Manual gameplay check
 
@@ -108,7 +112,31 @@ The integration tests clear only **Redis DB 15**; the game uses DB 0. GitHub Act
 5. Complete Polyculture: four distinct vegetable symbols generate 4 Food.
 6. Test Show Pattern Again, Cancel Challenge, soil care, and Rest.
 7. Open /dashboard to view Food stock and per-character counters.
-8. Verify legacy vegetable stock still sells as Food and pays the original Farmer.
+8. Restart Redis and verify balances, stock, and statistics survive (active puzzles are temporary).
 9. Retry the same challenge or concurrently buy the final Food unit: no duplicate rewards or charges.
 
 Logs: docker compose logs -f websocket.
+
+## Switching from the Redis-only version
+
+This change deliberately starts a new economy: old balances, stock, profiles, statistics,
+active challenges, and recent events are discarded, not imported. Browser identities
+can register again. Stop the old server before cleanup so it cannot recreate old keys:
+
+~~~bash
+docker compose stop websocket
+docker compose up -d postgres redis
+docker compose build websocket
+docker compose run --rm websocket python reset_legacy_redis.py
+docker compose up -d websocket
+~~~
+
+The reset uses SCAN and UNLINK only for known game namespaces; it never calls FLUSHDB
+and does not touch PostgreSQL or unrelated Redis keys. Deleted old state cannot be
+recovered without an existing backup. Do not run the reset again while players are active.
+
+PostgreSQL uses a named volume, a health check, and internal-only networking. The
+Compose credentials are for local development. DATABASE_URL configures the server;
+use separate credentials and backups for a hosted environment. Database connections
+are currently synchronous and opened per operation; connection pooling and async I/O
+remain future scaling work, as do paginated dashboard navigation and audit retention.

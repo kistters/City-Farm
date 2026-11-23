@@ -1,17 +1,10 @@
-"""Regras de negócio da economia do City-Farm.
-
-``EconomyService`` descreve o que pode acontecer no jogo. O acesso ao Redis
-fica isolado em ``EconomyRepository``, em :mod:`economy_repository`.
-
-As funções no fim do módulo são uma fachada temporária para o servidor atual:
-elas preservam a API original enquanto novos pontos de entrada podem injetar o
-serviço diretamente.
-"""
+"""Game rules; PostgreSQL stores durable state and Redis stores temporary puzzles."""
 import json
 import secrets
 import time
 
-from economy_repository import EconomyRepository, text
+from economy_repository import EconomyRepository
+from challenge_repository import ChallengeRepository
 from models import FOOD_PRODUCT
 from puzzles import (MATH_PUZZLE_REWARDS, MEMORY_PUZZLE_LEVELS,
                      check_solution, create_math_puzzle, create_memory_puzzle)
@@ -32,8 +25,9 @@ SOIL_PREPARE_RECOVERY = 40
 class EconomyService:
     """Casos de uso da economia, independentes do transporte WebSocket."""
 
-    def __init__(self, repository):
+    def __init__(self, repository, challenges):
         self.repository = repository
+        self.challenges = challenges
 
     def register_player_character(self, owner, name, role):
         if role not in ("farmer", "citizen"):
@@ -41,24 +35,7 @@ class EconomyService:
         self.repository.save_player_character(owner, name, role)
 
     def list_character_summaries(self):
-        owners, values = self.repository.load_character_summaries()
-        result = []
-        for index, owner in enumerate(owners):
-            profile, counts = values[2 * index:2 * index + 2]
-            if not profile:
-                continue
-            profile = {text(key): text(value) for key, value in profile.items()}
-            counts = {text(key): int(value) for key, value in counts.items()}
-            result.append({
-                "id": text(owner), "name": profile.get("name", ""),
-                "role": profile.get("role", ""),
-                "food_produced": counts.get("food_produced", 0),
-                "food_eaten": counts.get("food_eaten", 0),
-                "coins_earned_work": counts.get("coins_earned_work", 0),
-                "coins_spent_soil": counts.get("coins_spent_soil", 0),
-            })
-        return sorted(result, key=lambda character: (
-            character["role"], character["name"].casefold(), character["id"]))
+        return self.repository.load_character_summaries()
 
     def initialize_player_resources(self, owner):
         self.repository.initialize_player(owner, INITIAL_ENERGY, INITIAL_SOIL_HEALTH)
@@ -83,11 +60,16 @@ class EconomyService:
                 raise ValueError("Not enough energy. Rest or buy food.")
             public, expected = create_math_puzzle(level)
 
-        challenge_id, old = self.repository.load_active_challenge(owner, kind)
+        challenge_id, old = self.challenges.load_active_challenge(owner, kind)
+        if challenge_id and self.repository.is_challenge_finalized(challenge_id):
+            self.challenges.clear_completed_challenge(owner, kind, challenge_id)
+            challenge_id, old = self.challenges.load_active_challenge(owner, kind)
+            if old:
+                raise ValueError("Previous activity is being cleared; try again")
         if old:
             return json.loads(old)["public"]
         if challenge_id:
-            self.repository.remove_stale_active_challenge(owner, kind)
+            self.challenges.remove_stale_active_challenge(owner, kind)
 
         challenge_id = secrets.token_hex(16)
         public["id"] = challenge_id
@@ -95,8 +77,8 @@ class EconomyService:
             "owner": owner, "public": public, "expected": expected,
             "ready_at": time.time() + public.get("observe_seconds", 0),
         })
-        if not self.repository.save_new_challenge(owner, kind, challenge_id, payload, CHALLENGE_TTL):
-            _, old = self.repository.load_active_challenge(owner, kind)
+        if not self.challenges.save_new_challenge(owner, kind, challenge_id, payload, CHALLENGE_TTL):
+            _, old = self.challenges.load_active_challenge(owner, kind)
             if old:
                 return json.loads(old)["public"]
             raise ValueError("Another activity is starting; try again")
@@ -104,7 +86,7 @@ class EconomyService:
 
     def complete_challenge(self, owner, challenge_id, answer):
         self._validate_challenge_id(challenge_id)
-        raw = self.repository.load_challenge(challenge_id)
+        raw = self.challenges.load_challenge(challenge_id)
         if not raw:
             raise ValueError("Challenge expired or already completed")
         data = json.loads(raw)
@@ -119,15 +101,15 @@ class EconomyService:
         if public["kind"] == "farmer":
             cost = MEMORY_PUZZLE_LEVELS[public["level"]]["soil_cost"]
             quantity = MEMORY_PUZZLE_LEVELS[public["level"]]["production"]
-            outcome = self.repository.complete_farming_challenge(
-                raw, challenge_id, owner, cost, quantity)
+            outcome = self.repository.finalize_challenge(
+                self.challenges, raw, challenge_id, owner, "farmer", cost, quantity)
             if outcome == -2:
                 raise ValueError("Not enough soil health")
             reward = {"qty": quantity, "soil_cost": cost}
         else:
             coins = MATH_PUZZLE_REWARDS[public["level"]]
-            outcome = self.repository.complete_work_challenge(
-                raw, challenge_id, owner, ENERGY_COST, coins)
+            outcome = self.repository.finalize_challenge(
+                self.challenges, raw, challenge_id, owner, "citizen", ENERGY_COST, coins)
             if outcome == -2:
                 raise ValueError("Not enough energy")
             reward = {"coins": coins}
@@ -137,7 +119,7 @@ class EconomyService:
 
     def cancel_farming_challenge(self, owner, challenge_id):
         self._validate_challenge_id(challenge_id)
-        raw = self.repository.load_challenge(challenge_id)
+        raw = self.challenges.load_challenge(challenge_id)
         if not raw:
             raise ValueError("Challenge expired or already completed")
         challenge = json.loads(raw)
@@ -146,17 +128,18 @@ class EconomyService:
         kind = challenge["public"]["kind"]
         if kind != "farmer":
             raise ValueError("Only Farmer challenges can be cancelled here")
-        if self.repository.cancel_active_challenge(raw, challenge_id, owner, kind) != 1:
+        if self.repository.finalize_challenge(
+                self.challenges, raw, challenge_id, owner, kind, cancelled=True) != 1:
             raise ValueError("Challenge expired or already completed")
         return {"id": challenge_id}
 
     def recover_soil_health(self, owner):
         self.initialize_player_resources(owner)
-        return {"soil_health": self._restore_minimum_resource("game:soil_health:" + owner)}
+        return {"soil_health": self._restore_minimum_resource(owner, "soil_health")}
 
     def recover_energy_with_rest(self, owner):
         self.initialize_player_resources(owner)
-        return {"energy": self._restore_minimum_resource("game:energy:" + owner)}
+        return {"energy": self._restore_minimum_resource(owner, "energy")}
 
     def prepare_soil_with_coins(self, owner):
         self.initialize_player_resources(owner)
@@ -193,8 +176,8 @@ class EconomyService:
         if not isinstance(challenge_id, str) or len(challenge_id) != 32:
             raise ValueError("Invalid challenge")
 
-    def _restore_minimum_resource(self, key):
-        result = self.repository.restore_to_minimum(key, BASIC_RECOVERY)
+    def _restore_minimum_resource(self, owner, resource):
+        result = self.repository.restore_to_minimum(owner, resource, BASIC_RECOVERY)
         if result == -1:
             raise ValueError("Basic care is available only below 10")
         return result
@@ -202,7 +185,7 @@ class EconomyService:
 
 def _service(red):
     """Adaptador da API de funções legada para o novo serviço."""
-    return EconomyService(EconomyRepository(red))
+    return EconomyService(EconomyRepository(), ChallengeRepository(red))
 
 
 def register_player_character(red, owner, name, role):
