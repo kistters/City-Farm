@@ -10,8 +10,8 @@ sys.path.insert(0, str(CODE_DIRECTORY))
 
 from products import FOOD, LEGACY_PRODUCTS
 from puzzles import (
-    FARM_LEVELS, MEMORY_SYMBOLS, WORK_REWARDS,
-    check_solution, create_farm, create_work,
+    MATH_PUZZLE_REWARDS, MEMORY_PUZZLE_LEVELS, MEMORY_SYMBOLS,
+    check_solution, create_math_puzzle, create_memory_puzzle,
 )
 
 
@@ -19,7 +19,7 @@ class PuzzleTests(unittest.TestCase):
     def test_monoculture_same_food_icon_and_exact_positions(self):
         for level, size, selected in ((1, 3, 3), (2, 4, 6)):
             for _ in range(12):
-                public, board = create_farm(level)
+                public, board = create_memory_puzzle(level)
                 self.assertEqual(public["size"], size)
                 self.assertEqual(len(board), size ** 2)
                 symbol = public["symbol"]
@@ -37,7 +37,7 @@ class PuzzleTests(unittest.TestCase):
 
     def test_multiculture_remains_difficult_visual_only(self):
         for _ in range(20):
-            public, board = create_farm(3)
+            public, board = create_memory_puzzle(3)
             markers = [crop for crop in board if crop is not None]
             self.assertEqual(public["size"], 4)
             self.assertEqual(len(board), 16)
@@ -45,7 +45,7 @@ class PuzzleTests(unittest.TestCase):
             self.assertEqual(len(markers), 4)
             self.assertEqual(len(set(markers)), 4)
             self.assertTrue(set(markers).issubset(MEMORY_SYMBOLS))
-            self.assertEqual(FARM_LEVELS[3]["production"], 4)
+            self.assertEqual(MEMORY_PUZZLE_LEVELS[3]["production"], 4)
             wrong = board[:]
             index = next(i for i, value in enumerate(board) if value is not None)
             wrong[index] = next(x for x in MEMORY_SYMBOLS if x != wrong[index])
@@ -54,21 +54,21 @@ class PuzzleTests(unittest.TestCase):
         self.assertEqual(MEMORY_SYMBOLS, LEGACY_PRODUCTS)
 
     def test_rules_and_invalid_answers(self):
-        self.assertEqual([FARM_LEVELS[x]["soil_cost"] for x in (1, 2, 3)],
+        self.assertEqual([MEMORY_PUZZLE_LEVELS[x]["soil_cost"] for x in (1, 2, 3)],
                          [10, 35, 20])
-        self.assertEqual([FARM_LEVELS[x]["production"] for x in (1, 2, 3)],
+        self.assertEqual([MEMORY_PUZZLE_LEVELS[x]["production"] for x in (1, 2, 3)],
                          [1, 3, 4])
         for level in (0, 4, True, "1"):
             with self.assertRaises(ValueError):
-                create_farm(level)
-        public, expected = create_farm(1)
+                create_memory_puzzle(level)
+        public, expected = create_memory_puzzle(1)
         self.assertFalse(check_solution({"public": public, "expected": expected},
                                         ["fish"] * len(expected)))
 
     def test_math_arithmetic_and_integer_answers(self):
-        for level in WORK_REWARDS:
+        for level in MATH_PUZZLE_REWARDS:
             for _ in range(40):
-                public, answer = create_work(level)
+                public, answer = create_math_puzzle(level)
                 self.assertIs(type(answer), int)
                 self.assertTrue(check_solution({"public": public, "expected": answer},
                                                answer))

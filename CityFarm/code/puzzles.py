@@ -8,19 +8,20 @@ import secrets
 from products import FOOD, LEGACY_PRODUCTS
 
 RANDOM = secrets.SystemRandom()
-FARM_LEVELS = {
+MEMORY_PUZZLE_LEVELS = {
     1: {"size": 3, "cells": 3, "production": 1, "soil_cost": 10, "observe_seconds": 5},
     2: {"size": 4, "cells": 6, "production": 3, "soil_cost": 35, "observe_seconds": 5},
     3: {"size": 4, "cells": 4, "production": 4, "soil_cost": 20, "observe_seconds": 6},
 }
-WORK_REWARDS = {1: 5, 2: 10, 3: 15}
+MATH_PUZZLE_REWARDS = {1: 5, 2: 10, 3: 15}
 MEMORY_SYMBOLS = LEGACY_PRODUCTS
 
 
-def create_farm(level):
-    if type(level) is not int or level not in FARM_LEVELS:
+def create_memory_puzzle(level):
+    """Cria o desafio visual de memória usado pela atividade Farmer."""
+    if type(level) is not int or level not in MEMORY_PUZZLE_LEVELS:
         raise ValueError("Invalid level")
-    rules = FARM_LEVELS[level]
+    rules = MEMORY_PUZZLE_LEVELS[level]
     board = [None] * (rules["size"] ** 2)
     positions = RANDOM.sample(range(len(board)), rules["cells"])
     # Vegetais são símbolos de memória; a recompensa econômica segue sendo Food.
@@ -36,8 +37,9 @@ def create_farm(level):
     return public, board
 
 
-def create_work(level):
-    if type(level) is not int or level not in WORK_REWARDS:
+def create_math_puzzle(level):
+    """Cria o desafio aritmético usado pela atividade Citizen."""
+    if type(level) is not int or level not in MATH_PUZZLE_REWARDS:
         raise ValueError("Invalid level")
     if level == 1:
         a, b = RANDOM.randint(1, 25), RANDOM.randint(1, 25)

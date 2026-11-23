@@ -13,7 +13,8 @@ import time
 
 from economy_repository import EconomyRepository, text
 from products import FOOD
-from puzzles import FARM_LEVELS, WORK_REWARDS, check_solution, create_farm, create_work
+from puzzles import (MATH_PUZZLE_REWARDS, MEMORY_PUZZLE_LEVELS,
+                     check_solution, create_math_puzzle, create_memory_puzzle)
 
 
 CHALLENGE_TTL = 180
@@ -74,13 +75,13 @@ class EconomyService:
         self.initialize_player_resources(owner)
         current = self.get_player_resource_status(owner)
         if kind == "farmer":
-            if current["soil_health"] < FARM_LEVELS[level]["soil_cost"]:
+            if current["soil_health"] < MEMORY_PUZZLE_LEVELS[level]["soil_cost"]:
                 raise ValueError("Soil health too low. Care for the soil first.")
-            public, expected = create_farm(level)
+            public, expected = create_memory_puzzle(level)
         else:
             if current["energy"] < ENERGY_COST:
                 raise ValueError("Not enough energy. Rest or buy food.")
-            public, expected = create_work(level)
+            public, expected = create_math_puzzle(level)
 
         challenge_id, old = self.repository.load_active_challenge(owner, kind)
         if old:
@@ -116,15 +117,15 @@ class EconomyService:
 
         public = data["public"]
         if public["kind"] == "farmer":
-            cost = FARM_LEVELS[public["level"]]["soil_cost"]
-            quantity = FARM_LEVELS[public["level"]]["production"]
+            cost = MEMORY_PUZZLE_LEVELS[public["level"]]["soil_cost"]
+            quantity = MEMORY_PUZZLE_LEVELS[public["level"]]["production"]
             outcome = self.repository.complete_farming_challenge(
                 raw, challenge_id, owner, cost, quantity)
             if outcome == -2:
                 raise ValueError("Not enough soil health")
             reward = {"qty": quantity, "soil_cost": cost}
         else:
-            coins = WORK_REWARDS[public["level"]]
+            coins = MATH_PUZZLE_REWARDS[public["level"]]
             outcome = self.repository.complete_work_challenge(
                 raw, challenge_id, owner, ENERGY_COST, coins)
             if outcome == -2:
@@ -182,7 +183,9 @@ class EconomyService:
     def _validate_activity(kind, level):
         if kind not in ("farmer", "citizen"):
             raise ValueError("Unknown activity")
-        if type(level) is not int or level not in WORK_REWARDS:
+        available_levels = (MEMORY_PUZZLE_LEVELS if kind == "farmer"
+                            else MATH_PUZZLE_REWARDS)
+        if type(level) is not int or level not in available_levels:
             raise ValueError("Invalid level")
 
     @staticmethod
