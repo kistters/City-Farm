@@ -8,7 +8,9 @@ from html.parser import HTMLParser
 from pathlib import Path
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path("/workspace")
+if not ROOT.is_dir():
+    ROOT = Path(__file__).resolve().parents[1]
 FRONT = ROOT / "CityFarm" / "front"
 
 
@@ -174,7 +176,7 @@ class RolePageTests(unittest.TestCase):
             self.assertIn("character." + field, dashboard)
         self.assertIn("characters: []", dashboard_js)
         self.assertIn('if (data.characters)', dashboard_js)
-        self.assertIn("register_character(", websocket)
+        self.assertIn("register_player_character(", websocket)
         self.assertIn("dashboard_update()", websocket)
 
         for html in (farmer, citizen):
