@@ -12,7 +12,7 @@ from economy import (cancel_farming_challenge, complete_challenge,
                      purchase_food, recover_energy_with_rest,
                      recover_soil_health, register_player_character,
                      start_challenge)
-from players import normalize_player
+from models import PlayerProfile
 
 red = redis.StrictRedis(host="redis", port=6379, db=0)
 dashboard_clients = set()
@@ -40,7 +40,7 @@ def dashboard_update():
 
 def record_event(kind, actor, details):
     event = {
-        "kind": kind, "actor": actor["name"], "details": details,
+        "kind": kind, "actor": actor.nickname, "details": details,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     pipe = red.pipeline()
@@ -56,7 +56,7 @@ def broadcast():
             payload = {"market": current_market}
             if client.player:
                 payload["player_state"] = get_player_resource_status(
-                    red, client.player["id"])
+                    red, client.player.player_id)
             send(client, payload)
         except websocket.WebSocketClosedError:
             players.discard(client)
@@ -96,17 +96,19 @@ class PlayerHandler(websocket.WebSocketHandler):
                 profile = message["player_register"]
                 if not isinstance(profile, dict):
                     raise ValueError("Invalid profile")
-                player = normalize_player(profile.get("id"), profile.get("name"))
+                player = PlayerProfile.from_registration(
+                    profile.get("id"), profile.get("name"))
                 register_player_character(
-                    red, player["id"], player["name"], profile.get("role"))
+                    red, player.player_id, player.nickname, profile.get("role"))
                 self.player = player
-                send(self, {"player_registered": player,
-                            "player_state": get_player_resource_status(red, player["id"])})
+                send(self, {"player_registered": player.as_payload(),
+                            "player_state": get_player_resource_status(
+                                red, player.player_id)})
                 dashboard_update()
                 return
             if not self.player:
                 raise ValueError("Choose a nickname and join first")
-            owner = self.player["id"]
+            owner = self.player.player_id
             if "farm_start" in message:
                 request = message["farm_start"]
                 if not isinstance(request, dict):
