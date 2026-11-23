@@ -1,4 +1,4 @@
-"""Economia Food com Redis DB 15 (não toca o DB 0 do jogo)."""
+"""Integration tests: dedicated PostgreSQL database and Redis DB 15."""
 import json
 import os
 from pathlib import Path
@@ -7,6 +7,9 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 
 import redis
+import psycopg
+from psycopg.conninfo import conninfo_to_dict
+from unittest.mock import patch
 
 CODE_DIRECTORY = Path("/code")
 if not CODE_DIRECTORY.is_dir():
@@ -15,9 +18,10 @@ sys.path.insert(0, str(CODE_DIRECTORY))
 
 import economy
 from models import FOOD_PRODUCT
+from economy_repository import EconomyRepository
 
 
-class EconomyRedisTests(unittest.TestCase):
+class EconomyPersistenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.red = redis.StrictRedis(
@@ -25,14 +29,31 @@ class EconomyRedisTests(unittest.TestCase):
             port=6379, db=15, socket_timeout=3,
         )
         cls.red.ping()
+        database_url = os.environ["TEST_DATABASE_URL"]
+        if conninfo_to_dict(database_url).get("dbname") != "cityfarm_test":
+            raise RuntimeError("Tests require the isolated cityfarm_test database")
+        cls.environment = patch.dict(os.environ, {"DATABASE_URL": database_url})
+        cls.environment.start()
+        cls.addClassCleanup(cls.environment.stop)
+        cls.repository = EconomyRepository(database_url)
+        cls.repository.initialize_schema()
 
     def setUp(self):
         self.red.flushdb()
+        with self.repository.connect() as connection:
+            connection.execute("TRUNCATE food_purchases, food_lots, challenge_results, players RESTART IDENTITY")
         self.farmer = "a" * 32
         self.citizen = "b" * 32
 
     def tearDown(self):
         self.red.flushdb()
+
+    def set_player_resource(self, owner, field, value):
+        economy.initialize_player_resources(self.red, owner)
+        with self.repository.connect() as connection:
+            connection.execute(
+                psycopg.sql.SQL("UPDATE players SET {} = %s WHERE id = %s").format(
+                    psycopg.sql.Identifier(field)), (value, owner))
 
     def ready(self, challenge):
         key = "game:challenge:" + challenge["id"]
@@ -46,6 +67,58 @@ class EconomyRedisTests(unittest.TestCase):
         result = economy.complete_challenge(
             self.red, self.farmer, challenge["id"], challenge["pattern"])
         return challenge, result
+
+    def test_durable_state_survives_loss_of_redis(self):
+        economy.register_player_character(self.red, self.farmer, "Farmer", "farmer")
+        self.farm(2)
+        before = economy.get_player_resource_status(self.red, self.farmer)
+        self.red.flushdb()
+        self.assertEqual(economy.get_player_resource_status(self.red, self.farmer), before)
+        self.assertEqual(economy.get_food_market_status(self.red), {"food": 3})
+        self.assertEqual(json.loads(json.dumps(economy.get_food_market_status(self.red))),
+                         {"food": 3})
+        self.assertEqual(economy.list_character_summaries(self.red)[0]["food_produced"], 3)
+        with self.repository.connect() as connection:
+            lots = connection.execute("SELECT farmer_id, quantity FROM food_lots").fetchall()
+        self.assertEqual(lots, [{"farmer_id": self.farmer, "quantity": 3}])
+
+    def test_cleanup_failure_cannot_duplicate_reward(self):
+        challenge = economy.start_challenge(self.red, self.farmer, "farmer", 1)
+        self.ready(challenge)
+        with patch("challenge_repository.ChallengeRepository.clear_completed_challenge"):
+            economy.complete_challenge(
+                self.red, self.farmer, challenge["id"], challenge["pattern"])
+        with self.assertRaisesRegex(ValueError, "already completed"):
+            economy.complete_challenge(
+                self.red, self.farmer, challenge["id"], challenge["pattern"])
+        self.assertEqual(economy.get_food_market_status(self.red), {"food": 1})
+
+        next_challenge = economy.start_challenge(self.red, self.farmer, "farmer", 1)
+        self.assertNotEqual(next_challenge["id"], challenge["id"])
+
+    def test_database_failure_rolls_back_reward_and_keeps_challenge_retryable(self):
+        challenge = economy.start_challenge(self.red, self.farmer, "farmer", 1)
+        self.ready(challenge)
+        raw = self.red.get("game:challenge:" + challenge["id"])
+        from challenge_repository import ChallengeRepository
+        with self.assertRaises(psycopg.errors.CheckViolation):
+            self.repository.finalize_challenge(
+                ChallengeRepository(self.red), raw, challenge["id"], self.farmer,
+                "farmer", cost=10, reward=-1)
+        self.assertEqual(economy.get_player_resource_status(self.red, self.farmer)["soil_health"], 100)
+        self.assertEqual(economy.get_food_market_status(self.red), {"food": 0})
+        economy.complete_challenge(
+            self.red, self.farmer, challenge["id"], challenge["pattern"])
+        self.assertEqual(economy.get_food_market_status(self.red), {"food": 1})
+
+    def test_legacy_reset_preserves_unrelated_keys(self):
+        from reset_legacy_redis import delete_legacy_game_state
+        self.red.set("another-app:key", "keep")
+        self.red.set("game:coins:" + self.farmer, 500)
+        self.red.rpush("game:stock:food", self.farmer)
+        self.assertEqual(delete_legacy_game_state(self.red), 2)
+        self.assertEqual(self.red.get("another-app:key"), b"keep")
+        self.assertEqual(delete_legacy_game_state(self.red), 0)
 
     def test_character_registration_keeps_role_name_and_accumulators(self):
         economy.register_player_character(self.red, self.farmer, "Rafael", "farmer")
@@ -62,7 +135,7 @@ class EconomyRedisTests(unittest.TestCase):
                 self.assertEqual(row[field], 0)
 
         # Mudança de apelido não cria outro personagem nem apaga o acumulado.
-        self.red.hset("game:stats:" + self.farmer, "food_produced", 8)
+        self.set_player_resource(self.farmer, "food_produced", 8)
         economy.register_player_character(self.red, self.farmer, "Novo nome", "farmer")
         board = economy.list_character_summaries(self.red)
         self.assertEqual(len(board), 2)
@@ -99,7 +172,7 @@ class EconomyRedisTests(unittest.TestCase):
         raw = json.loads(self.red.get("game:challenge:" + work["id"]))
         economy.complete_challenge(self.red, self.citizen, work["id"], raw["expected"])
         for _ in range(2):
-            self.red.set("game:energy:" + self.citizen, 0)
+            self.set_player_resource(self.citizen, "energy", 0)
             economy.purchase_food(self.red, self.citizen)
         by_role = {row["role"]: row for row in economy.list_character_summaries(self.red)}
         self.assertEqual(by_role["citizen"]["coins_earned_work"], 15)
@@ -110,13 +183,13 @@ class EconomyRedisTests(unittest.TestCase):
 
     def test_soil_spending_counter_records_only_successful_payment(self):
         economy.register_player_character(self.red, self.farmer, "Farm", "farmer")
-        self.red.set("game:soil_health:" + self.farmer, 0)
+        self.set_player_resource(self.farmer, "soil_health", 0)
         economy.recover_soil_health(self.red, self.farmer)
         self.assertEqual(economy.list_character_summaries(self.red)[0]["coins_spent_soil"], 0)
         with self.assertRaisesRegex(ValueError, "Not enough coins"):
             economy.prepare_soil_with_coins(self.red, self.farmer)
         self.assertEqual(economy.list_character_summaries(self.red)[0]["coins_spent_soil"], 0)
-        self.red.set("game:coins:" + self.farmer, 5)
+        self.set_player_resource(self.farmer, "coins", 5)
         economy.prepare_soil_with_coins(self.red, self.farmer)
         self.assertEqual(economy.list_character_summaries(self.red)[0]["coins_spent_soil"], 5)
         with self.assertRaisesRegex(ValueError, "Not enough coins"):
@@ -140,9 +213,9 @@ class EconomyRedisTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=4) as executor:
             results = list(executor.map(harvest, range(8)))
         self.assertEqual(results.count(True), 1)
-        self.red.set("game:coins:" + self.citizen, 10)
+        self.set_player_resource(self.citizen, "coins", 10)
         owners = (self.citizen, "c" * 32)
-        self.red.set("game:coins:" + owners[1], 10)
+        self.set_player_resource(owners[1], "coins", 10)
 
         def purchase(owner):
             try:
@@ -155,8 +228,11 @@ class EconomyRedisTests(unittest.TestCase):
             buyers = list(executor.map(purchase, owners))
         self.assertEqual(buyers.count(True), 1)
         self.assertEqual(economy.list_character_summaries(self.red)[1]["food_produced"], 1)
-        self.assertEqual(sum(int(self.red.hget("game:stats:" + owner,
-                                           "food_eaten") or 0) for owner in owners), 1)
+        with self.repository.connect() as connection:
+            total = connection.execute(
+                "SELECT sum(food_eaten) AS quantity FROM players WHERE id = ANY(%s)",
+                (list(owners),)).fetchone()["quantity"]
+        self.assertEqual(total, 1)
         self.assertEqual(economy.get_food_market_status(self.red)["food"], 0)
 
     def test_any_level_produces_only_food_and_uses_soil(self):
@@ -170,14 +246,13 @@ class EconomyRedisTests(unittest.TestCase):
                 })
                 self.assertEqual(economy.get_player_resource_status(self.red, self.farmer)["soil_health"], soil)
                 self.assertEqual(
-                    set(self.red.keys("game:stock:*")), {b"game:stock:food"})
+                    set(self.red.keys("game:stock:*")), set())
 
     def test_unsold_food_does_not_block_new_harvest(self):
         for _ in range(10):
             self.farm(1)
         self.assertEqual(economy.get_food_market_status(self.red), {FOOD_PRODUCT: 10})
-        self.assertEqual(self.red.lrange("game:stock:food", 0, -1),
-                         [self.farmer.encode()] * 10)
+        self.assertEqual(self.red.llen("game:stock:food"), 0)
         with self.assertRaisesRegex(ValueError, "Soil health too low"):
             economy.start_challenge(self.red, self.farmer, "farmer", 1)
         economy.recover_soil_health(self.red, self.farmer)
@@ -199,7 +274,7 @@ class EconomyRedisTests(unittest.TestCase):
 
     def test_legacy_stock_is_not_part_of_the_food_market(self):
         self.red.rpush("game:stock:corn", self.farmer)
-        self.red.set("game:coins:" + self.citizen, 10)
+        self.set_player_resource(self.citizen, "coins", 10)
         self.assertEqual(economy.get_food_market_status(self.red), {"food": 0})
         with self.assertRaisesRegex(ValueError, "Food out of stock"):
             economy.purchase_food(self.red, self.citizen)
@@ -244,7 +319,7 @@ class EconomyRedisTests(unittest.TestCase):
         self.farm(1)
         buyers = ("b" * 32, "c" * 32)
         for buyer in buyers:
-            self.red.set("game:coins:" + buyer, 10)
+            self.set_player_resource(buyer, "coins", 10)
         def purchase_available_food(owner):
             try:
                 economy.purchase_food(self.red, owner)
@@ -277,16 +352,16 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertIn((stock, soil), [(0, 100), (1, 90)])
 
     def test_basic_and_paid_soil_care(self):
-        self.red.set("game:soil_health:" + self.farmer, 0)
+        self.set_player_resource(self.farmer, "soil_health", 0)
         self.assertEqual(economy.recover_soil_health(self.red, self.farmer)["soil_health"], 10)
         with self.assertRaisesRegex(ValueError, "below 10"):
             economy.recover_soil_health(self.red, self.farmer)
-        self.red.set("game:coins:" + self.farmer, 5)
+        self.set_player_resource(self.farmer, "coins", 5)
         self.assertEqual(economy.prepare_soil_with_coins(self.red, self.farmer)["soil_health"], 50)
         self.assertEqual(economy.get_player_resource_status(self.red, self.farmer)["coins"], 0)
 
     def test_citizen_rest_and_work_with_no_food(self):
-        self.red.set("game:energy:" + self.citizen, 0)
+        self.set_player_resource(self.citizen, "energy", 0)
         self.assertEqual(economy.recover_energy_with_rest(self.red, self.citizen)["energy"], 10)
         with self.assertRaisesRegex(ValueError, "below 10"):
             economy.recover_energy_with_rest(self.red, self.citizen)
@@ -297,7 +372,7 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(economy.get_player_resource_status(self.red, self.citizen)["coins"], 5)
 
     def test_expired_wrong_answer_and_insufficient_soil(self):
-        self.red.set("game:soil_health:" + self.farmer, 9)
+        self.set_player_resource(self.farmer, "soil_health", 9)
         with self.assertRaisesRegex(ValueError, "Soil health too low"):
             economy.start_challenge(self.red, self.farmer, "farmer", 1)
         economy.recover_soil_health(self.red, self.farmer)

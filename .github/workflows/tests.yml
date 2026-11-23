@@ -6,6 +6,15 @@ jobs:
   python:
     runs-on: ubuntu-latest
     services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cityfarm
+          POSTGRES_PASSWORD: cityfarm
+          POSTGRES_DB: cityfarm_test
+        ports:
+          - 5432:5432
+        options: --health-cmd "pg_isready -U cityfarm" --health-interval 5s --health-timeout 5s --health-retries 10
       redis:
         image: redis:7.4-alpine
         ports:
@@ -16,9 +25,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r CityFarm/requirements.txt
-      - name: Puzzle and Redis tests
+      - name: Puzzle and persistence tests
         env:
           REDIS_HOST: localhost
+          TEST_DATABASE_URL: postgresql://cityfarm:cityfarm@localhost:5432/cityfarm_test
           PYTHONPATH: CityFarm/code
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: JavaScript syntax
