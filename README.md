@@ -1,6 +1,6 @@
 # City-Farm
 
-A local multiplayer game about farming, work, and consumption. Farmers complete memory puzzles to produce Food; Citizens solve arithmetic challenges to earn coins, buy Food, and restore Energy.
+A local multiplayer game about farming, work, and consumption. Enter a shared pixel-art village, then play as a Farmer who grows Food or a Citizen who earns coins to buy it.
 
 Food and coins are awarded **immediately after server-side validation**—no Celery, RabbitMQ, or waiting for crops to grow.
 
@@ -12,12 +12,35 @@ Docker Compose v2 is required.
 docker compose up --build -d
 ~~~
 
-- http://localhost/ — choose your role.
+- http://localhost/ — explore the shared pixel-art village, meet players, and choose a role.
 - http://localhost/farmer — memory puzzles, Soil Health, and Food production.
 - http://localhost/citizen — arithmetic, coins, Energy, and eating Food.
 - http://localhost/dashboard — the Food market, recent activity, and character statistics.
 
 A phone on the same Wi-Fi can reach the game using your computer's local IP address, provided ports 80 and 8888 are accessible. **Do not expose the game to the public internet:** player IDs are not authenticated.
+
+## Multiplayer village (experimental)
+
+The home page now shows a small top-down **28×18 tile village**, rendered with
+HTML Canvas and original pixel art. Join as **Farmer** or **Citizen** and use
+**WASD**, **arrow keys**, or the touch direction buttons to walk. Other players
+on the same server appear immediately with nicknames. Walk next to the Farm
+(Farmer) or Market (Citizen) and press **E** or click **Enter building** to
+open the existing role gameplay. The Dashboard remains accessible from the
+navigation.
+
+The Tornado `/world` WebSocket owns player positions. It accepts one-tile
+cardinal movements, blocks walls and water, and broadcasts join/move/leave
+messages to connected browsers. Rendering interpolates movement between tiles.
+The **world state is in memory only**: disconnecting removes a character,
+restarting Tornado resets positions, and each connected tab has its own avatar.
+The player economy, stock, and statistics remain in PostgreSQL. Redis still
+holds temporary puzzles and recent activity.
+
+This is an intentionally **single-process, local-network prototype**. It does
+not implement accounts, secure login, reconnect-to-last-position, collisions
+between avatars, chat, spatial interest management, or persistence of map
+positions. Player IDs are untrusted; keep it off the public internet.
 
 ## Economy: only Food
 
