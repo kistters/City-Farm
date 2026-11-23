@@ -145,8 +145,10 @@ class RolePageTests(unittest.TestCase):
             "corn", "wheat", "carrot", "lettuce", "tomato",
         ):
             self.assertIn(".sprite-" + icon, css)
-        for html in (farmer, citizen, home, dashboard):
+        for html in (farmer, citizen, dashboard):
             self.assertIn("pixel-sprite", html)
+        self.assertIn('id="world-canvas"', home)
+        self.assertIn("/js/world.js", parse("index.html").scripts)
         self.assertIn("image-rendering:pixelated", css)
         self.assertIn("sprite-career-", citizen)
         self.assertIn("sprite-citizen-rest", citizen)
