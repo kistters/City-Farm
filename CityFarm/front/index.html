@@ -3,44 +3,88 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#245c43">
-  <title>City-Farm — Choose your role</title>
+  <meta name="theme-color" content="#284f39">
+  <title>City-Farm — Village</title>
   <link rel="icon" href="/css/images/favicon.ico">
-  <link rel="stylesheet" href="/css/dashboard.css?v=31">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
+  <link rel="stylesheet" href="/css/world.css?v=1">
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/" aria-label="City-Farm home"><span aria-hidden="true">🌱</span> City-Farm</a>
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="/farmer" >Farmer</a>
-        <a href="/citizen" >Citizen</a>
-        <a href="/dashboard" >Dashboard</a>
-      </nav>
+  <header class="world-header">
+    <a class="world-brand" href="/">CITY<span>·</span>FARM</a>
+    <nav aria-label="Main navigation">
+      <a href="/farmer">Farm</a>
+      <a href="/citizen">City</a>
+      <a href="/dashboard">Dashboard</a>
+    </nav>
+  </header>
+
+  <main class="world-page">
+    <div class="world-heading">
+      <div>
+        <p class="world-eyebrow">A tiny shared world</p>
+        <h1>Welcome to City-Farm</h1>
+        <p>Walk through the village. Meet other players. Find your place in the economy.</p>
+      </div>
+      <div class="world-online" aria-live="polite">
+        <span class="online-dot" aria-hidden="true"></span>
+        <span id="online-count">0 players online</span>
+      </div>
     </div>
-  </header><main class="page-container landing">
-    <div class="landing-hero">
-      <p class="eyebrow">A multiplayer farming experiment</p>
-      <h1>Grow it. Work. Trade.</h1>
-      <p>Farmers solve memory patterns to grow food. Citizens work on arithmetic to earn coins and buy food.</p>
+
+    <section class="world-panel" aria-label="Interactive village map">
+      <div class="world-stage">
+        <canvas id="world-canvas" width="896" height="576"
+          role="img" aria-label="Top-down village with farmland, streets, houses and live players"></canvas>
+        <div class="world-map-tag">CITY-FARM <span>WORLD 01</span></div>
+        <div class="world-connection" id="world-connection" role="status">Connecting to the village…</div>
+
+        <div class="world-join" id="world-join">
+          <form id="join-form" class="join-card">
+            <p class="world-eyebrow">New adventure</p>
+            <h2>Choose your character</h2>
+            <label for="player-nickname">Nickname</label>
+            <input id="player-nickname" name="nickname" maxlength="24"
+              autocomplete="nickname" required placeholder="Your name">
+            <fieldset class="role-selection">
+              <legend>Role</legend>
+              <label><input type="radio" name="role" value="farmer" checked>
+                <span class="role-avatar farmer-avatar" aria-hidden="true">F</span>
+                <span><strong>Farmer</strong><small>Grow food</small></span></label>
+              <label><input type="radio" name="role" value="citizen">
+                <span class="role-avatar citizen-avatar" aria-hidden="true">C</span>
+                <span><strong>Citizen</strong><small>Work &amp; trade</small></span></label>
+            </fieldset>
+            <p class="join-error" id="join-error" role="alert" aria-live="polite"></p>
+            <button class="join-button" type="submit">Enter the village</button>
+          </form>
+        </div>
+      </div>
+      <div class="world-toolbar">
+        <div class="world-help">
+          <strong>Move: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys</strong>
+          <span>Walk near your building and press <kbd>E</kbd> to enter.</span>
+        </div>
+        <div class="world-action">
+          <a id="enter-building" href="#" hidden>Enter building</a>
+          <span id="position-label">Choose a character to begin</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="world-footer">
+      <div class="mobile-directions" aria-label="Touch movement controls">
+        <button type="button" data-move="up" aria-label="Move up">▲</button>
+        <div>
+          <button type="button" data-move="left" aria-label="Move left">◀</button>
+          <button type="button" data-move="down" aria-label="Move down">▼</button>
+          <button type="button" data-move="right" aria-label="Move right">▶</button>
+        </div>
+      </div>
+      <p>This village is a local-network multiplayer prototype. Positions reset when the server restarts.</p>
     </div>
-    <div class="role-cards">
-      <a class="role-card" href="/farmer">
-        <div class="role-icon" aria-hidden="true"><span class="pixel-sprite sprite-farm-1"></span></div>
-        <span class="eyebrow">Produce</span>
-        <h2>Farmer</h2>
-        <p>Memorize vegetable patterns, produce Food, and sell it to the city.</p>
-        <span class="role-link">Enter the farm <span aria-hidden="true">→</span></span>
-      </a>
-      <a class="role-card" href="/citizen">
-        <div class="role-icon" aria-hidden="true"><span class="pixel-sprite sprite-career-2"></span></div>
-        <span class="eyebrow">Consume</span>
-        <h2>Citizen</h2>
-        <p>Solve arithmetic, earn coins, then buy and eat food from Farmers.</p>
-        <span class="role-link">Enter the city <span aria-hidden="true">→</span></span>
-      </a>
-    </div>
-    <p class="landing-footer">Want to inspect the system? <a href="/dashboard">Open the technical dashboard</a>.</p>
   </main>
-</body></html>
+
+  <script src="/js/player.js?v=20"></script>
+  <script src="/js/world.js?v=1"></script>
+</body>
+</html>
