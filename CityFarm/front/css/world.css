@@ -1,0 +1,106 @@
+:root {
+  color-scheme: light;
+  --ink: #233d31;
+  --forest: #285c43;
+  --cream: #f5f1dd;
+  --border: #d0cfb3;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #f0efdc; color: var(--ink);
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif; }
+a { color: inherit; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+.world-header { background: #244f3b; color: #fff6d9; min-height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px max(18px, calc((100vw - 1120px)/2)); gap: 15px; }
+.world-brand { font: 900 23px/1.1 monospace; letter-spacing: 1px; text-decoration: none; }
+.world-brand span { color: #ffc35d; }
+.world-header nav { display: flex; gap: clamp(12px, 2vw, 25px); flex-wrap: wrap; }
+.world-header nav a { text-decoration: none; font-size: 14px; font-weight: 700; }
+.world-header nav a:hover, .world-header nav a:focus-visible { text-decoration: underline; }
+.world-page { max-width: 1080px; margin: 0 auto; padding: 22px 18px 36px; }
+.world-heading { display: flex; align-items: end; justify-content: space-between;
+  gap: 16px; margin-bottom: 18px; }
+.world-eyebrow { text-transform: uppercase; letter-spacing: 2px; color: #517259;
+  font-size: 11px; font-weight: 900; margin: 0 0 7px; }
+.world-heading h1 { margin: 0 0 7px; font-size: clamp(24px, 4vw, 36px); line-height: 1.15; }
+.world-heading p:not(.world-eyebrow) { margin: 0; line-height: 1.55; }
+.world-online { padding: 10px 12px; white-space: nowrap; background: #fffef2;
+  border: 1px solid var(--border); border-radius: 10px; font-size: 13px; font-weight: 700; }
+.online-dot { display: inline-block; width: 9px; height: 9px; background: #57a86c;
+  border-radius: 50%; margin-right: 7px; }
+.world-panel { background: #fffef2; border: 1px solid #c2c8a8; padding: 12px;
+  border-radius: 16px; box-shadow: 0 8px 0 #ced5b8; }
+.world-stage { position: relative; overflow: hidden; background: #8aba6f;
+  border: 5px solid #324d38; border-radius: 7px; }
+#world-canvas { width: 100%; height: auto; display: block; aspect-ratio: 28 / 18;
+  image-rendering: pixelated; image-rendering: crisp-edges; }
+.world-map-tag { position: absolute; top: 10px; left: 10px; pointer-events: none;
+  background: #243d34e8; color: #fff9dc; padding: 7px 10px; border-radius: 4px;
+  font: bold 12px monospace; letter-spacing: 1px; }
+.world-map-tag span { color: #acd1a8; font-weight: normal; margin-left: 5px; }
+.world-connection { position: absolute; top: 10px; right: 10px;
+  padding: 7px 10px; border-radius: 4px; background: #fef9dfed; font-size: 12px;
+  font-weight: 700; max-width: 55%; }
+.world-join { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center;
+  background: #142d2499; padding: 12px; }
+.world-join[hidden] { display: none; }
+.join-card { width: min(380px, 100%); max-height: 100%; overflow-y: auto;
+  background: var(--cream); border: 3px solid #274b38; border-radius: 10px;
+  box-shadow: 7px 7px 0 #172e23aa; padding: clamp(12px, 2.8vw, 23px); }
+.join-card h2 { font: bold clamp(17px, 2.5vw, 24px)/1.15 monospace; margin: 0 0 15px; }
+.join-card > label { display: block; font-weight: 800; font-size: 13px; margin-bottom: 6px; }
+.join-card > input { width: 100%; padding: 11px; background: #fff; border-radius: 6px;
+  border: 2px solid #9eaf98; outline-offset: 2px; }
+.role-selection { border: 0; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; padding: 0; margin: 14px 0 0; }
+.role-selection legend { font-weight: 800; font-size: 13px; margin-bottom: 7px; }
+.role-selection label { position: relative; display: flex; gap: 8px; align-items: center;
+  padding: 11px 7px; background: white; border: 2px solid #c2c8b5;
+  border-radius: 6px; cursor: pointer; }
+.role-selection label:has(input:checked) { background: #e9f2d9; border-color: #2b7952; }
+.role-selection input { position: absolute; top: 3px; right: 3px; accent-color: #2b7952; }
+.role-selection strong, .role-selection small { display: block; }
+.role-selection strong { font-size: 13px; }
+.role-selection small { font-size: 11px; color: #667366; }
+.role-avatar { flex: 0 0 29px; height: 29px; display: grid; place-items: center;
+  border: 3px solid #304233; color: white; font: bold 15px monospace; }
+.farmer-avatar { background: #8b6137; }
+.citizen-avatar { background: #567fbd; }
+.join-error { font-size: 12px; min-height: 18px; color: #b03f35; margin: 10px 0; }
+.join-button { display: block; width: 100%; padding: 11px 16px; border: 0;
+  background: #2f7750; color: white; border-radius: 6px; font-weight: 800; }
+.join-button:hover { background: #215c3c; }
+.world-toolbar { display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; padding: 12px 5px 4px; }
+.world-help { display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.world-help strong { font-size: 12px; }
+kbd { background: #edf0e1; border: 1px solid #aeb8a5; border-bottom: 3px solid #aeb8a5;
+  border-radius: 3px; padding: 2px 5px; margin: 0 2px; font: bold 11px monospace; }
+.world-action { display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+  font-size: 12px; text-align: right; }
+#enter-building { text-decoration: none; padding: 9px 12px; background: #27784e;
+  color: white; border-radius: 5px; font-weight: 800; }
+#enter-building[hidden] { display: none; }
+.world-footer { display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: #657164; gap: 15px; margin-top: 15px; }
+.mobile-directions { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mobile-directions div { display: flex; gap: 4px; }
+.mobile-directions button { min-width: 46px; min-height: 44px; border: 1px solid #abc0a9;
+  background: #fffdf0; border-radius: 6px; color: #2a6146; font-size: 18px;
+  touch-action: manipulation; }
+.mobile-directions button:active { background: #d1eacb; }
+:focus-visible { outline: 3px solid #e7983f; outline-offset: 3px; }
+@media (max-width: 620px) {
+  .world-header { align-items: flex-start; flex-direction: column; padding: 13px 18px; }
+  .world-heading { flex-direction: column; align-items: flex-start; }
+  .world-page { padding: 15px 10px; }
+  .world-panel { padding: 5px; border-radius: 8px; }
+  .world-stage { border-width: 3px; }
+  .world-map-tag { font-size: 9px; top: 5px; left: 5px; padding: 3px 5px; }
+  .world-connection { top: 5px; right: 5px; font-size: 10px; padding: 4px; }
+  .world-toolbar { flex-wrap: wrap; }
+  .world-action { align-items: flex-start; text-align: left; }
+  .world-footer { flex-direction: column; }
+}
