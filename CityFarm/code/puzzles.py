@@ -5,7 +5,7 @@ o servidor ainda valida cada resposta e só concede uma recompensa por desafio.
 """
 import secrets
 
-from products import FOOD, LEGACY_PRODUCTS
+from products import FOOD
 
 RANDOM = secrets.SystemRandom()
 MEMORY_PUZZLE_LEVELS = {
@@ -14,7 +14,7 @@ MEMORY_PUZZLE_LEVELS = {
     3: {"size": 4, "cells": 4, "production": 4, "soil_cost": 20, "observe_seconds": 6},
 }
 MATH_PUZZLE_REWARDS = {1: 5, 2: 10, 3: 15}
-MEMORY_SYMBOLS = LEGACY_PRODUCTS
+MEMORY_SYMBOLS = ("corn", "wheat", "carrot", "lettuce", "tomato")
 
 
 def create_memory_puzzle(level):

@@ -14,7 +14,7 @@ if not CODE_DIRECTORY.is_dir():
 sys.path.insert(0, str(CODE_DIRECTORY))
 
 import economy
-from products import FOOD, LEGACY_PRODUCTS
+from products import FOOD
 
 
 class EconomyRedisTests(unittest.TestCase):
@@ -197,43 +197,13 @@ class EconomyRedisTests(unittest.TestCase):
         self.assertEqual(economy.get_player_resource_status(self.red, self.farmer)["coins"], 5)
         self.assertEqual(economy.get_food_market_status(self.red), {"food": 0})
 
-    def test_previous_stock_counts_as_food_and_is_sellable(self):
+    def test_legacy_stock_is_not_part_of_the_food_market(self):
         self.red.rpush("game:stock:corn", self.farmer)
-        self.red.rpush("game:stock:lettuce", self.farmer)
-        self.assertEqual(economy.get_food_market_status(self.red), {"food": 2})
         self.red.set("game:coins:" + self.citizen, 10)
-        economy.purchase_food(self.red, self.citizen)
-        self.assertEqual(economy.get_food_market_status(self.red), {"food": 1})
-        self.red.set("game:energy:" + self.citizen, 0)
-        economy.purchase_food(self.red, self.citizen)
         self.assertEqual(economy.get_food_market_status(self.red), {"food": 0})
-        self.assertEqual(economy.get_player_resource_status(self.red, self.farmer)["coins"], 10)
-
-    def test_new_food_is_sold_before_legacy_stock(self):
-        self.red.rpush("game:stock:tomato", "c" * 32)
-        self.farm(1)
-        self.assertEqual(economy.get_food_market_status(self.red), {"food": 2})
-        self.red.set("game:coins:" + self.citizen, 5)
-        result = economy.purchase_food(self.red, self.citizen)
-        self.assertEqual(result["seller"], self.farmer)
-        self.assertEqual(self.red.llen("game:stock:tomato"), 1)
-        self.assertEqual(economy.get_food_market_status(self.red), {"food": 1})
-
-    def test_legacy_plots_preserve_original_seller(self):
-        for product, mapping in (
-            ("wheat", {"product": "wheat", "qty": 1}),
-            ("corn", {"crop:corn": 1}),
-            ("tomato", {"stock:tomato": 1, "remaining": 1}),
-        ):
-            self.red.hset("game:plot:" + self.farmer + ":0", mapping=mapping)
-            self.red.rpush("game:stock:" + product, self.farmer + ":0")
-            self.red.set("game:coins:" + self.citizen, 10)
-            self.red.set("game:energy:" + self.citizen, 0)
-            result = economy.purchase_food(self.red, self.citizen)
-            self.assertEqual(result["seller"], self.farmer)
-            self.assertEqual(economy.get_food_market_status(self.red), {"food": 0})
-            self.assertFalse(self.red.exists("game:plot:" + self.farmer + ":0"))
-        self.assertEqual(economy.get_player_resource_status(self.red, self.farmer)["coins"], 15)
+        with self.assertRaisesRegex(ValueError, "Food out of stock"):
+            economy.purchase_food(self.red, self.citizen)
+        self.assertEqual(self.red.llen("game:stock:corn"), 1)
 
     def test_cancel_does_not_grant_food_or_use_soil(self):
         challenge = economy.start_challenge(self.red, self.farmer, "farmer", 1)

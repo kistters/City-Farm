@@ -8,7 +8,7 @@ if not CODE_DIRECTORY.is_dir():
     CODE_DIRECTORY = Path(__file__).resolve().parents[1] / "CityFarm" / "code"
 sys.path.insert(0, str(CODE_DIRECTORY))
 
-from products import FOOD, LEGACY_PRODUCTS
+from products import FOOD
 from puzzles import (
     MATH_PUZZLE_REWARDS, MEMORY_PUZZLE_LEVELS, MEMORY_SYMBOLS,
     check_solution, create_math_puzzle, create_memory_puzzle,
@@ -51,7 +51,6 @@ class PuzzleTests(unittest.TestCase):
             wrong[index] = next(x for x in MEMORY_SYMBOLS if x != wrong[index])
             self.assertFalse(check_solution({"public": public, "expected": board},
                                             wrong))
-        self.assertEqual(MEMORY_SYMBOLS, LEGACY_PRODUCTS)
 
     def test_rules_and_invalid_answers(self):
         self.assertEqual([MEMORY_PUZZLE_LEVELS[x]["soil_cost"] for x in (1, 2, 3)],

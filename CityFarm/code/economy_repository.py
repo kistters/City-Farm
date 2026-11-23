@@ -3,7 +3,7 @@
 Esta classe concentra nomes de chaves e comandos Redis. Ela não decide se uma
 ação é permitida pelo jogo; essa regra fica em :mod:`economy`.
 """
-from products import FOOD, LEGACY_PRODUCTS
+from products import FOOD
 
 
 # Os scripts garantem que uma transação inteira ocorra no Redis ou não ocorra.
@@ -41,49 +41,14 @@ local coins = tonumber(redis.call('GET', KEYS[1]) or '0')
 local energy = tonumber(redis.call('GET', KEYS[2]) or '0')
 if coins < tonumber(ARGV[1]) then return {-1, ''} end
 if energy >= tonumber(ARGV[2]) then return {-2, ''} end
-local stock_key, item, product
-for i = 3, #KEYS - 1 do
-    local candidate = redis.call('LINDEX', KEYS[i], 0)
-    if candidate then stock_key, item, product = KEYS[i], candidate, ARGV[i+1]; break end
-end
+local item = redis.call('LINDEX', KEYS[3], 0)
 if not item then return {-3, ''} end
-local seller, slot = string.match(item, '^([0-9a-f]+):([0-9]+)$')
-if not seller then seller = item end
+local seller = item
 if not string.match(seller, '^[0-9a-f]+$') or string.len(seller) ~= 32 then return {-4, ''} end
-
--- Unidades antigas mantêm seu vínculo com o terreno histórico.
-local legacy, previous, field, legacy_key
-if slot then
-    legacy_key = 'game:plot:' .. seller .. ':' .. slot
-    field = 'crop:' .. product
-    local count = tonumber(redis.call('HGET', legacy_key, field) or '0')
-    legacy, previous = false, false
-    if count == 0 then
-        field = 'stock:' .. product
-        count = tonumber(redis.call('HGET', legacy_key, field) or '0')
-        previous = count > 0
-    end
-    if count == 0 and redis.call('HGET', legacy_key, 'product') == product then
-        count = tonumber(redis.call('HGET', legacy_key, 'qty') or '0')
-        legacy = true
-    end
-    if count < 1 then return {-4, ''} end
-end
-redis.call('LPOP', stock_key)
+redis.call('LPOP', KEYS[3])
 redis.call('DECRBY', KEYS[1], ARGV[1])
 redis.call('INCRBY', 'game:coins:' .. seller, ARGV[1])
 redis.call('SET', KEYS[2], math.min(tonumber(ARGV[2]), energy + tonumber(ARGV[3])))
-if slot then
-    if legacy then
-        if redis.call('HINCRBY', legacy_key, 'qty', -1) == 0 then redis.call('DEL', legacy_key) end
-    elseif previous then
-        redis.call('HINCRBY', legacy_key, field, -1)
-        if redis.call('HINCRBY', legacy_key, 'remaining', -1) == 0 then redis.call('DEL', legacy_key) end
-    elseif redis.call('HINCRBY', legacy_key, field, -1) == 0 then
-        redis.call('HDEL', legacy_key, field)
-        if redis.call('HLEN', legacy_key) == 0 then redis.call('DEL', legacy_key) end
-    end
-end
 redis.call('HINCRBY', KEYS[#KEYS], 'food_eaten', 1)
 return {1, seller}
 """
@@ -159,10 +124,7 @@ class EconomyRepository:
         return owners, pipe.execute()
 
     def count_available_food(self):
-        pipe = self.redis.pipeline()
-        for product in (FOOD,) + LEGACY_PRODUCTS:
-            pipe.llen("game:stock:" + product)
-        return sum(pipe.execute())
+        return self.redis.llen("game:stock:" + FOOD)
 
     def load_active_challenge(self, owner, kind):
         challenge_id = text(self.redis.get(self.active_key(owner, kind)))
@@ -207,10 +169,8 @@ class EconomyRepository:
             args=[cost, maximum, recovery]))
 
     def purchase_next_food(self, owner, price, maximum_energy, gained_energy):
-        products = (FOOD,) + LEGACY_PRODUCTS
-        keys = ["game:coins:" + owner, "game:energy:" + owner]
-        keys += ["game:stock:" + product for product in products]
-        keys.append(self.stats_key(owner))
+        keys = ["game:coins:" + owner, "game:energy:" + owner,
+                "game:stock:" + FOOD, self.stats_key(owner)]
         code, seller = self.redis.register_script(BUY_FOOD)(
-            keys=keys, args=[price, maximum_energy, gained_energy, *products])
+            keys=keys, args=[price, maximum_energy, gained_energy])
         return int(code), text(seller)
