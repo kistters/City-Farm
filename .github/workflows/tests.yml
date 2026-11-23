@@ -37,6 +37,7 @@ jobs:
           node --check CityFarm/front/js/farmer.js
           node --check CityFarm/front/js/citizen.js
           node --check CityFarm/front/js/dashboard.js
+          node --check CityFarm/front/js/world.js
       - name: Independent identities on the same browser
         run: node tests/test_player_identity.cjs
       - name: Citizen numeric input regression
